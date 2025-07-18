@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Skyview Public School</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="bg-light">
+    <div class="container">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-lg">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <img src="../assets/images/logo.png" alt="Skyview Logo" height="80" class="mb-3">
+                            <h4 class="text-primary">Welcome Back</h4>
+                            <p class="text-muted">Please login to your account</p>
+                        </div>
+                        <form id="loginForm" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="username" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">Remember me</label>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary" id="loginButton">
+                                    <span class="normal-state">Login</span>
+                                    <span class="loading-state d-none">
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Logging in...
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="text-center mt-3">
+                                <p class="mb-0">Don't have an account? <a href="#" class="text-primary">Sign Up</a></p>  
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            const loginButton = document.getElementById('loginButton');
+
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                togglePassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
+
+            const setLoading = (isLoading) => {
+                const normalState = loginButton.querySelector('.normal-state');
+                const loadingState = loginButton.querySelector('.loading-state');
+                loginButton.disabled = isLoading;
+                
+                if (isLoading) {
+                    normalState.classList.add('d-none');
+                    loadingState.classList.remove('d-none');
+                } else {
+                    normalState.classList.remove('d-none');
+                    loadingState.classList.add('d-none');
+                }
+            };
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('rememberMe').checked;
+
+                if (!username || !password) {
+                    alert('Please enter both username and password');
+                    return;
+                }
+
+                try {
+                    setLoading(true);
+                    const success = await Auth.login(username, password, rememberMe);
+                    if (success) {
+                        // Check if we were redirected from another page
+                        const redirectUrl = new URLSearchParams(window.location.search).get('redirect');
+                        window.location.href = redirectUrl || '../index.html';
+                    } else {
+                        alert('Invalid credentials. Please try again');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    alert('An error occurred during login. Please try again');
+                } finally {
+                    setLoading(false);
+                }
+            });
+
+            // If already logged in, redirect to home
+            if (Auth.isAuthenticated()) {
+                window.location.href = '../index.html';
+            }
+        });
+    </script>
+</body>
+</html>

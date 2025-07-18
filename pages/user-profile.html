@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - SKYVIEW</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .profile-section {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .profile-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 60px;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 48px;
+            color: #6c757d;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        /* General Styles */
+
+    </style>
+</head>
+<body class="bg-light">
+     <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+    <div class="container">
+        <div class="profile-section">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h2 class="mb-3">My Profile</h2>
+                <div id="adminControls" style="display: none;">
+                    <a href="user-list.html" class="btn btn-primary mb-3">
+                        <i class="fas fa-users"></i> Manage Users
+                    </a>
+                </div>
+            </div>
+
+            <form id="profileForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" class="form-control" id="firstName" name="firstName" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" class="form-control" id="lastName" name="lastName" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <input type="text" class="form-control" id="role" name="role" readonly>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                    <button type="button" class="btn btn-danger" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>   
+    <script src="../components/navbar.js"></script>
+    <script>
+        // Check authentication
+        if (!Auth.isAuthenticated()) {
+            window.location.href = '../index.html';
+        }
+
+        // Logout function
+        function logout() {
+            Auth.logout();
+            window.location.href = '../index.html';
+        }
+
+        // Load profile data
+        async function loadProfile() {
+            try {
+                console.log('Token:', Auth.getToken()); 
+                console.log('API URL:', `${CONFIG.API_URL}/users/profile`); 
+
+                const response = await fetch(`${CONFIG.API_URL}/users/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                console.log('Response status:', response.status); 
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Server error:', errorData); 
+                    throw new Error(`Failed to load profile: ${errorData.message || 'Unknown error'}`);
+                }
+
+                const user = await response.json();
+                console.log('User data:', user); 
+
+                // Only update the form if we have user data
+                if (user) {
+                    document.getElementById('firstName').value = user.firstName || '';
+                    document.getElementById('lastName').value = user.lastName || '';
+                    document.getElementById('email').value = user.email || '';
+                    document.getElementById('username').value = user.username || '';
+                    document.getElementById('role').value = user.role || '';
+
+                    // Show admin controls if user is admin
+                    if (user.role === 'admin') {
+                        document.getElementById('adminControls').style.display = 'block';
+                    }
+                } else {
+                    console.error('No user data received');
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                alert(`Failed to load profile data: ${error.message}`);
+            }
+        }
+
+        // Update profile
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value
+            };
+
+            console.log('Updating profile with data:', formData); 
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/users/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                console.log('Update response status:', response.status); 
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Update error:', errorData); 
+                    throw new Error(`Failed to update profile: ${errorData.message || 'Unknown error'}`);
+                }
+
+                const result = await response.json();
+                console.log('Update result:', result); 
+                alert('Profile updated successfully');
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert(`Failed to update profile: ${error.message}`);
+            }
+        });
+
+        // Load profile on page load
+        loadProfile();
+    </script>
+    
+</body>
+</html>

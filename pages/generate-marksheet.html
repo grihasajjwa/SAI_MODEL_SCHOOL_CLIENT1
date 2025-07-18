@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Marksheet</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f5f5f5; 
+            font-size: 15px;
+            font-family: 'Times New Roman', Times, serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        .marksheet-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #000;
+        }
+        .marksheet-inner {
+            border: 1px solid #000;
+            padding: 20px;
+            position: relative;
+            background: 
+                linear-gradient(45deg, #000 12px, transparent 0) 0 0,
+                linear-gradient(-45deg, #000 12px, transparent 0) 100% 0,
+                linear-gradient(135deg, #000 12px, transparent 0) 0 100%,
+                linear-gradient(-135deg, #000 12px, transparent 0) 100% 100%;
+            background-size: 30px 30px;
+            background-repeat: no-repeat;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 60px;
+            color: rgba(0, 0, 0, 0.05);
+            white-space: nowrap;
+            pointer-events: none;
+            font-family: Consolas, monospace;
+            font-weight: bold;
+            z-index: 1;
+        }
+        .school-header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .school-logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 5px;
+        }
+        .school-header h2 {
+            margin: 5px 0;
+            font-size: 28px;
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .school-header p {
+            margin: 2px 0;
+            font-size: 15px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: 500;
+        }
+        .student-info {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: Consolas, monospace; /* font-family: 'Times New Roman', Times, serif;  */
+        }
+        .student-info p {
+            margin-bottom: 5px;
+        }
+        .student-info strong {
+            font-weight: 600;
+        }
+        .marks-table {
+            font-size: 13px;
+            font-family: Consolas, monospace;
+        }
+        .marks-table th {
+            background-color: #f8f9fa;
+            text-align: center;
+            vertical-align: middle;
+            padding: 4px !important;
+            font-size: 13px;
+            white-space: nowrap;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .marks-table td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 3px !important;
+        }
+        .marks-input {
+            width: 45px !important;
+            display: inline-block !important;
+            text-align: center;
+            padding: 1px !important;
+            font-size: 13px !important;
+            height: 24px !important;
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: 500;
+        }
+        .result-summary {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: Consolas, monospace; /* font-family: 'Times New Roman', Times, serif; */
+        }
+        .result-summary p {
+            margin-bottom: 0;
+        }
+        .result-summary strong {
+            font-weight: 600;
+        }
+        .grade-info {
+            font-size: 13px;
+            margin: 10px 0;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: Consolas, monospace; /* font-family: 'Times New Roman', Times, serif; */
+        }
+        .grade-info h6 {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .signatures {
+            margin-top: 30px;
+            padding-top: 20px;
+            /* border-top: 1px solid #ddd; */
+        }
+        .signatures p {
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            width: 80%;
+            margin: 5px auto;
+        }
+        .total-cell {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .table > :not(caption) > * > * {
+            padding: 0.25rem;
+        }
+        @media print {
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+            body { 
+                margin: 0;
+                padding: 0;
+                font-size: 12px;
+            }
+            .marksheet-container {
+                max-width: 100%;
+                margin: 0;
+                padding: 10px;
+                box-shadow: none;
+                border: none;
+            }
+            .marksheet-inner {
+                padding: 10px;
+                border: 1px solid #000;
+            }
+            .no-print, 
+            .btn,
+            button,
+            .d-flex.justify-content-between.mb-3 { 
+                display: none !important; 
+            }
+            .marks-table {
+                width: 100%;
+                font-size: 11px;
+                page-break-inside: avoid;
+            }
+            .marks-table table {
+                width: 100% !important;
+                margin: 0 !important;
+                page-break-inside: avoid;
+            }
+            .marks-table th, .marks-table td {
+                padding: 2px !important;
+                font-size: 11px !important;
+                white-space: nowrap;
+            }
+            .student-info {
+                font-size: 12px;
+                margin-bottom: 10px;
+                page-break-inside: avoid;
+            }
+            .grade-info {
+                font-size: 10px;
+                margin-top: 10px;
+            }
+            .grade-info p {
+                margin: 0;
+                line-height: 1.2;
+            }
+            .table > :not(caption) > * > * {
+                padding: 2px !important;
+            }
+            .table {
+                border-color: #000 !important;
+            }
+            .table th, .table td {
+                border-color: #000 !important;
+            }
+            .col-print-6 {
+                width: 50% !important;
+                float: left !important;
+                flex: 0 0 50% !important;
+                max-width: 50% !important;
+            }
+            .student-info .row {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                margin: 0 -5px;
+            }
+            .student-info p {
+                margin-bottom: 5px !important;
+                line-height: 1.3;
+            }
+            .student-info .col-print-6 {
+                padding: 0 5px;
+            }
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container marksheet-container">
+        <div class="marksheet-inner">
+            <div class="watermark">SKYVIEW PUBLIC SCHOOL</div>
+            <div class="d-flex justify-content-between mb-3 no-print">
+                <button id="saveMarks" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Marks
+                </button>
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Marksheet
+                </button>
+            </div>
+            
+            <div class="school-header">
+                <img src="../assets/images/logo.png" alt="School Logo" class="school-logo">
+                <h2>SKYVIEW PUBLIC SCHOOL</h2>
+                <p>Uttar Andaranfulbari, Tufanganj, Coochbehar, WB, PIN- 736160</p>
+                <p>Contact No. +91-86535-54323   |   Email: skyviewpublicschool@gmail.com</p>
+                <h4 class="mt-2">STUDENT PROGRESS REPORT</h4>
+            </div>
+
+            <div class="student-info">
+                <div class="row g-2">
+                    <div class="col-6 col-print-6">
+                        <p class="mb-1"><strong>Student Name:</strong> <span id="studentName"></span></p>
+                        <p class="mb-1"><strong>Class:</strong> <span id="className"></span></p>
+                        <p class="mb-1"><strong>Date of Birth:</strong> <span id="dob"></span></p>
+                    </div>
+                    <div class="col-6 col-print-6">
+                        <p class="mb-1"><strong>Admission No:</strong> <span id="admissionNo"></span></p>
+                        <p class="mb-1"><strong>Section:</strong> <span id="section"></span></p>
+                        <p class="mb-1"><strong>Academic Year:</strong> <span id="academicYear"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="marks-table">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Subject</th>
+                            <th colspan="3">Periodic Test 1</th>
+                            <th colspan="3">Half Yearly</th>
+                            <th colspan="3">Periodic Test 2</th>
+                            <th colspan="3">Final Exam</th>
+                        </tr>
+                        <tr>
+                            <th>Written<br>(80)</th>
+                            <th>Oral<br>(20)</th>
+                            <th>Total<br>(100)</th>
+                            <th>Written<br>(80)</th>
+                            <th>Oral<br>(20)</th>
+                            <th>Total<br>(100)</th>
+                            <th>Written<br>(80)</th>
+                            <th>Oral<br>(20)</th>
+                            <th>Total<br>(100)</th>
+                            <th>Written<br>(80)</th>
+                            <th>Oral<br>(20)</th>
+                            <th>Total<br>(100)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="marksTableBody">
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-secondary">
+                            <td><strong>Grand Total</strong></td>
+                            <td colspan="2"></td>
+                            <td id="pt1Total">0</td>
+                            <td colspan="2"></td>
+                            <td id="hyTotal">0</td>
+                            <td colspan="2"></td>
+                            <td id="pt2Total">0</td>
+                            <td colspan="2"></td>
+                            <td id="finalTotal">0</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td><strong>Percentage</strong></td>
+                            <td colspan="2"></td>
+                            <td id="pt1Percentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="hyPercentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="pt2Percentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="finalPercentage">0%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="grade-info">
+                <h6>Grading System:</h6>
+                <div class="row">
+                    <div class="col-6">
+                        <p class="mb-0">A1 (91-100): Outstanding | A2 (81-90): Excellent</p>
+                        <p class="mb-0">B1 (71-80): Very Good | B2 (61-70): Good</p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0">C1 (51-60): Fair | C2 (41-50): Average</p>
+                        <p class="mb-0">D (33-40): Below Average | E (Below 33): Needs Improvement</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-summary">
+                <div class="row mb-1">
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Overall Percentage:</strong> <span id="overallPercentage">0</span>%</p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Overall Grade:</strong> <span id="overallGrade">-</span></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Result:</strong> <span id="finalResult">-</span></p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Rank in Class:</strong> <span id="classRank">-</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="signatures">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Class Teacher</p>
+                    </div>
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Principal</p>
+                    </div>
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Parent's Signature</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        const API_BASE_URL = CONFIG.API_URL;
+        let studentId, className, section, marksExist = false;
+
+        // Function to get authentication token
+        function getAuthToken() {
+            return localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+        }
+
+        // Function to make authenticated API calls
+        async function apiCall(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '../pages/login.html';
+                throw new Error('Authentication required');
+            }
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
+            return fetch(url, { ...options, headers });
+        }
+
+        // Load marksheet data
+        async function loadMarksData() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const data = urlParams.get('data');
+                
+                if (data) {
+                    // If data is passed, use it directly
+                    const studentData = JSON.parse(data);
+                    
+                    // Update student info
+                    document.getElementById('studentName').textContent = studentData.studentName;
+                    document.getElementById('admissionNo').textContent = studentData.admissionNo;
+                    document.getElementById('fatherName').textContent = studentData.fatherName;
+                    document.getElementById('className').textContent = studentData.className;
+                    document.getElementById('section').textContent = studentData.section;
+                    document.getElementById('academicYear').textContent = '2024-2025';
+
+                    // Fill in marks data
+                    if (studentData.marks && studentData.marks.length > 0) {
+                        studentData.marks.forEach(subjectMark => {
+                            const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+                            examTypes.forEach(examType => {
+                                if (subjectMark[examType]) {
+                                    const writtenElem = document.getElementById(`${subjectMark.subjectName}-${examType}-written`);
+                                    const oralElem = document.getElementById(`${subjectMark.subjectName}-${examType}-oral`);
+                                    const totalElem = document.getElementById(`${subjectMark.subjectName}-${examType}-total`);
+                                    
+                                    if (writtenElem) writtenElem.textContent = subjectMark[examType].written || '-';
+                                    if (oralElem) oralElem.textContent = subjectMark[examType].oral || '-';
+                                    if (totalElem) totalElem.textContent = 
+                                        ((subjectMark[examType].written || 0) + (subjectMark[examType].oral || 0)) || '-';
+                                }
+                            });
+                        });
+
+                        // Calculate and update totals
+                        updateTotals(studentData.marks);
+                    }
+                } else {
+                    // If no data passed, fetch from API
+                    const studentResponse = await apiCall(`${API_BASE_URL}/students/${studentId}`);
+                    if (!studentResponse.ok) throw new Error('Failed to fetch student data');
+                    const studentData = await studentResponse.json();
+
+                    // Update student info
+                    document.getElementById('studentName').textContent = studentData.name;
+                    document.getElementById('admissionNo').textContent = studentData.admissionNo;
+                    document.getElementById('fatherName').textContent = studentData.fatherName;
+                    document.getElementById('className').textContent = className;
+                    document.getElementById('section').textContent = section;
+                    document.getElementById('academicYear').textContent = '2024-2025';
+
+                    // Get marks data
+                    const marksResponse = await apiCall(`${API_BASE_URL}/marks/${studentId}`);
+                    if (marksResponse.ok) {
+                        const marksData = await marksResponse.json();
+                        if (marksData.marks && marksData.marks.length > 0) {
+                            marksData.marks.forEach(subjectMark => {
+                                const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+                                examTypes.forEach(examType => {
+                                    if (subjectMark[examType]) {
+                                        const writtenElem = document.getElementById(`${subjectMark.subject}-${examType}-written`);
+                                        const oralElem = document.getElementById(`${subjectMark.subject}-${examType}-oral`);
+                                        const totalElem = document.getElementById(`${subjectMark.subject}-${examType}-total`);
+                                        
+                                        if (writtenElem) writtenElem.textContent = subjectMark[examType].written || '-';
+                                        if (oralElem) oralElem.textContent = subjectMark[examType].oral || '-';
+                                        if (totalElem) totalElem.textContent = 
+                                            ((subjectMark[examType].written || 0) + (subjectMark[examType].oral || 0)) || '-';
+                                    }
+                                });
+                            });
+
+                            // Calculate and update totals
+                            updateTotals(marksData.marks);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading marks data:', error);
+                throw error;
+            }
+        }
+
+        function updateTotals(marks) {
+            const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+            
+            examTypes.forEach(examType => {
+                let totalMarks = 0;
+                let subjectsWithMarks = 0;
+
+                marks.forEach(subject => {
+                    if (subject[examType]) {
+                        const total = (subject[examType].written || 0) + (subject[examType].oral || 0);
+                        if (total > 0) {
+                            totalMarks += total;
+                            subjectsWithMarks++;
+                        }
+                    }
+                });
+
+                if (subjectsWithMarks > 0) {
+                    const percentage = (totalMarks / (subjectsWithMarks * 100)) * 100;
+                    document.getElementById(`${examType}-total`).textContent = totalMarks;
+                    document.getElementById(`${examType}-percentage`).textContent = percentage.toFixed(2) + '%';
+                }
+            });
+
+            // Calculate overall percentage
+            let totalPercentage = 0;
+            let validExams = 0;
+
+            examTypes.forEach(examType => {
+                const percentageElement = document.getElementById(`${examType}-percentage`);
+                if (percentageElement) {
+                    const percentage = parseFloat(percentageElement.textContent);
+                    if (!isNaN(percentage) && percentage > 0) {
+                        totalPercentage += percentage;
+                        validExams++;
+                    }
+                }
+            });
+
+            if (validExams > 0) {
+                const overallPercentage = totalPercentage / validExams;
+                document.getElementById('overallPercentage').textContent = overallPercentage.toFixed(2) + '%';
+                document.getElementById('overallGrade').textContent = calculateGrade(overallPercentage);
+                document.getElementById('finalResult').textContent = overallPercentage >= 33 ? 'PASS' : 'NEEDS IMPROVEMENT';
+            }
+        }
+
+        function calculateGrade(percentage) {
+            if (percentage >= 91) return 'A1 - Outstanding';
+            if (percentage >= 81) return 'A2 - Excellent';
+            if (percentage >= 71) return 'B1 - Very Good';
+            if (percentage >= 61) return 'B2 - Good';
+            if (percentage >= 51) return 'C1 - Fair';
+            if (percentage >= 41) return 'C2 - Average';
+            if (percentage >= 33) return 'D - Below Average';
+            return 'E - Needs Improvement';
+        }
+
+        async function generatePDF() {
+            try {
+                const element = document.getElementById('marksheet-content');
+                if (!element) {
+                    throw new Error('Marksheet content not found');
+                }
+                
+                // Hide print buttons during PDF generation
+                const actionButtons = document.querySelectorAll('.no-print');
+                actionButtons.forEach(btn => btn.style.display = 'none');
+
+                const opt = {
+                    margin: [10, 10],
+                    filename: `Marksheet_${document.getElementById('admissionNo').textContent}.pdf`,
+                    image: { type: 'jpeg', quality: 1 },
+                    html2canvas: { 
+                        scale: 2,
+                        useCORS: true,
+                        logging: false,
+                        letterRendering: true
+                    },
+                    jsPDF: { 
+                        unit: 'mm', 
+                        format: 'a4', 
+                        orientation: 'portrait',
+                        compress: true
+                    }
+                };
+
+                // Generate PDF
+                await html2pdf()
+                    .from(element)
+                    .set(opt)
+                    .save()
+                    .then(() => {
+                        // Show buttons again after PDF is generated
+                        actionButtons.forEach(btn => btn.style.display = '');
+                        
+                        // Close the window after PDF is generated
+                        setTimeout(() => {
+                            window.close();
+                        }, 1000);
+                    });
+
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await loadMarksData();
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const shouldPrint = urlParams.get('print');
+                
+                if (shouldPrint === 'pdf') {
+                    // Generate PDF after a short delay to ensure content is rendered
+                    setTimeout(generatePDF, 1000);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load marks data');
+            }
+        });
+    </script>
+</body>
+</html>

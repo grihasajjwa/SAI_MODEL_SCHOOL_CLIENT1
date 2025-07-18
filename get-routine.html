@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Class Routine Viewer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    select, button { padding: 10px; font-size: 16px; margin-right: 10px; }
+  </style>
+</head>
+<body>
+
+  <h2>View Class Routine</h2>
+
+  <label for="classSelect">Class:</label>
+  <input type="text" id="classSelect" placeholder="e.g., 5A">
+
+  <label for="daySelect">Day:</label>
+  <select id="daySelect">
+    <option>Monday</option>
+    <option>Tuesday</option>
+    <option>Wednesday</option>
+    <option>Thursday</option>
+    <option>Friday</option>
+    <option>Saturday</option>
+  </select>
+
+  <button onclick="fetchRoutine()">Fetch Routine</button>
+
+  <div id="routineTableContainer"></div>
+
+  <script>
+    async function fetchRoutine() {
+      const className = document.getElementById("classSelect").value.trim();
+      const day = document.getElementById("daySelect").value;
+
+      if (!className) {
+        alert("Please enter a class name.");
+        return;
+      }
+
+      const response = await fetch(`https://skyview-server-3.vercel.app/api/routines/get-routine?class=${className}&day=${day}`);
+      const data = await response.json();
+
+      const container = document.getElementById("routineTableContainer");
+      container.innerHTML = ""; // clear previous
+
+      if (!data.routine || !data.routine.routines || !data.routine.routines[day] || data.routine.routines[day].length === 0) {
+        container.innerHTML = `<p>No routine found for class <strong>${className}</strong> on <strong>${day}</strong>.</p>`;
+        return;
+      }
+
+      const periods = data.routine.routines[day];
+
+      let table = `<table>
+        <tr>
+          <th>Period</th>
+          <th>Time</th>
+          <th>Teacher</th>
+          <th>Subject</th>
+          <th>Book</th>
+        </tr>`;
+
+      periods.forEach(period => {
+        table += `<tr>
+          <td>${period.period}</td>
+          <td>${period.time}</td>
+          <td>${period.teacher}</td>
+          <td>${period.subject}</td>
+          <td>${period.book}</td>
+        </tr>`;
+      });
+
+      table += `</table>`;
+      container.innerHTML = table;
+    }
+  </script>
+</body>
+</html>

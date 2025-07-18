@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Marks</title>
+  <style>
+    table {
+      width: 60%;
+      border-collapse: collapse;
+      margin: 25px auto;
+      font-size: 18px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .error-message {
+      color: red;
+      font-weight: bold;
+      text-align: center;
+    }
+    .loading-message {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align: center;">Student Marks</h2>
+  <p id="loading" class="loading-message">Loading data...</p>
+  <p id="error" class="error-message" style="display: none;">Failed to fetch data. Please try again later.</p>
+  <table id="marksTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Subject</th>
+        <th>Marks</th>
+      </tr>
+    </thead>
+    <tbody id="marksTableBody">
+      <!-- Data will be inserted here -->
+    </tbody>
+  </table>
+
+  <script>
+    async function fetchMarks() {
+      try {
+        const response = await fetch('https://skyview-server-3.vercel.app/api/marks');
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid data format received");
+        }
+        
+        document.getElementById('loading').style.display = 'none';
+        const table = document.getElementById('marksTable');
+        const tableBody = document.getElementById('marksTableBody');
+        tableBody.innerHTML = ''; // Clear existing data
+        
+        if (data.length === 0) {
+          document.getElementById('error').textContent = "No data available.";
+          document.getElementById('error').style.display = 'block';
+          return;
+        }
+
+        table.style.display = 'table';
+        data.forEach(item => {
+          if (item.id && item.name && item.subject && typeof item.marks === 'number') {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${item.id}</td>
+              <td>${item.name}</td>
+              <td>${item.subject}</td>
+              <td>${item.marks}</td>
+            `;
+            tableBody.appendChild(row);
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", fetchMarks);
+  </script>
+</body>
+</html>

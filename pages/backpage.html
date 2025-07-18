@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Report Card</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Consolas, monospace;
+            background-color: #f8f9fa;
+            position: relative;
+        }
+        .report-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+           font-family: Consolas, monospace;
+            font-size: 4rem;
+            color: rgba(0, 0, 0, 0.05);
+            white-space: nowrap;
+            font-weight: bold;
+            z-index: 999;
+        }
+        .table th {
+            background-color: #d9eaff !important;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        .table td {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        h5.attendance-title {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="report-card position-relative">
+            <div class="watermark">SKYVIEW PUBLIC SCHOOL</div>
+            <h3 class="text-center mb-4">CO-SCHOLASTIC AREAS</h3>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Activity</th>
+                        <th>Term-I</th>
+                        <th>Term-II</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Art Education</td><td></td><td></td></tr>
+                    <tr><td>Moral Values</td><td></td><td></td></tr>
+                    <tr><td>Dance & Music</td><td></td><td></td></tr>
+                    <tr><td>Yoga</td><td></td><td></td></tr>
+                    <tr><td>Games</td><td></td><td></td></tr>
+                    <tr><td>Hand Writing</td><td></td><td></td></tr>
+                    <tr><td>Discipline</td><td></td><td></td></tr>
+                </tbody>
+            </table>
+            <h5 class="attendance-title mt-4">Attendance</h5>
+            <p><strong>Total Days:</strong> </p>
+            <p><strong>Days Present:</strong> </p>
+            <!-- <p><strong>Days Absent:</strong> 18</p> -->
+            <h5 class="text-success">Class Teacher's Remarks: <strong></strong></h5>
+        </div>
+    </div>
+</body>
+</html>

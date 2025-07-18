@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Subject - Skyview Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    
+    <style>
+        .subject-row {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        td.details-control {
+            background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+            cursor: pointer;
+        }
+        tr.shown td.details-control {
+            background: url('https://datatables.net/examples/resources/details_close.png') no-repeat center center;
+        }
+        .subject-details {
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+        .subject-details table {
+            width: 100%;
+            margin-bottom: 0;
+        }
+        .subject-details th {
+            background-color: #e9ecef;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+     <!-- Navbar will be loaded here -->
+     <div id="navbar-container"></div>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Manage Subjects</h4>
+                    </div>
+                    <div class="card-body">
+                        <table id="subjectsTable" class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30px"></th>
+                                    <th>Class</th>
+                                    <th>Section</th>
+                                    <th>Academic Year</th>
+                                    <th>Class Teacher</th>
+                                    <th>Student Count</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subjectsTableBody">
+                                <!-- Classes will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Subject Modal -->
+    <div class="modal fade" id="editSubjectModal" tabindex="-1" role="dialog" aria-labelledby="editSubjectModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSubjectModalLabel">Edit Class Subjects</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editSubjectForm" onsubmit="event.preventDefault(); updateSubjects();">
+                        <!-- Hidden inputs for class details -->
+                        <input type="hidden" id="editClassId">
+                        
+                        <!-- Read-only class information -->
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">Class</label>
+                                    <input type="text" id="editClassName" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">Section</label>
+                                    <input type="text" id="editSection" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">Academic Year</label>
+                                    <input type="text" id="editAcademicYear" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">Class Teacher</label>
+                                    <input type="text" id="editClassTeacher" class="form-control" placeholder="Enter class teacher name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Subjects Container -->
+                        <div class="subjects-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Subjects</h6>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="addSubjectRow('editSubjectsContainer')">
+                                    <i class="fas fa-plus"></i> Add Subject
+                                </button>
+                            </div>
+                            
+                            <div id="editSubjectsContainer">
+                                <!-- Subject rows will be added here -->
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" form="editSubjectForm" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- <button class="btn btn-sm btn-success" onclick="testUpdateSubjects('${classData._id}')">
+        <i class="fas fa-sync"></i> Test Update
+    </button> -->
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script>
+        // Function to format the subject details
+        function formatSubjectDetails(subjects) {
+            if (!subjects || subjects.length === 0) {
+                return '<div class="subject-details">No subjects added yet.</div>';
+            }
+
+            return `
+                <div class="subject-details">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Subject Name</th>
+                                <th>Teacher Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjects.map((subject, index) => `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${subject.name}</td>
+                                    <td>${subject.teacher}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function addSubjectRow(containerId) {
+            const container = document.getElementById(containerId);
+            const row = document.createElement('div');
+            row.className = 'subject-row mb-3 p-3 border rounded';
+            row.innerHTML = `
+                <div class="row">
+                    <div class="col-md-5">
+                        <div class="form-group">
+                            <label class="form-label">Subject Name</label>
+                            <input type="text" class="form-control subject-name" placeholder="Enter subject name" required>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-group">
+                            <label class="form-label">Subject Teacher</label>
+                            <input type="text" class="form-control subject-teacher" placeholder="Enter teacher name" required>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-danger remove-subject mt-4" onclick="removeSubjectRow(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeSubjectRow(button) {
+            const container = document.getElementById('editSubjectsContainer');
+            if (container.children.length > 1) {
+                button.closest('.subject-row').remove();
+            } else {
+                alert('At least one subject is required');
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadClasses();
+        });
+
+        async function loadClasses() {
+            try {
+                console.log('\n=== Loading classes ===');
+                const response = await fetch(`${CONFIG.API_URL}/classes`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch classes');
+                }
+
+                const classes = await response.json();
+                console.log('Fetched classes:', JSON.stringify(classes, null, 2));
+
+                const tableBody = document.getElementById('subjectsTableBody');
+                tableBody.innerHTML = '';
+
+                classes.forEach(classData => {
+                    console.log('Processing class:', classData._id);
+                    const row = document.createElement('tr');
+                    const safeSubjects = JSON.stringify(classData.subjects || []).replace(/"/g, '&quot;');
+                    console.log('Subjects for class:', classData._id, ':', safeSubjects);
+                    
+                    row.innerHTML = `
+                        <td class="details-control" data-subjects='${safeSubjects}'></td>
+                        <td>${classData.className}</td>
+                        <td>${classData.section}</td>
+                        <td>${classData.academicYear}</td>
+                        <td>${classData.classTeacher}</td>
+                        <td>${classData.studentCount}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-primary" onclick="editClass('${classData._id}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Initialize DataTable
+                if ($.fn.DataTable.isDataTable('#subjectsTable')) {
+                    console.log('Destroying existing DataTable');
+                    $('#subjectsTable').DataTable().destroy();
+                }
+                
+                console.log('Initializing new DataTable');
+                const table = $('#subjectsTable').DataTable({
+                    order: [[1, 'asc']],
+                    columnDefs: [
+                        { orderable: false, targets: [0, 6] }
+                    ]
+                });
+
+                // Add event listener for opening and closing details
+                $('#subjectsTable tbody').on('click', 'td.details-control', function () {
+                    const tr = $(this).closest('tr');
+                    const row = table.row(tr);
+                    
+                    try {
+                        const subjects = JSON.parse($(this).attr('data-subjects'));
+                        console.log('Clicked row subjects:', subjects);
+                        
+                        if (row.child.isShown()) {
+                            console.log('Hiding row details');
+                            row.child.hide();
+                            tr.removeClass('shown');
+                        } else {
+                            console.log('Showing row details');
+                            row.child(formatSubjectDetails(subjects)).show();
+                            tr.addClass('shown');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing subjects data:', error);
+                        alert('Error showing subject details');
+                    }
+                });
+
+                console.log('=== Classes loaded successfully ===\n');
+            } catch (error) {
+                console.error('Error loading classes:', error);
+                alert('Failed to load classes');
+            }
+        }
+
+        async function editClass(classId) {
+            try {
+                console.log('\n=== Starting class edit ===');
+                console.log('Editing class:', classId);
+
+                const response = await fetch(`${CONFIG.API_URL}/classes/${classId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch class details');
+                }
+
+                const classData = await response.json();
+                console.log('Fetched class data:', JSON.stringify(classData, null, 2));
+                
+                // Populate form with class details
+                document.getElementById('editClassId').value = classData._id;
+                document.getElementById('editClassName').value = classData.className;
+                document.getElementById('editSection').value = classData.section;
+                document.getElementById('editAcademicYear').value = classData.academicYear;
+                document.getElementById('editClassTeacher').value = classData.classTeacher || '';
+
+                // Clear and populate subjects
+                const container = document.getElementById('editSubjectsContainer');
+                container.innerHTML = '';
+                
+                if (classData.subjects && classData.subjects.length > 0) {
+                    console.log('Adding existing subjects:', classData.subjects);
+                    classData.subjects.forEach(subject => {
+                        const row = document.createElement('div');
+                        row.className = 'subject-row mb-3 p-3 border rounded';
+                        row.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <label class="form-label">Subject Name</label>
+                                        <input type="text" class="form-control subject-name" value="${subject.name}" placeholder="Enter subject name" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <label class="form-label">Subject Teacher</label>
+                                        <input type="text" class="form-control subject-teacher" value="${subject.teacher}" placeholder="Enter teacher name" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-danger remove-subject mt-4" onclick="removeSubjectRow(this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(row);
+                    });
+                } else {
+                    console.log('No existing subjects, adding empty row');
+                    addSubjectRow('editSubjectsContainer');
+                }
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editSubjectModal'));
+                modal.show();
+                console.log('=== Class edit complete ===\n');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load class details');
+            }
+        }
+
+        async function testUpdateSubjects(classId) {
+            try {
+                console.log('\n=== Starting test update ===');
+                console.log('Updating subjects for class:', classId);
+
+                const response = await fetch(`${CONFIG.API_URL}/classes/test-update/${classId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)}`
+                    }
+                });
+
+                const responseData = await response.json();
+                console.log('Response:', JSON.stringify(responseData, null, 2));
+
+                if (!response.ok) {
+                    throw new Error(responseData.message || 'Failed to update subjects');
+                }
+
+                // Verify subjects were saved
+                if (!responseData.subjects || responseData.subjects.length === 0) {
+                    throw new Error('Subjects were not saved properly');
+                }
+
+                console.log('Subjects saved successfully:', responseData.subjects.length);
+
+                // Reload classes to show updated data
+                await loadClasses();
+                
+                alert('Test update completed successfully');
+                console.log('=== Test update complete ===\n');
+            } catch (error) {
+                console.error('Error updating subjects:', error);
+                alert(error.message || 'Failed to update subjects');
+            }
+        }
+
+        async function updateSubjects() {
+            try {
+                console.log('\n=== Starting subject update ===');
+                const classId = document.getElementById('editClassId').value;
+                const className = document.getElementById('editClassName').value;
+                const section = document.getElementById('editSection').value;
+                const academicYear = document.getElementById('editAcademicYear').value;
+                const classTeacher = document.getElementById('editClassTeacher').value.trim() || 'Not Assigned';
+
+                console.log('Class details:', { classId, className, section, academicYear, classTeacher });
+
+                // Get all subject rows
+                const container = document.getElementById('editSubjectsContainer');
+                const subjectRows = container.querySelectorAll('.subject-row');
+                console.log('Found subject rows:', subjectRows.length);
+
+                if (!container || subjectRows.length === 0) {
+                    console.log('No subject container or rows found');
+                    alert('Please add at least one subject');
+                    return;
+                }
+
+                // Get subjects and validate
+                const subjects = [];
+                for (const row of subjectRows) {
+                    const nameInput = row.querySelector('.subject-name');
+                    const teacherInput = row.querySelector('.subject-teacher');
+                    
+                    if (!nameInput || !teacherInput) {
+                        console.log('Missing inputs in row:', row);
+                        throw new Error('Invalid subject row structure');
+                    }
+                    
+                    const subjectName = nameInput.value.trim();
+                    const teacherName = teacherInput.value.trim();
+                    
+                    console.log('Processing subject:', { subjectName, teacherName });
+                    
+                    if (!subjectName || !teacherName) {
+                        console.log('Invalid subject data:', { subjectName, teacherName });
+                        nameInput.classList.add('is-invalid');
+                        teacherInput.classList.add('is-invalid');
+                        throw new Error(`Please fill in all fields for subject ${Array.from(subjectRows).indexOf(row) + 1}`);
+                    }
+                    
+                    nameInput.classList.remove('is-invalid');
+                    teacherInput.classList.remove('is-invalid');
+                    
+                    subjects.push({
+                        name: subjectName,
+                        teacher: teacherName
+                    });
+                }
+
+                if (subjects.length === 0) {
+                    throw new Error('No subjects collected. Please add at least one subject.');
+                }
+
+                console.log('Collected subjects:', JSON.stringify(subjects, null, 2));
+
+                // Prepare request data
+                const requestData = {
+                    className,
+                    section,
+                    academicYear,
+                    classTeacher,
+                    subjects: subjects
+                };
+
+                console.log('Request data:', JSON.stringify(requestData, null, 2));
+
+                // Make the API call
+                console.log('Sending request to:', `${CONFIG.API_URL}/classes/${classId}`);
+                const response = await fetch(`${CONFIG.API_URL}/classes/${classId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const responseData = await response.json();
+                console.log('Response data:', JSON.stringify(responseData, null, 2));
+
+                if (!response.ok) {
+                    console.log('Request failed:', response.status, response.statusText);
+                    throw new Error(responseData.message || 'Failed to update subjects');
+                }
+
+                // Verify subjects were saved
+                if (!responseData.subjects || responseData.subjects.length === 0) {
+                    throw new Error('Subjects were not saved properly');
+                }
+
+                console.log('Update successful, subjects saved:', responseData.subjects.length);
+
+                // Close modal
+                const modalElement = document.getElementById('editSubjectModal');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                modal.hide();
+
+                // Reload classes to show updated data
+                console.log('Reloading classes...');
+                await loadClasses();
+                
+                // Show success message
+                alert('Subjects updated successfully');
+                console.log('=== Subject update complete ===\n');
+            } catch (error) {
+                console.error('Error updating subjects:', error);
+                alert(error.message || 'Failed to update subjects. Please try again.');
+            }
+        }
+    </script>
+     <script src="../js/auth.js"></script>
+     <script src="../components/navbar.js"></script>
+</body>
+</html>

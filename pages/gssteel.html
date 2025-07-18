@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GS STEEL</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <style>
+ body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f7fa;
+  padding: 40px 20px;
+  color: #333;
+  max-width: 900px;
+  margin: auto;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: #fff;
+  padding: 30px 40px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Headings */
+h2, h3 {
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="date"],
+#globalSearch {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px 15px;
+  margin: 8px auto 20px;
+  display: block;
+  border-radius: 8px;
+  border: 1.5px solid #ccc;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+input:focus,
+#globalSearch:focus {
+  border-color: #0056b3;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 86, 179, 0.4);
+}
+
+/* Buttons */
+button,
+#addTaskBtn {
+  background-color: #007bff;
+  color: white;
+  padding: 5px 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 4px 6px rgb(0 123 255 / 0.4);
+}
+
+button:hover,
+#addTaskBtn:hover {
+  background-color: #0056b3;
+  box-shadow: 0 6px 8px rgb(0 86 179 / 0.6);
+}
+
+/* Task Input Group */
+.task-input-group {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  margin: 20px auto;
+  flex-wrap: wrap;
+}
+
+.task-input-group input[type="text"],
+.task-input-group input[type="date"] {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+}
+
+.task-input-group input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* Buttons: Complete & Delete */
+button.completeBtn,
+button.deleteBtn {
+  padding: 6px 12px;
+  font-size: 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin-bottom: 5px;
+}
+
+button.completeBtn:hover {
+  background-color: #19692c;
+  box-shadow: 0 3px 6px rgba(25, 105, 44, 0.6);
+}
+
+button.deleteBtn:hover {
+  background-color: #f44336;
+  box-shadow: 0 3px 6px rgba(135, 14, 30, 0.6);
+}
+
+/* Task Styles */
+.completed {
+  color: #999;
+  font-style: italic;
+/*   text-decoration: line-through; */
+}
+
+.task-text {
+  font-weight: 500;
+}
+
+/* DataTable Styling */
+table.dataTable {
+  border-collapse: separate !important;
+  border-spacing: 0 12px !important;
+  margin-top: 30px !important;
+  width: 100% !important;
+  box-shadow: 0 6px 15px rgb(0 0 0 / 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+}
+
+table.dataTable thead tr {
+  background-color: #007bff !important;
+  color: white !important;
+  font-weight: 700;
+  font-size: 16px;
+  border: none !important;
+  box-shadow: inset 0 -3px 8px rgb(0 0 0 / 0.15);
+}
+
+table.dataTable tbody tr {
+  background: #fff;
+  box-shadow: 0 3px 6px rgb(0 0 0 / 0.05);
+  border-radius: 10px;
+}
+
+table.dataTable tbody tr:hover {
+  background-color: #e6f0ff !important;
+  cursor: pointer;
+}
+
+table.dataTable tbody td:first-child,
+table.dataTable thead th:first-child {
+  width: 40%;
+  min-width: 200px;
+}
+
+table.dataTable tbody td:not(:first-child),
+table.dataTable thead th:not(:first-child) {
+  width: 15%;
+  min-width: 80px;
+}
+
+table.dataTable {
+  font-size: 14px;
+}
+
+/* Hide DataTables default search box */
+.dataTables_filter {
+  display: none;
+}
+    textarea {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px 15px;
+  margin: 8px auto 20px;
+  display: block;
+  border-radius: 8px;
+  border: 1.5px solid #ccc;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+  resize: vertical; /* allows resizing vertically */
+}
+
+textarea:focus {
+  border-color: #0056b3;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 86, 179, 0.4);
+}
+
+
+/* Responsive Styling */
+@media (max-width: 600px) {
+  button {
+    width: 100%;
+    margin: 10px 0 0 0;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  #globalSearch {
+    max-width: 100%;
+  }
+}
+
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Advanced To-Do List</h2>
+<div class="task-input-group">
+   <input type="date" id="taskDate">
+ <textarea id="taskInput" placeholder="Enter task" rows="3" style="width: 100%; max-width: 400px; padding: 12px 15px; margin: 8px auto 20px; display: block; border-radius: 8px; border: 1.5px solid #ccc; font-size: 16px; transition: border-color 0.3s ease;"></textarea>
+
+ 
+  <button id="addTaskBtn">Add Task</button>
+</div>
+
+  <input type="text" id="globalSearch" placeholder="Search all tasks..." style="width: 100%; padding: 8px; margin-top: 20px;">
+
+  <h3>Pending Tasks</h3>
+  <table id="pendingTable">
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="taskTableBody"></tbody>
+  </table>
+
+  <h3>Completed Tasks</h3>
+  <table id="completedTable">
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="completedTableBody"></tbody>
+  </table>
+</div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function () {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('taskDate').value = today;
+          });
+  function loadTasks() {
+  // Initialize or reuse DataTables
+  let pendingTable = $.fn.DataTable.isDataTable('#pendingTable')
+    ? $('#pendingTable').DataTable()
+    : $('#pendingTable').DataTable();
+
+  let completedTable = $.fn.DataTable.isDataTable('#completedTable')
+    ? $('#completedTable').DataTable()
+    : $('#completedTable').DataTable();
+
+  // Clear existing rows without destroying tables
+  pendingTable.clear();
+  completedTable.clear();
+
+  $.ajax({
+    url: 'https://skyview-server-3.vercel.app/api/todo/tasks',
+    method: 'GET',
+    success: function (tasks) {
+      tasks.forEach(task => {
+        if (task.status === 'Completed') {
+          completedTable.row.add([
+            `<span class="completed">${task.task}</span>`,
+            task.date,
+            task.status
+          ]);
+        } else {
+          pendingTable.row.add([
+            `<span class="task-text">${task.task}</span>`,
+            task.date,
+            task.status,
+            `<button class="completeBtn">Complete</button> <button class="deleteBtn">Delete</button>`
+          ]).node().dataset.id = task._id;
+        }
+      });
+
+      // Redraw tables
+      pendingTable.draw();
+      completedTable.draw();
+    },
+    error: function () {
+      alert('Failed to load tasks.');
+    }
+  });
+}
+
+    $(document).ready(function () {
+      loadTasks();
+
+      $('#addTaskBtn').click(function () {
+        const task = $('#taskInput').val().trim();
+        const date = $('#taskDate').val();
+
+        if (!task || !date) {
+          alert('Please enter both task and date');
+          return;
+        }
+
+        $.ajax({
+          url: 'https://skyview-server-3.vercel.app/api/todo/add-task',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ task: task, date: date, status: 'Pending' }),
+          success: function () {
+            $('#taskInput').val('');
+            $('#taskDate').val('');
+            loadTasks();
+          },
+          error: function () {
+            alert('Failed to add task.');
+          }
+        });
+      });
+
+      // Handle complete button
+      $('#taskTableBody').on('click', '.completeBtn', function () {
+        const row = $(this).closest('tr');
+        const id = row.data('id');
+
+        $.ajax({
+          url: `https://skyview-server-3.vercel.app/api/todo/task/${id}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({ status: 'Completed' }),
+          success: function () {
+            loadTasks();
+          },
+          error: function () {
+            alert('Failed to update task.');
+          }
+        });
+      });
+
+      // Handle delete button
+      $('#taskTableBody').on('click', '.deleteBtn', function () {
+        const row = $(this).closest('tr');
+        const id = row.data('id');
+
+        $.ajax({
+          url: `https://skyview-server-3.vercel.app/api/todo/task/${id}`,
+          method: 'DELETE',
+          success: function () {
+            loadTasks();
+          },
+          error: function () {
+            alert('Failed to delete task.');
+          }
+        });
+      });
+
+      // Global search input
+      $('#globalSearch').on('keyup', function () {
+        const value = this.value;
+        $('#pendingTable').DataTable().search(value).draw();
+        $('#completedTable').DataTable().search(value).draw();
+      });
+    });
+  </script>
+
+</body>
+</html>

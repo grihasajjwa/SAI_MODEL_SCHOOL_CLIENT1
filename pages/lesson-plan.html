@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson Plan</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <style>
+        .action-btn { margin: 2px; }
+        .checkbox-container { display: flex; gap: 10px; }
+        table,th,td{
+            border: 1px solid black;
+            border-collapse: collapse;
+            word-wrap: break-word;
+        }
+        table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+        /* Method 2: Contenteditable Div */
+        .multiline-input {
+            width: 100%;
+            min-height: 50px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: white;
+            white-space: pre-wrap;
+            outline: none;
+        }
+
+        .multiline-input:empty:before {
+            content: attr(placeholder);
+            color: gray;
+        }
+        @media print {
+            .btn, select, input, .add-btn, .no-print { display: none !important; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid black; padding: 5px; text-align: left; }
+            .checkbox-text { margin-right: 8px; }
+            /* Hide the 8th column (Action) */
+            th:nth-child(9),
+            td:nth-child(9) {
+                display: none;
+            }
+            /* Show print header when printing */
+            .print-header {
+                display: block !important;
+                margin-bottom: 30px;
+            }
+            /* Ensure page breaks don't split rows */
+            tr { page-break-inside: avoid; }
+            /* Add some spacing between elements */
+            .print-header p {
+                margin: 5px 0;
+                font-size: 14px;
+            }
+            .print-header h4 {
+                margin: 20px 0;
+                font-size: 18px;
+                font-weight: bold;
+            }
+        }
+        @media screen and (max-width: 700px) {
+            .striped thead,
+            .striped thead tr,
+            .striped thead tr th {
+                display: none !important;
+            }
+            .striped {
+                width: 100%;
+                overflow-x: auto;
+            }
+            .container {
+                width: 95%;
+                max-width: none;
+                padding: 0 10px;
+            }
+            /* Ensure table is scrollable horizontally */
+            .responsive-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+        /* Loading overlay styles */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Add loading overlay -->
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <nav class="blue darken-1 no-print">
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo">Lesson Plan</a>
+            <ul class="right">
+                <li><a href="#" onclick="Auth.logout()" class="waves-effect waves-light"><i class="material-icons left">exit_to_app</i>Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+
+    <div class="container">
+        <!-- Add print header -->
+        <div class="print-header" style="display: none;">
+            <h4 style="text-align: center;">Lesson Plan</h4>
+            <div style="margin-bottom: 20px;">
+                <p><strong>Class:</strong> <span id="print-class"></span></p>
+                <p><strong>Subject:</strong> <span id="print-subject"></span></p>
+                <p><strong>Academic Year:</strong> <span id="print-academic-year"></span></p>
+                <p><strong>Teacher:</strong> <span id="print-teacher"></span></p>
+            </div>
+        </div>
+        
+        <div class="row no-print" style="margin-top: 20px;">
+            <div class="col s12">
+                <button class="btn waves-effect waves-light" onclick="addChapter()">
+                    <i class="material-icons left">add</i>Add New Chapter
+                </button>
+                <button class="btn waves-effect waves-light orange" onclick="loadExistingPlan()">
+                    <i class="material-icons left">folder_open</i>Load Existing Plan
+                </button>
+                <button class="btn waves-effect waves-light blue" onclick="saveLessonPlan()">
+                    <i class="material-icons left">save</i>Save
+                </button>
+                <button class="btn waves-effect waves-light red" onclick="printPage()">
+                    <i class="material-icons left">print</i>Print
+                </button>
+                <button class="btn waves-effect waves-light green" onclick="exportExcel()">
+                    <i class="material-icons left">download</i>Export to Excel
+                </button>
+            </div>
+        </div>
+        <div class="row no-print">
+            <div class="input-field col s3">
+                <select id="class">
+                    <option value="" disabled selected>Select Class</option>
+                </select>
+                <label>Select Class</label>
+            </div>
+            <div class="input-field col s3">
+                <select id="subjectName">
+                    <option value="" disabled selected>Select Subject</option>
+                </select>
+                <label>Select Subject</label>
+            </div>
+            <div class="input-field col s3">
+                <select id="academicYear">
+                    <option value="" disabled selected>Academic Year</option>
+                    <option value="2025-2026">2025-2026</option>
+                    <option value="2026-2027">2026-2027</option>
+                </select>
+                <label>Academic Year</label>
+            </div>
+            <div class="input-field col s3">
+                <input type="text" placeholder="Teacher Name" class="validate">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col s12">
+                <table id="lessonPlanTable" class="striped">
+                    <thead>
+                        <tr>
+                            <th>Chapter No</th>
+                            <th>Chapter Name</th>
+                            <th>Day</th>
+                            <th>Topic</th>
+                            <th>Method</th>
+                            <th>Teaching Aids</th>
+                            <th>Assessment</th>
+                            <th>Remarks</th>
+                            <th class="no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lessonPlanBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Backend API URL
+        const API_BASE_URL = CONFIG.API_URL;
+
+        // Loading overlay functions
+        function showLoading() {
+            document.querySelector('.loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading-overlay').style.display = 'none';
+        }
+
+        // Get authentication token from localStorage
+        function getAuthToken() {
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+            if (!token) {
+                console.log('No token found');
+                return null;
+            }
+            return token;
+        }
+
+        // Check if user is authenticated
+        function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('Authentication check failed, redirecting to login');
+                window.location.href = '../pages/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Function to make authenticated API calls
+        async function apiCall(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token available for API call');
+                window.location.href = '../pages/login.html';
+                throw new Error('Authentication required');
+            }
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
+           // return fetch(url, { ...options, headers });
+            try {
+                const response = await fetch(url, { ...options, headers });
+                if (!response.ok) {
+                    console.error(`API call failed: ${response.status} ${response.statusText}`);
+                    throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+                }
+                return response;
+            } catch (error) {
+                console.error('Error during API call:', error);
+                throw error;
+            }
+            
+        }
+
+        async function loadClassAndSubjectData() {
+            try {
+                showLoading();
+                // Try to get data from localStorage first
+                const cachedClassData = localStorage.getItem('classData');
+
+                if (cachedClassData) {
+                    const classes = JSON.parse(cachedClassData);
+                    populateClassDropdown(classes);
+
+                    // If we have a selected class, populate its subjects
+                    const selectedClass = document.getElementById('class').value;
+                    if (selectedClass) {
+                        loadSubjectsForClass(selectedClass, classes);
+                    }
+                } else {
+                    // If no cached data, fetch from server
+                    const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+                    if (!token) {
+                        throw new Error('No auth token found');
+                    }
+
+                    const classResponse = await fetch(`${CONFIG.API_URL}/classes`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!classResponse.ok) {
+                        throw new Error('Failed to fetch class data');
+                    }
+
+                    const classData = await classResponse.json();
+                    localStorage.setItem('classData', JSON.stringify(classData));
+                    populateClassDropdown(classData);
+                }
+            } catch (error) {
+                console.error('Error loading class data:', error);
+                M.toast({ html: 'Error loading class data', classes: 'red' });
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function loadSubjectsForClass(className, classes) {
+            try {
+                showLoading();
+                console.log('Loading subjects for class:', className);
+                
+                // First check localStorage for cached subject data
+                const cachedSubjectData = localStorage.getItem('subjectData');
+                let subjectCache = cachedSubjectData ? JSON.parse(cachedSubjectData) : {};
+                
+                if (subjectCache[className]) {
+                    console.log('Loading subjects from cache:', className, subjectCache[className]);
+                    populateSubjectDropdown(subjectCache[className]);
+                } else {
+                    // If not in cache, check the class data
+                    const selectedClass = classes.find(c => c.className === className);
+                    if (selectedClass && selectedClass.subjects) {
+                        console.log('Loading subjects from class data:', className, selectedClass.subjects);
+                        populateSubjectDropdown(selectedClass.subjects);
+                        
+                        // Cache the subjects
+                        subjectCache[className] = selectedClass.subjects;
+                        localStorage.setItem('subjectData', JSON.stringify(subjectCache));
+                    } else {
+                        // If not found in any cache, fetch from server
+                        const response = await fetch(`${CONFIG.API_URL}/lesson-plan/subjects/${className}`, {
+                            headers: {
+                                'Authorization': `Bearer ${getAuthToken()}`
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch subjects');
+                        }
+                        
+                        const subjects = await response.json();
+                        console.log('Fetched subjects from server:', subjects);
+                        populateSubjectDropdown(subjects);
+                        
+                        // Cache the fetched subjects
+                        subjectCache[className] = subjects;
+                        localStorage.setItem('subjectData', JSON.stringify(subjectCache));
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+                M.toast({ html: 'Error loading subjects', classes: 'red' });
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function populateClassDropdown(classes) {
+            const classSelect = document.getElementById('class');
+            classSelect.innerHTML = '<option value="" disabled selected>Select Class</option>';
+            classes.forEach(cls => {
+                const className = cls.className;
+                if (className) {
+                    const option = document.createElement('option');
+                    option.value = className;
+                    option.textContent = className;
+                    classSelect.appendChild(option);
+                }
+            });
+            M.FormSelect.init(classSelect);
+        }
+
+        function populateSubjectDropdown(subjects) {
+            const subjectSelect = document.getElementById('subjectName');
+            subjectSelect.innerHTML = '<option value="" disabled selected>Select Subject</option>';
+            subjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject.name;
+                option.textContent = subject.name;
+                subjectSelect.appendChild(option);
+            });
+            M.FormSelect.init(subjectSelect);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication first
+            if (!checkAuth()) return;
+            
+            // Initialize form selects
+            M.FormSelect.init(document.querySelectorAll('select'));
+            
+            // Set default academic year
+            document.getElementById("academicYear").value = "2025-2026";
+            M.FormSelect.init(document.getElementById("academicYear"));
+
+            // Load class data from cache or server
+            loadClassAndSubjectData();
+            addChapter();
+
+            // Add change event listener for class select
+            document.getElementById('class').addEventListener('change', async function() {
+                const selectedClass = this.value;
+                if (selectedClass) {
+                    const cachedClassData = localStorage.getItem('classData');
+                    if (cachedClassData) {
+                        const classes = JSON.parse(cachedClassData);
+                        loadSubjectsForClass(selectedClass, classes);
+                    }
+                }
+            });
+
+            // Add change event listener for subject select
+            document.getElementById('subjectName').addEventListener('change', function() {
+                const selectedSubject = this.value;
+                if (selectedSubject) {
+                    loadExistingPlan();
+                }
+            });
+        });
+
+        async function loadExistingPlan() {
+            const className = document.getElementById("class").value;
+            const subjectName = document.getElementById("subjectName").value;
+            const tbody = document.getElementById("lessonPlanBody");
+
+            if (!className || !subjectName) {
+                M.toast({html: 'Please select both Class and Subject', classes: 'red'});
+                return;
+            }
+
+            try {
+                showLoading();
+                // Clear existing table first
+                tbody.innerHTML = '';
+
+                const response = await apiCall(`${API_BASE_URL}/lesson-plan/${className}/${subjectName}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // If no plan exists, add an empty chapter
+                        M.toast({html: 'Starting new lesson plan', classes: 'blue'});
+                        addChapter();
+                        hideLoading();
+                        return;
+                    }
+                    throw new Error('Failed to fetch lesson plan');
+                }
+
+                const data = await response.json();
+                if (!Array.isArray(data) || data.length === 0) {
+                    // If no lessons, add an empty chapter
+                    M.toast({html: 'Starting new lesson plan', classes: 'blue'});
+                    addChapter();
+                    hideLoading();
+                    return;
+                }
+
+                // Group lessons by chapter
+                const chapterMap = new Map();
+                data.forEach(lesson => {
+                    if (!chapterMap.has(lesson.chapterNo)) {
+                        chapterMap.set(lesson.chapterNo, {
+                            chapterNo: lesson.chapterNo,
+                            chapterName: lesson.chapterName,
+                            lessons: []
+                        });
+                    }
+                    chapterMap.get(lesson.chapterNo).lessons.push(lesson);
+                });
+
+                // Add chapters and lessons to table
+                for (const [chapterNo, chapter] of chapterMap) {
+                    // Add chapter row
+                    const chapterRow = tbody.insertRow();
+                    chapterRow.className = 'chapter-row';
+                    chapterRow.dataset.chapterNo = chapterNo;
+                    chapterRow.innerHTML = `
+                        <td>Chapter ${chapterNo}</td>
+                        <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter Chapter Name" required>${chapter.chapterName}</div></td>
+                        <td>${chapter.lessons[0].day || ''}</td>
+                        <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter Topic" required>${chapter.lessons[0].topic || ''}</div></td>
+                        <td>
+                            <select class="browser-default" required>
+                                <option value="Board Work" ${chapter.lessons[0].method === 'Board Work' ? 'selected' : ''}>Board Work</option>
+                                <option value="Reading" ${chapter.lessons[0].method === 'Reading' ? 'selected' : ''}>Reading</option>
+                                <option value="Q & A Method" ${chapter.lessons[0].method === 'Q & A Method' ? 'selected' : ''}>Q & A Method</option>
+                                <option value="Discussion" ${chapter.lessons[0].method === 'Discussion' ? 'selected' : ''}>Discussion</option>
+                                <option value="Activity" ${chapter.lessons[0].method === 'Activity' ? 'selected' : ''}>Activity</option>
+                                <option value="Demonstration" ${chapter.lessons[0].method === 'Demonstration' ? 'selected' : ''}>Demonstration</option>
+                                <option value="Group Work" ${chapter.lessons[0].method === 'Group Work' ? 'selected' : ''}>Group Work</option>
+                            </select>
+                        </td>
+                        <td>
+                            <div>
+                                <label>
+                                    <input type="checkbox" class="filled-in" ${chapter.lessons[0].teachingAids?.includes('Chart') ? 'checked' : ''} />
+                                    <span>Chart</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    <input type="checkbox" class="filled-in" ${chapter.lessons[0].teachingAids?.includes('Video') ? 'checked' : ''} />
+                                    <span>Video</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    <input type="checkbox" class="filled-in" ${chapter.lessons[0].teachingAids?.includes('PPT') ? 'checked' : ''} />
+                                    <span>PPT</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    <input type="checkbox" class="filled-in" ${chapter.lessons[0].teachingAids?.includes('Textbook') ? 'checked' : ''} />
+                                    <span>Textbook</span>
+                                </label>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <label>
+                                    <input type="checkbox" class="filled-in" ${chapter.lessons[0].assessment?.includes('Oral') ? 'checked' : ''} />
+                                    <span>Oral</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    <input type="checkbox" class="filled-in" ${chapter.lessons[0].assessment?.includes('Written') ? 'checked' : ''} />
+                                    <span>Written</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    <input type="checkbox" class="filled-in" ${chapter.lessons[0].assessment?.includes('Project') ? 'checked' : ''} />
+                                    <span>Project</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    <input type="checkbox" class="filled-in" ${chapter.lessons[0].assessment?.includes('Quiz') ? 'checked' : ''} />
+                                    <span>Quiz</span>
+                                </label>
+                            </div>
+                        </td>
+                        <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter remarks">${chapter.lessons[0].remarks || ''}</div></td>
+                        <td class="no-print">
+                            <button class="btn-floating btn-small waves-effect waves-light blue action-btn" onclick="addSubRow(this)" title="Add Topic">
+                                <i class="material-icons">add</i>
+                            </button>
+                            <button class="btn-floating btn-small waves-effect waves-light red action-btn" onclick="removeRow(this)" title="Delete">
+                                <i class="material-icons">delete</i>
+                            </button>
+                        </td>
+                    `;
+
+                    // Add remaining lessons as sub-rows
+                    chapter.lessons.slice(1).forEach(lesson => {
+                        const lessonRow = tbody.insertRow();
+                        lessonRow.dataset.chapterNo = chapterNo;
+
+                        lessonRow.innerHTML = `
+                            <td></td>
+                            <td></td>
+                            <td>${lesson.day || ''}</td>
+                            <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter Topic" required>${lesson.topic || ''}</div></td>
+                            <td>
+                                <select class="browser-default" required>
+                                     <option value="Board Work" ${lesson.method === 'Board Work' ? 'selected' : ''}>Board Work</option>
+                                <option value="Reading" ${lesson.method === 'Reading' ? 'selected' : ''}>Reading</option>
+                                <option value="Q & A Method" ${lesson.method === 'Q & A Method' ? 'selected' : ''}>Q & A Method</option>
+                                <option value="Discussion" ${lesson.method === 'Discussion' ? 'selected' : ''}>Discussion</option>
+                                <option value="Activity" ${lesson.method === 'Activity' ? 'selected' : ''}>Activity</option>
+                                <option value="Demonstration" ${lesson.method === 'Demonstration' ? 'selected' : ''}>Demonstration</option>
+                                <option value="Group Work" ${lesson.method === 'Group Work' ? 'selected' : ''}>Group Work</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" class="filled-in" ${lesson.teachingAids?.includes('Chart') ? 'checked' : ''} />
+                                        <span>Chart</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" class="filled-in" ${lesson.teachingAids?.includes('Video') ? 'checked' : ''} />
+                                        <span>Video</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" class="filled-in" ${lesson.teachingAids?.includes('PPT') ? 'checked' : ''} />
+                                        <span>PPT</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" class="filled-in" ${lesson.teachingAids?.includes('Textbook') ? 'checked' : ''} />
+                                        <span>Textbook</span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" class="filled-in" ${lesson.assessment?.includes('Oral') ? 'checked' : ''} />
+                                        <span>Oral</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" class="filled-in" ${lesson.assessment?.includes('Written') ? 'checked' : ''} />
+                                        <span>Written</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" class="filled-in" ${lesson.assessment?.includes('Project') ? 'checked' : ''} />
+                                        <span>Project</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" class="filled-in" ${lesson.assessment?.includes('Quiz') ? 'checked' : ''} />
+                                        <span>Quiz</span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter remarks">${lesson.remarks || ''}</div></td>
+                            <td class="no-print">
+                                <button class="btn-floating btn-small waves-effect waves-light red action-btn" onclick="removeRow(this)" title="Delete">
+                                    <i class="material-icons">delete</i>
+                                </button>
+                            </td>
+                        `;
+                    });
+                }
+
+                // Re-initialize all Materialize selects
+                M.FormSelect.init(document.querySelectorAll('select'));
+            } catch (error) {
+                console.error('Error loading lesson plan:', error);
+                M.toast({html: 'Error loading lesson plan', classes: 'red'});
+                // Start with an empty chapter
+                addChapter();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function addChapter() {
+            const tbody = document.getElementById("lessonPlanBody");
+            let maxChapterNo = 0;
+            
+            // Find the highest chapter number
+            const rows = tbody.getElementsByTagName('tr');
+            for (let row of rows) {
+                if (row.dataset.chapterNo) {
+                    const num = parseInt(row.dataset.chapterNo);
+                    if (!isNaN(num)) {
+                        maxChapterNo = Math.max(maxChapterNo, num);
+                    }
+                }
+            }
+            
+            const chapterNo = maxChapterNo + 1;
+            const newRow = tbody.insertRow();
+            newRow.className = 'chapter-row';
+            newRow.dataset.chapterNo = chapterNo;
+            
+            newRow.innerHTML = `
+                <td>Chapter ${chapterNo}</td>
+                <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter Chapter Name" required></div></td>
+                <td>1</td>
+                <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter Topic" required></div></td>
+                <td>
+                    <select class="browser-default" required>
+                        <option value="" disabled selected>Choose method</option>
+                        <option value="Board Work">Board Work</option>
+                        <option value="Reading">Reading</option>
+                        <option value="Q & A Method">Q & A Method</option>
+                        <option value="Discussion">Discussion</option>
+                        <option value="Activity">Activity</option>
+                        <option value="Demonstration">Demonstration</option>
+                        <option value="Group Work">Group Work</option>
+                    </select>
+                </td>
+                <td>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Chart</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Video</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>PPT</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Textbook</span>
+                        </label>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Oral</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Written</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Project</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Quiz</span>
+                        </label>
+                    </div>
+                </td>
+                <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter remarks"></div></td>
+                <td class="no-print">
+                    <button class="btn-floating btn-small waves-effect waves-light blue action-btn" onclick="addSubRow(this)" title="Add Topic">
+                        <i class="material-icons">add</i>
+                    </button>
+                    <button class="btn-floating btn-small waves-effect waves-light red action-btn" onclick="removeRow(this)" title="Delete">
+                        <i class="material-icons">delete</i>
+                    </button>
+                </td>
+            `;
+        }
+
+        function addSubRow(button) {
+            const row = button.closest('tr');
+            if (!row) return;
+            
+            const tbody = row.parentElement;
+            const chapterNo = row.dataset.chapterNo;
+            
+            // Find all rows of this chapter and get the last one
+            let lastRowOfChapter = null;
+            let lastDay = 0;
+            let currentRow = tbody.firstElementChild;
+            let lastRowIndex = -1; // Track the index within tbody
+            let currentIndex = 0;
+            
+            // Get chapter name from the input field
+            let chapterNameInput = row.cells[1].querySelector('div');
+            let chapterName = chapterNameInput ? chapterNameInput.textContent.trim() : row.cells[1].textContent;
+            
+            // Check if chapter name is empty
+            if (!chapterName || chapterName.trim() === '') {
+                M.toast({html: 'Please enter chapter name first!', classes: 'red'});
+                return;
+            }
+            // First pass: find the last row and highest day number
+            while (currentRow) {
+                if (currentRow.dataset.chapterNo === chapterNo) {
+                    lastRowOfChapter = currentRow;
+                    lastRowIndex = currentIndex;
+                    const dayCell = currentRow.cells[2];
+                    if (dayCell) {
+                        const day = parseInt(dayCell.innerText);
+                        if (!isNaN(day)) {
+                            lastDay = Math.max(lastDay, day);
+                        }
+                    }
+                } else if (currentRow.dataset.chapterNo > chapterNo) {
+                    break;
+                }
+                currentRow = currentRow.nextElementSibling;
+                currentIndex++;
+            }
+
+            // If no last row found, use the chapter row
+            if (!lastRowOfChapter) {
+                lastRowOfChapter = row;
+                lastRowIndex = Array.from(tbody.children).indexOf(row);
+                lastDay = 0;
+            }
+
+            // Insert new row after the last row of this chapter
+            const newRow = tbody.insertRow(lastRowIndex + 1);
+            newRow.dataset.chapterNo = chapterNo;
+
+            newRow.innerHTML = `
+                <td></td>
+                <td></td>
+                <td>${lastDay + 1}</td>
+                <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter Topic" required></div></td>
+                <td>
+                    <select class="browser-default" required>
+                            <option value="" disabled selected>Choose method</option>
+                        <option value="Board Work">Board Work</option>
+                        <option value="Reading">Reading</option>
+                        <option value="Q & A Method">Q & A Method</option>
+                        <option value="Discussion">Discussion</option>
+                        <option value="Activity">Activity</option>
+                        <option value="Demonstration">Demonstration</option>
+                        <option value="Group Work">Group Work</option>
+                        </select>
+                </td>
+                <td>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Chart</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Video</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>PPT</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Textbook</span>
+                        </label>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Oral</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Written</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Project</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" class="filled-in" />
+                            <span>Quiz</span>
+                        </label>
+                    </div>
+                </td>
+                <td><div class="multiline-input validate" contenteditable="true" placeholder="Enter remarks"></div></td>
+                <td class="no-print">
+                    <button class="btn-floating btn-small waves-effect waves-light red action-btn" onclick="removeRow(this)" title="Delete">
+                        <i class="material-icons">delete</i>
+                    </button>
+                </td>
+            `;
+        }
+
+        function removeRow(button) {
+            const row = button.closest('tr');
+            const tbody = row.parentElement;
+            const isChapterRow = row.classList.contains('chapter-row');
+            
+            if (isChapterRow) {
+                // If it's a chapter row, also remove all associated topic rows
+                let currentRow = row;
+                let lastDay = 0;
+                let usedDays = new Set();
+                
+                // Find the next chapter row or end of table
+                while (currentRow && (!currentRow.classList.contains('chapter-row') || currentRow === row)) {
+                    const dayCell = currentRow.cells[2];
+                    if (dayCell) {
+                        const day = parseInt(dayCell.innerText);
+                        if (!isNaN(day)) {
+                            lastDay = Math.max(lastDay, day);
+                            usedDays.add(day);
+                        }
+                    }
+                    currentRow = currentRow.nextElementSibling;
+                }
+
+                // Remove all rows belonging to this chapter
+                while (currentRow && !currentRow.classList.contains('chapter-row')) {
+                    currentRow.remove();
+                    currentRow = row.nextElementSibling;
+                }
+            }
+            
+            row.remove();
+            
+            // Renumber remaining chapters if we removed a chapter row
+            if (isChapterRow) {
+                const chapterRows = tbody.getElementsByClassName('chapter-row');
+                Array.from(chapterRows).forEach((chapterRow, index) => {
+                    const chapterNo = index + 1;
+                    chapterRow.dataset.chapterNo = chapterNo;
+                    chapterRow.cells[0].innerText = `Chapter ${chapterNo}`;
+                });
+            }
+        }
+
+        async function saveLessonPlan() {
+            try {
+                showLoading();
+                const table = document.getElementById("lessonPlanBody");
+                const className = document.getElementById("class").value;
+                const subjectName = document.getElementById("subjectName").value;
+                const academicYear = document.getElementById("academicYear").value;
+                const teacherName = document.querySelector('input[type="text"]').value;
+
+                if (!className || !subjectName || !academicYear || !teacherName) {
+                    M.toast({html: 'Please fill in all required fields (Class, Subject, Academic Year, and Teacher Name)', classes: 'red'});
+                    return;
+                }
+
+                if (table.rows.length === 0) {
+                    M.toast({html: 'Please add at least one chapter', classes: 'red'});
+                    return;
+                }
+
+                // First fetch existing lesson plan to check for existing chapters
+                let existingPlan;
+                try {
+                    const response = await apiCall(`${API_BASE_URL}/lesson-plan/${className}`);
+                    if (response.ok) {
+                        existingPlan = await response.json();
+                    }
+                } catch (error) {
+                    console.log('No existing lesson plan found:', error);
+                }
+
+                let currentChapter = null;
+                let chapters = new Map(); // Use Map to track chapters by number
+
+                // If we have an existing plan, pre-populate our chapters map
+                if (existingPlan) {
+                    const existingSubject = existingPlan.subjects.find(s => s.subjectName === subjectName);
+                    if (existingSubject) {
+                        existingSubject.chapters.forEach(chapter => {
+                            chapters.set(chapter.chapterNo, {
+                                chapterNo: chapter.chapterNo,
+                                chapterName: chapter.chapterName,
+                                lessons: [...chapter.lessons]
+                            });
+                        });
+                    }
+                }
+
+                for (let i = 0; i < table.rows.length; i++) {
+                    const row = table.rows[i];
+                    const chapterText = row.cells[0].innerText;
+                    
+                    if (chapterText.startsWith('Chapter ')) {
+                        const chapterNo = parseInt(chapterText.replace('Chapter ', ''));
+                        const chapterNameDiv = row.cells[1].querySelector('.multiline-input');
+                        const chapterName = chapterNameDiv ? chapterNameDiv.textContent.trim() : '';
+                        
+                        if (!chapterName) {
+                            M.toast({html: `Please enter chapter name for Chapter ${chapterNo}`, classes: 'red'});
+                            return;
+                        }
+
+                        // Get existing chapter or create new one
+                        currentChapter = chapters.get(chapterNo);
+                        if (currentChapter) {
+                            // Update chapter name if changed
+                            currentChapter.chapterName = chapterName;
+                            // Clear existing lessons as we'll rebuild them
+                            currentChapter.lessons = [];
+                        } else {
+                            currentChapter = {
+                                chapterNo,
+                                chapterName,
+                                lessons: []
+                            };
+                        }
+                        chapters.set(chapterNo, currentChapter);
+                    }
+
+                    // Process lesson data (for both chapter rows and sub-rows)
+                    const topicDiv = row.cells[3].querySelector('.multiline-input');
+                    const methodSelect = row.cells[4].querySelector('select');
+                    const remarksDiv = row.cells[7].querySelector('.multiline-input');
+
+                    if (!topicDiv || !topicDiv.textContent.trim() || !methodSelect || !methodSelect.value) {
+                        M.toast({html: 'Please fill all required fields for lessons', classes: 'red'});
+                        return;
+                    }
+
+                    if (currentChapter) {
+                        const lesson = {
+                            day: parseInt(row.cells[2].innerText) || 1,
+                            topic: topicDiv.textContent.trim(),
+                            method: methodSelect.value,
+                            teachingAids: Array.from(row.cells[5].querySelectorAll('input[type="checkbox"]'))
+                                .filter(cb => cb.checked)
+                                .map(cb => cb.nextElementSibling.textContent),
+                            assessment: Array.from(row.cells[6].querySelectorAll('input[type="checkbox"]'))
+                                .filter(cb => cb.checked)
+                                .map(cb => cb.nextElementSibling.textContent),
+                            remarks: remarksDiv ? remarksDiv.textContent.trim() : ''
+                        };
+                        currentChapter.lessons.push(lesson);
+                    }
+                }
+
+                // Create new class if it doesn't exist
+                if (!existingPlan) {
+                    await apiCall(`${API_BASE_URL}/lesson-plan/add`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            className,
+                            subjects: [{
+                                subjectName,
+                                academicYear,
+                                teacherName,
+                                chapters: []
+                            }]
+                        })
+                    });
+                }
+
+                // Save each chapter
+                for (const [chapterNo, chapter] of chapters) {
+                    try {
+                        console.log('Saving chapter:', chapter);
+                        const response = await apiCall(`${API_BASE_URL}/lesson-plan/${className}/${subjectName}/add-chapter`, {
+                            method: 'PUT',
+                            body: JSON.stringify({
+                                chapterNo: chapter.chapterNo,
+                                chapterName: chapter.chapterName,
+                                lessons: chapter.lessons,
+                                teacherName
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Failed to save chapter ${chapterNo}`);
+                        }
+                    } catch (error) {
+                        console.error(`Error saving chapter ${chapterNo}:`, error);
+                        M.toast({html: `Error saving chapter ${chapterNo}`, classes: 'red'});
+                        return;
+                    }
+                }
+
+                M.toast({html: 'Lesson plan saved successfully!', classes: 'green'});
+            } catch (error) {
+                console.error('Error saving lesson plan:', error);
+
+                if (error.message.includes('Authentication')) {
+                    window.location.href = '../pages/login.html';
+                } else {
+                    M.toast({html: 'Error saving lesson plan', classes: 'red'});
+                }
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function printPage() {
+            // Store the current values
+            const classSelect = document.getElementById('class');
+            const subjectSelect = document.getElementById('subjectName');
+            const academicYearSelect = document.getElementById('academicYear');
+            const teacherInput = document.querySelector('input[type="text"]');
+            
+            // Get selected values
+            const selectedClass = classSelect.options[classSelect.selectedIndex]?.text || '';
+            const selectedSubject = subjectSelect.options[subjectSelect.selectedIndex]?.text || '';
+            const selectedYear = academicYearSelect.options[academicYearSelect.selectedIndex]?.text || '';
+            const teacherName = teacherInput.value || '';
+
+            // Store original values for restoration
+            const originalClassValue = classSelect.value;
+            const originalSubjectValue = subjectSelect.value;
+
+            // Update print header
+            document.getElementById('print-class').textContent = selectedClass;
+            document.getElementById('print-subject').textContent = selectedSubject;
+            document.getElementById('print-academic-year').textContent = selectedYear;
+            document.getElementById('print-teacher').textContent = teacherName;
+
+            // Show print header before printing
+            const printHeader = document.querySelector('.print-header');
+            printHeader.style.display = 'block';
+
+            // Store the original content
+            const printContent = document.body.innerHTML;
+
+            // Create temporary elements to hold content during print
+            const tempElements = [];
+
+            // Replace contenteditable divs with their text content
+            document.querySelectorAll('.multiline-input').forEach(div => {
+                const text = div.textContent || '';
+                const span = document.createElement('span');
+                span.textContent = text;
+                tempElements.push({ original: div, temp: span });
+                div.parentNode.replaceChild(span, div);
+            });
+
+            // Replace select values with text (except class and subject dropdowns)
+            document.querySelectorAll('select').forEach(select => {
+                if (select.id !== 'class' && select.id !== 'subjectName') {
+                    const text = select.options[select.selectedIndex]?.text || '';
+                    const span = document.createElement('span');
+                    span.textContent = text;
+                    tempElements.push({ original: select, temp: span });
+                    select.parentNode.replaceChild(span, select);
+                }
+            });
+
+            // Handle checkboxes
+            const checkboxStates = [];
+            document.querySelectorAll("input[type=checkbox]").forEach(checkbox => {
+                const label = checkbox.closest('label');
+                if (label) {
+                    checkboxStates.push({
+                        label: label,
+                        checked: checkbox.checked,
+                        originalDisplay: label.style.display
+                    });
+                    
+                    if (checkbox.checked) {
+                        const spanText = checkbox.nextElementSibling.textContent;
+                        label.innerHTML = spanText;
+                    } else {
+                        label.style.display = "none";
+                    }
+                }
+            });
+
+            // Print the page
+            window.print();
+
+            // Hide print header after printing
+            printHeader.style.display = 'none';
+
+            // Restore the original elements
+            tempElements.forEach(({ original, temp }) => {
+                if (temp.parentNode) {
+                    temp.parentNode.replaceChild(original, temp);
+                }
+            });
+
+            // Restore checkbox states
+            checkboxStates.forEach(state => {
+                state.label.style.display = state.originalDisplay;
+                if (!state.checked) {
+                    const checkbox = state.label.querySelector('input[type=checkbox]');
+                    if (checkbox) {
+                        checkbox.checked = false;
+                    }
+                }
+            });
+
+            // Re-initialize Materialize selects
+            M.FormSelect.init(document.querySelectorAll('select'));
+
+            // Restore class and subject selections using stored original values
+            classSelect.value = originalClassValue;
+            M.FormSelect.init(classSelect);
+
+            subjectSelect.value = originalSubjectValue;
+            M.FormSelect.init(subjectSelect);
+
+            // Reload class and subject data from cache
+            const cachedClassData = localStorage.getItem('classData');
+            if (cachedClassData) {
+                const classes = JSON.parse(cachedClassData);
+                if (originalClassValue) {
+                    loadSubjectsForClass(originalClassValue, classes);
+                }
+            }
+        }
+
+        function exportExcel() {
+            let table = document.querySelector("table");
+            let wb = XLSX.utils.table_to_book(table, { sheet: "Lesson Plan" });
+            XLSX.writeFile(wb, "Lesson_Plan.xlsx");
+            M.toast({html: 'Excel file downloaded successfully!'});
+        }
+    </script>
+</body>
+</html>

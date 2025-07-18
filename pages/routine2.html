@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>School Routine - Monday</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef1f5;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    thead {
+      background-color: #4CAF50;
+      color: white;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+      border: 1px solid #ccc;
+    }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .break-row td {
+      background-color: #ffe4b2;
+      font-weight: bold;
+      text-align: center;
+    }
+    select:disabled, input:disabled {
+      background-color: #ddd;
+    }
+    .settings {
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+    .settings label {
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    .settings input {
+      margin-right: 20px;
+      width: 60px;
+    }
+    h2 {
+      margin-top: 40px;
+      color: #2c3e50;
+    }
+    .action-buttons {
+      margin-bottom: 40px;
+    }
+    .action-buttons button {
+      margin-right: 10px;
+      padding: 6px 12px;
+      font-weight: bold;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    select, input[type="text"] {
+      margin: 5px 0;
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    .save-buttons {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+    }
+    .save-buttons button {
+      padding: 8px 16px;
+      font-weight: bold;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .save-buttons button:hover {
+      background: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="settings" id="settings"></div>
+    <h1>School Routine - Weekly</h1>
+    <div id="routineTables"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+  const teachers = ["Amrita", "Ankita", "Shubhra", "New Teacher", "Supriya", "Sneha", "Sumitra", "Mainak", "Madhumita", "Moumita Suvam", "Ranjit", "Sujata"];
+  const subjects = ["Math", "English", "Science", "Bengali/ Hindi", "SST", "GK", "Computer", "Moral Value", "3rd Lang. Hindi", "Communication","Yoga","Rhymes", "Drawing", "Music/Dance", "Reading Writing Skill", "Library", "Games", "SUPW", "House-Teacher"];
+  const allPeriods = [
+    { period: "1st", time: "10.25 - 11.05" },
+    { period: "2nd", time: "11.05 - 11.45" },
+    { period: "3rd", time: "11.45 - 12.25" },
+    { period: "Break", time: "12.25 - 12.50" },
+    { period: "4th", time: "12.50 - 01.30" },   
+    { period: "5th", time: "01.30 - 02.05" },
+    { period: "6th", time: "02.05 - 02.40" },
+    { period: "7th", time: "02.40 - 03.15" }
+  ];
+  const classes = ["Nursery-A", "LKG-A", "LKG-B", "UKG-A", "UKG-B", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5"];
+  const settingsDiv = document.getElementById("settings");
+  const tablesContainer = document.getElementById("routineTables");
+
+  function createSettings() {
+    classes.forEach(cls => {
+      const label = document.createElement("label");
+      label.innerHTML = `${cls} Periods: `;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.id = `${cls.replace(/\s/g, '')}Periods`;
+      input.value = 6;
+      input.min = 1;
+      input.max = 10;
+      label.appendChild(input);
+      settingsDiv.appendChild(label);
+    });
+    const btn = document.createElement("button");
+    btn.textContent = "Generate Routine";
+    btn.onclick = generateRoutine;
+    settingsDiv.appendChild(btn);
+  }
+
+  function createDropdown(options, teacherBookedPerDay, day, period, teacherCount) {
+    const select = document.createElement("select");
+    const updateOptions = () => {
+      const selectedTeacher = select.dataset.assignedTeacher || ""; // Preserve the selected teacher
+      select.innerHTML = `<option value="">--Select--</option>` + options.map(opt => {
+        const isBooked = teacherBookedPerDay[day]?.[period]?.has(opt);
+        const count = teacherCount[day]?.[opt] || 0;
+        return `<option value="${opt}" ${opt === selectedTeacher ? "selected" : ""} ${isBooked && opt !== selectedTeacher ? "disabled" : ""}>${opt} (${count})</option>`;
+      }).join("");
+    };
+
+    select.addEventListener("change", (e) => {
+      const selectedTeacher = e.target.value;
+      teacherBookedPerDay[day] = teacherBookedPerDay[day] || {};
+      teacherBookedPerDay[day][period] = teacherBookedPerDay[day][period] || new Set();
+      teacherCount[day] = teacherCount[day] || {};
+
+      // Remove previous teacher assignment
+      const previousTeacher = select.dataset.assignedTeacher;
+      if (previousTeacher) {
+        teacherBookedPerDay[day][period].delete(previousTeacher);
+        teacherCount[day][previousTeacher] = (teacherCount[day][previousTeacher] || 1) - 1;
+      }
+
+      // Add new teacher assignment
+      if (selectedTeacher) {
+        teacherBookedPerDay[day][period].add(selectedTeacher);
+        teacherCount[day][selectedTeacher] = (teacherCount[day][selectedTeacher] || 0) + 1;
+        select.dataset.assignedTeacher = selectedTeacher;
+      } else {
+        delete select.dataset.assignedTeacher;
+      }
+
+      // Update all dropdowns for the same day
+      document.querySelectorAll(`select[data-day="${day}"]`).forEach(sel => {
+        const event = new Event("update-options");
+        sel.dispatchEvent(event);
+      });
+
+      // Blur the dropdown after selection
+      select.blur();
+    });
+
+    select.addEventListener("click", () => {
+      const event = new Event("update-options");
+      select.dispatchEvent(event); // Trigger update-options on click
+    });
+
+    select.addEventListener("update-options", updateOptions);
+    updateOptions();
+    return select;
+  }
+
+  function generateRoutine() {
+    tablesContainer.innerHTML = "";
+    const periodLimits = {};
+    const teacherCount = {};
+    const teacherBookedPerDay = {};
+
+    classes.forEach(cls => {
+      const id = `${cls.replace(/\s/g, '')}Periods`;
+      periodLimits[cls] = parseInt(document.getElementById(id).value);
+    });
+
+    classes.forEach(cls => {
+      const classTitle = document.createElement("h2");
+      classTitle.textContent = `Class: ${cls}`;
+      const wrapper = document.createElement("div");
+      wrapper.id = `wrapper-${cls.replace(/\s/g, '')}`;
+      const table = document.createElement("table");
+      const thead = document.createElement("thead");
+      thead.innerHTML = `
+        <tr>
+          <th>Period</th>
+          <th>Time</th>
+          <th>Monday</th>
+          <th>Tuesday</th>
+          <th>Wednesday</th>
+          <th>Thursday</th>
+          <th>Friday</th>
+        </tr>`;
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+      let count = 0;
+
+      for (let { period, time } of allPeriods) {
+        if (period === "Break") {
+          const breakRow = document.createElement("tr");
+          breakRow.className = "break-row";
+          breakRow.innerHTML = `<td colspan="7" class="break-row">Break Time (${time})</td>`;
+          tbody.appendChild(breakRow);
+          continue;
+        }
+
+        if (count >= periodLimits[cls]) continue;
+        count++;
+
+        const row = document.createElement("tr");
+
+        const mondayTeacherSelect = createDropdown(teachers, teacherBookedPerDay, "Monday", period, teacherCount);
+        const tuesdayTeacherSelect = createDropdown(teachers, teacherBookedPerDay, "Tuesday", period, teacherCount);
+        const wednesdayTeacherSelect = createDropdown(teachers, teacherBookedPerDay, "Wednesday", period, teacherCount);
+        const thursdayTeacherSelect = createDropdown(teachers, teacherBookedPerDay, "Thursday", period, teacherCount);
+        const fridayTeacherSelect = createDropdown(teachers, teacherBookedPerDay, "Friday", period, teacherCount);
+
+        mondayTeacherSelect.dataset.day = "Monday";
+        mondayTeacherSelect.dataset.period = period;
+
+        tuesdayTeacherSelect.dataset.day = "Tuesday";
+        tuesdayTeacherSelect.dataset.period = period;
+
+        wednesdayTeacherSelect.dataset.day = "Wednesday";
+        wednesdayTeacherSelect.dataset.period = period;
+
+        thursdayTeacherSelect.dataset.day = "Thursday";
+        thursdayTeacherSelect.dataset.period = period;
+
+        fridayTeacherSelect.dataset.day = "Friday";
+        fridayTeacherSelect.dataset.period = period;
+
+        const mondaySubjectSelect = createDropdown(subjects, {}, "Monday", {}, {});
+        mondaySubjectSelect.dataset.day = "Monday";
+
+        const tuesdaySubjectSelect = createDropdown(subjects, {}, "Tuesday", {}, {});
+        tuesdaySubjectSelect.dataset.day = "Tuesday";
+
+        const wednesdaySubjectSelect = createDropdown(subjects, {}, "Wednesday", {}, {});
+        wednesdaySubjectSelect.dataset.day = "Wednesday";
+
+        const thursdaySubjectSelect = createDropdown(subjects, {}, "Thursday", {}, {});
+        thursdaySubjectSelect.dataset.day = "Thursday";
+
+        const fridaySubjectSelect = createDropdown(subjects, {}, "Friday", {}, {});
+        fridaySubjectSelect.dataset.day = "Friday";
+
+        const mondayBookInput = document.createElement("input");
+        mondayBookInput.type = "text";
+        mondayBookInput.placeholder = "Enter book name";
+        mondayBookInput.dataset.day = "Monday";
+
+        const tuesdayBookInput = mondayBookInput.cloneNode();
+        tuesdayBookInput.dataset.day = "Tuesday";
+
+        const wednesdayBookInput = mondayBookInput.cloneNode();
+        wednesdayBookInput.dataset.day = "Wednesday";
+
+        const thursdayBookInput = mondayBookInput.cloneNode();
+        thursdayBookInput.dataset.day = "Thursday";
+
+        const fridayBookInput = mondayBookInput.cloneNode();
+        fridayBookInput.dataset.day = "Friday";
+
+        row.innerHTML = `
+          <td>${period}</td>
+          <td>${time}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>          
+        `;
+
+        row.children[2].appendChild(mondayTeacherSelect);
+        row.children[2].appendChild(mondaySubjectSelect);
+        row.children[2].appendChild(mondayBookInput);
+
+        row.children[3].appendChild(tuesdayTeacherSelect);
+        row.children[3].appendChild(tuesdaySubjectSelect);
+        row.children[3].appendChild(tuesdayBookInput);
+
+        row.children[4].appendChild(wednesdayTeacherSelect);
+        row.children[4].appendChild(wednesdaySubjectSelect);
+        row.children[4].appendChild(wednesdayBookInput);
+
+        row.children[5].appendChild(thursdayTeacherSelect);
+        row.children[5].appendChild(thursdaySubjectSelect);
+        row.children[5].appendChild(thursdayBookInput);
+
+        row.children[6].appendChild(fridayTeacherSelect);
+        row.children[6].appendChild(fridaySubjectSelect);
+        row.children[6].appendChild(fridayBookInput);
+
+        tbody.appendChild(row);
+      }
+
+      table.appendChild(tbody);
+
+      // Add Save buttons for each day
+      const saveButtonsDiv = document.createElement("div");
+      saveButtonsDiv.className = "save-buttons";
+
+      ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].forEach(day => {
+        const saveButton = document.createElement("button");
+        saveButton.textContent = `Save ${day}`;
+        saveButton.onclick = () => {
+          const data = [];
+          tbody.querySelectorAll("tr").forEach(row => {
+            if (row.classList.contains("break-row")) return;
+            const teacher = row.querySelector(`select[data-day='${day}']`)?.value || "";
+            const subject = row.querySelector(`select[data-day='${day}']:nth-of-type(2)`)?.value || "";
+            const book = row.querySelector(`input[data-day='${day}']`)?.value || "";
+            data.push({
+              period: row.children[0].textContent,
+              time: row.children[1].textContent,
+              teacher,
+              subject,
+              book
+            });
+          });
+          const routinePayload = {
+            class: cls,
+            day: day,
+            periods: data
+          };
+          console.log("Sending Routine:", routinePayload); // Log to console
+          try {
+            fetch("https://skyview-server-3.vercel.app/api/routines/save-routine", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(routinePayload),
+            });
+            alert(`Routine for ${cls} on ${day} saved successfully!`);
+          } catch (error) {
+            console.error("Error saving routine:", error);
+            if (error.response && error.response.status === 401) {
+              window.location.href = "/frontend_html/login.html";
+            }
+          }
+        };
+        saveButtonsDiv.appendChild(saveButton);
+      });
+
+      wrapper.appendChild(classTitle); // Add class name above the table
+      wrapper.appendChild(table);
+      wrapper.appendChild(saveButtonsDiv);
+      tablesContainer.appendChild(wrapper);
+    });
+  }
+
+  window.onload = createSettings;
+</script>
+</body>
+</html>

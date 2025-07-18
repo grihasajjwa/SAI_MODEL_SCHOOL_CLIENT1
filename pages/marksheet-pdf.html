@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marksheet PDF</title>
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .marksheet-container {
+                page-break-inside: avoid;
+            }
+        }
+        body { 
+            margin: 0;
+            padding: 0;
+            background: white;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12px;
+            line-height: 1.3;
+        }
+        .marksheet-container {
+            width: 19cm;
+            min-height: 27.7cm;
+            margin: 1cm auto;
+            background: white;
+            padding: 1cm;
+            position: relative;
+            border: 3px double #000;
+            box-sizing: border-box;
+        }
+        .marksheet-inner {
+            border: 2px solid #000;
+            padding: 1cm;
+            position: relative;
+            background: white;
+            height: calc(100% - 2cm);
+            box-sizing: border-box;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            opacity: 0.07;
+            color: #000;
+            white-space: nowrap;
+            line-height: 1;
+            font-weight: 900;
+            letter-spacing: 8px;
+            font-family: "Times New Roman", serif;
+            pointer-events: none;
+        }
+        .school-header {
+            text-align: center;
+            margin-bottom: 10mm;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5mm;
+        }
+        .school-logo {
+            width: 15mm;
+            height: 15mm;
+            margin-bottom: 2mm;
+        }
+        .school-header h2 {
+            font-size: 24px;
+            font-weight: 900;
+            margin: 2mm 0;
+            letter-spacing: 1px;
+        }
+        .school-header p {
+            margin: 1mm 0;
+            font-size: 11px;
+        }
+        .student-info {
+            margin-bottom: 5mm;
+            padding: 3mm;
+            background-color: #f8f9fa;
+            border: 1px solid #000;
+        }
+        .student-info p {
+            margin: 1mm 0;
+            line-height: 1.2;
+        }
+        .marks-table {
+            margin: 5mm 0;
+            width: 100%;
+        }
+        .marks-table table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000;
+        }
+        .marks-table th {
+            background-color: #e9ecef;
+            border: 1px solid #000;
+            padding: 1mm;
+            font-size: 10px;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .marks-table td {
+            border: 1px solid #000;
+            padding: 1mm;
+            font-size: 10px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .result-summary {
+            margin: 5mm 0;
+            padding: 3mm;
+            background-color: #f8f9fa;
+            border: 1px solid #000;
+        }
+        .grade-info {
+            margin: 5mm 0;
+            padding: 3mm;
+            border: 1px solid #000;
+            font-size: 9px;
+        }
+        .signatures {
+            margin-top: 10mm;
+            position: absolute;
+            bottom: 10mm;
+            left: 10mm;
+            right: 10mm;
+        }
+        .signature-line {
+            border-top: 1px solid #000;
+            width: 80%;
+            margin: 2mm auto;
+        }
+        /* Bootstrap overrides */
+        .table {
+            margin-bottom: 0;
+        }
+        .table > :not(caption) > * > * {
+            padding: 0.25rem;
+            background-color: transparent;
+            border-bottom-width: 1px;
+        }
+        .table > :not(:first-child) {
+            border-top: 1px solid #000;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-right: -15px;
+            margin-left: -15px;
+        }
+        .col-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+        .col-4 {
+            flex: 0 0 33.333333%;
+            max-width: 33.333333%;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .mb-1 {
+            margin-bottom: 0.25rem;
+        }
+        .mb-0 {
+            margin-bottom: 0;
+        }
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="marksheet-container" id="marksheet">
+        <div class="marksheet-inner">
+            <div class="watermark">SKYVIEW PUBLIC SCHOOL</div>
+            
+            <div class="school-header">
+                <img src="../assets/images/logo.png" alt="School Logo" class="school-logo">
+                <h2>SKYVIEW PUBLIC SCHOOL</h2>
+                <p>Uttar Andaranfulbari, Tufanganj, Coochbehar, WB, PIN- 736160</p>
+                <p>Contact No. +91-86535-54323   |   Email: skyviewpublicschool@gmail.com</p>
+                <h4 class="mt-2">STUDENT PROGRESS REPORT</h4>
+            </div>
+
+            <div class="student-info">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <p class="mb-1"><strong>Student Name:</strong> <span id="studentName"></span></p>
+                        <p class="mb-1"><strong>Class:</strong> <span id="className"></span></p>
+                        <p class="mb-1"><strong>Father's Name:</strong> <span id="fatherName"></span></p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-1"><strong>Admission No:</strong> <span id="admissionNo"></span></p>
+                        <p class="mb-1"><strong>Section:</strong> <span id="section"></span></p>
+                        <p class="mb-1"><strong>Academic Year:</strong> <span id="academicYear"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="marks-table">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Subject</th>
+                            <th colspan="3">Periodic Test 1</th>
+                            <th colspan="3">Half Yearly</th>
+                            <th colspan="3">Periodic Test 2</th>
+                            <th colspan="3">Final Exam</th>
+                        </tr>
+                        <tr>
+                            <th>Written<br>(80)</th>
+                            <th>Oral<br>(20)</th>
+                            <th>Total<br>(100)</th>
+                            <th>Written<br>(80)</th>
+                            <th>Oral<br>(20)</th>
+                            <th>Total<br>(100)</th>
+                            <th>Written<br>(80)</th>
+                            <th>Oral<br>(20)</th>
+                            <th>Total<br>(100)</th>
+                            <th>Written<br>(80)</th>
+                            <th>Oral<br>(20)</th>
+                            <th>Total<br>(100)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="marksTableBody">
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-secondary">
+                            <td><strong>Grand Total</strong></td>
+                            <td colspan="2"></td>
+                            <td id="pt1Total">0</td>
+                            <td colspan="2"></td>
+                            <td id="hyTotal">0</td>
+                            <td colspan="2"></td>
+                            <td id="pt2Total">0</td>
+                            <td colspan="2"></td>
+                            <td id="finalTotal">0</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td><strong>Percentage</strong></td>
+                            <td colspan="2"></td>
+                            <td id="pt1Percentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="hyPercentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="pt2Percentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="finalPercentage">0%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="grade-info">
+                <h6>Grading System:</h6>
+                <div class="row">
+                    <div class="col-6">
+                        <p class="mb-0">A1 (91-100): Outstanding | A2 (81-90): Excellent</p>
+                        <p class="mb-0">B1 (71-80): Very Good | B2 (61-70): Good</p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0">C1 (51-60): Fair | C2 (41-50): Average</p>
+                        <p class="mb-0">D (33-40): Below Average | E (Below 33): Needs Improvement</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-summary">
+                <div class="row mb-1">
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Overall Percentage:</strong> <span id="overallPercentage">0</span>%</p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Overall Grade:</strong> <span id="overallGrade">-</span></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Result:</strong> <span id="finalResult">-</span></p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Rank in Class:</strong> <span id="classRank">-</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="signatures">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Class Teacher</p>
+                    </div>
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Principal</p>
+                    </div>
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Parent's Signature</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const data = urlParams.get('data');
+                
+                if (!data) {
+                    throw new Error('No student data provided');
+                }
+
+                const studentData = JSON.parse(data);
+                
+                // Fill student info
+                document.getElementById('studentName').textContent = studentData.studentName;
+                document.getElementById('admissionNo').textContent = studentData.admissionNo;
+                document.getElementById('fatherName').textContent = studentData.fatherName;
+                document.getElementById('className').textContent = studentData.className;
+                document.getElementById('section').textContent = studentData.section;
+                document.getElementById('academicYear').textContent = studentData.academicYear || '2024-2025';
+                document.getElementById('classRank').textContent = studentData.rank || '-';
+
+                // Fill marks table
+                const tbody = document.getElementById('marksTableBody');
+                studentData.marks.forEach(subject => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${subject.subjectName}</td>
+                        ${createExamCells('pt1', subject)}
+                        ${createExamCells('hy', subject)}
+                        ${createExamCells('pt2', subject)}
+                        ${createExamCells('final', subject)}
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                // Update totals and percentages
+                updateTotals(studentData.marks);
+
+                // Generate PDF after a short delay
+                setTimeout(generatePDF, 1000);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to generate PDF: ' + error.message);
+            }
+        });
+
+        function createExamCells(examType, subject) {
+            const written = subject[examType]?.written || '-';
+            const oral = subject[examType]?.oral || '-';
+            const total = (written !== '-' && oral !== '-') ? 
+                parseInt(written) + parseInt(oral) : '-';
+            
+            return `
+                <td>${written}</td>
+                <td>${oral}</td>
+                <td class="total-cell">${total}</td>
+            `;
+        }
+
+        function updateTotals(marks) {
+            const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+            
+            examTypes.forEach(examType => {
+                let totalMarks = 0;
+                let subjectsWithMarks = 0;
+
+                marks.forEach(subject => {
+                    if (subject[examType]) {
+                        const total = (subject[examType].written || 0) + (subject[examType].oral || 0);
+                        if (total > 0) {
+                            totalMarks += total;
+                            subjectsWithMarks++;
+                        }
+                    }
+                });
+
+                if (subjectsWithMarks > 0) {
+                    const percentage = (totalMarks / (subjectsWithMarks * 100)) * 100;
+                    document.getElementById(`${examType}Total`).textContent = totalMarks;
+                    document.getElementById(`${examType}Percentage`).textContent = percentage.toFixed(2) + '%';
+                }
+            });
+
+            // Calculate overall percentage
+            let totalPercentage = 0;
+            let validExams = 0;
+
+            examTypes.forEach(examType => {
+                const percentageElement = document.getElementById(`${examType}Percentage`);
+                if (percentageElement) {
+                    const percentage = parseFloat(percentageElement.textContent);
+                    if (!isNaN(percentage) && percentage > 0) {
+                        totalPercentage += percentage;
+                        validExams++;
+                    }
+                }
+            });
+
+            if (validExams > 0) {
+                const overallPercentage = totalPercentage / validExams;
+                document.getElementById('overallPercentage').textContent = overallPercentage.toFixed(2);
+                document.getElementById('overallGrade').textContent = calculateGrade(overallPercentage);
+                document.getElementById('finalResult').textContent = overallPercentage >= 33 ? 'PASS' : 'NEEDS IMPROVEMENT';
+            }
+        }
+
+        function calculateGrade(percentage) {
+            if (percentage >= 91) return 'A1 - Outstanding';
+            if (percentage >= 81) return 'A2 - Excellent';
+            if (percentage >= 71) return 'B1 - Very Good';
+            if (percentage >= 61) return 'B2 - Good';
+            if (percentage >= 51) return 'C1 - Fair';
+            if (percentage >= 41) return 'C2 - Average';
+            if (percentage >= 33) return 'D - Below Average';
+            return 'E - Needs Improvement';
+        }
+
+        async function generatePDF() {
+            try {
+                const element = document.getElementById('marksheet');
+                if (!element) {
+                    throw new Error('Marksheet content not found');
+                }
+
+                // Load Bootstrap CSS before generating PDF
+                await new Promise((resolve) => {
+                    const link = document.createElement('link');
+                    link.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css';
+                    link.rel = 'stylesheet';
+                    link.onload = resolve;
+                    document.head.appendChild(link);
+                });
+
+                const opt = {
+                    margin: 10,
+                    filename: `Marksheet_${document.getElementById('admissionNo').textContent}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 1,
+                        useCORS: true,
+                        letterRendering: true,
+                        scrollX: 0,
+                        scrollY: 0,
+                        logging: false,
+                        onclone: function(clonedDoc) {
+                            const container = clonedDoc.querySelector('.marksheet-container');
+                            container.style.margin = '10mm';
+                            container.style.width = '190mm';
+                            container.style.minHeight = '277mm';
+                            
+                            // Force background colors
+                            const elements = clonedDoc.querySelectorAll('*');
+                            elements.forEach(el => {
+                                const style = window.getComputedStyle(el);
+                                if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                                    el.style.webkitPrintColorAdjust = 'exact';
+                                    el.style.printColorAdjust = 'exact';
+                                    el.style.backgroundColor = style.backgroundColor;
+                                }
+                            });
+                        }
+                    },
+                    jsPDF: { 
+                        unit: 'mm',
+                        format: 'a4',
+                        orientation: 'portrait',
+                        compress: true,
+                        hotfixes: ['px_scaling']
+                    }
+                };
+
+                // Generate PDF
+                await html2pdf()
+                    .from(element)
+                    .set(opt)
+                    .save()
+                    .then(() => {
+                        // Close the window after PDF is generated
+                        setTimeout(() => {
+                            window.close();
+                        }, 1000);
+                    });
+
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
+        }
+
+        // Auto-generate PDF when page loads
+        window.onload = function() {
+            generatePDF();
+        };
+    </script>
+</body>
+</html>

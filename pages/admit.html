@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admit Card</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+       body, html {
+    height: 100%; /* Ensure the body and html take full height */
+    margin: 0; /* Remove default margin */
+    display: flex; /* Use Flexbox for the body */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    background-color: #f4f4f4; /* Background color */
+}
+
+.main {
+    text-align: center;
+}
+
+h1 {
+    font-size: 48px;
+    color: #4CAF50;
+}
+
+p {
+    font-size: 20px;
+}
+
+.message {
+    font-size: 24px;
+    margin-top: 20px;
+    color: #FF6347;
+}
+
+#navbar-container {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 999;
+    background-color: #fff; /* Optional: Set a background color for better visibility */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Add some shadow to the navbar */
+}
+
+    </style>
+</head>
+<body>
+    <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+    <div class="container">
+        <div class="main">
+            <h1>Coming Soon</h1>
+            <p>We are working hard to bring you something amazing.</p>
+            <p class="message">Stay tuned for updates!</p>
+        </div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script>
+        // API endpoints
+        const API_BASE_URL = CONFIG.API_URL;
+        
+        // Get authentication token from localStorage
+        function getAuthToken() {
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+            if (!token) {
+                console.log('No token found');
+                return null;
+            }
+            return token;
+        }
+
+        // Check if user is authenticated
+        function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('Authentication check failed, redirecting to login');
+                window.location.href = '../pages/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Function to make authenticated API calls
+        async function apiCall(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token available for API call');
+                window.location.href = '../pages/login.html';
+                throw new Error('Authentication required');
+            }
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
+            return fetch(url, { ...options, headers });
+        }
+
+        // Load classes when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = '../login.html';
+                return;
+            }
+        });
+        function logout() {
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.USER);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.REMEMBER_ME);
+        window.location.href = 'pages/login.html';
+    }
+    </script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+</body>
+</html>

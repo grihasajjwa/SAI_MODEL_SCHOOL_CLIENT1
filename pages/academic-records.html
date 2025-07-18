@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Records - Skyview Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        .card {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: 0.3s;
+        }
+        .card:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .action-buttons button {
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+
+    <div class="container mt-4">
+        <h2 class="mb-4">Academic Records Management</h2>
+        
+        <!-- Add New Class Button -->
+        <button class="btn btn-primary mb-4 disabled-btn" data-bs-toggle="modal" data-bs-target="#addClassModal">
+            <i class="fas fa-plus"></i> Add New Class
+        </button>
+        <!-- <button class="btn btn-primary mb-4" >
+         <a class="nav-link" href="/pages/class-students.html">Add Class Subject</a>
+        </button> -->
+        <button class="btn btn-primary mb-4 disabled-btn" >
+            <a class="nav-link" href="/pages/create-subject.html">Create/ Edit Subject / Teachers</a>
+           </button>
+        <!-- Class Cards Container -->
+        <div class="row" id="classCardsContainer">
+            <!-- Cards will be dynamically added here -->
+        </div>
+
+        <!-- Add/Edit Class Modal -->
+        <div class="modal fade" id="addClassModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">Add New Class</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="classForm">
+                            <input type="hidden" id="classId">
+                            <div class="mb-3">
+                                <label for="academicYear" class="form-label">Academic Year</label>
+                                <input type="text" class="form-control" id="academicYear" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="className" class="form-label">Class Name</label>
+                                <input type="text" class="form-control" id="className" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="section" class="form-label">Section</label>
+                                <input type="text" class="form-control" id="section" placeholder="A" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="classTeacher" class="form-label">Class Teacher</label>
+                                <input type="text" class="form-control" id="classTeacher" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="saveClass">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script>
+        // API endpoints
+        const API_BASE_URL = CONFIG.API_URL;
+        
+        // Get authentication token from localStorage
+        function getAuthToken() {
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+            if (!token) {
+                console.log('No token found');
+                return null;
+            }
+            return token;
+        }
+
+        // Check if user is authenticated
+        function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('Authentication check failed, redirecting to login');
+                window.location.href = '../pages/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Function to make authenticated API calls
+        async function apiCall(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token available for API call');
+                window.location.href = '../pages/login.html';
+                throw new Error('Authentication required');
+            }
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
+            return fetch(url, { ...options, headers });
+        }
+
+        // Function to load all classes
+        async function loadClasses() {
+            try {
+                const response = await apiCall(`${API_BASE_URL}/classes`);
+                if (!response || !response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP error! status: ${response?.status || 'unknown'}`);
+                }
+                
+                const classes = await response.json();
+                console.log('Loaded classes:', classes); // Debug log
+                
+                if (Array.isArray(classes)) {
+                    displayClasses(classes);
+                } else {
+                    console.error('Invalid response format:', classes);
+                    throw new Error('Invalid response format from server');
+                }
+            } catch (error) {
+                console.error('Error loading classes:', error);
+                if (error.message.includes('Authentication')) {
+                    window.location.href = '../pages/login.html';
+                } else {
+                    alert(`Failed to load classes: ${error.message}`);
+                }
+            }
+        }
+
+        // Function to display classes
+        function displayClasses(classes) {
+    const container = document.getElementById('classCardsContainer');
+    container.innerHTML = '';
+
+    classes.forEach(classData => {
+        console.log('Displaying class:', classData);
+        
+        const card = document.createElement('div');
+        card.className = 'col-md-4 mb-4';
+        
+        const isDisabled = !userHasPermission();  // Example condition
+
+        card.innerHTML = `
+            <div class="card" style="cursor: pointer;" onclick="viewClassStudents('${classData.className}', '${classData.section}')">
+                <div class="card-body">
+                    <h5 class="card-title">${classData.className} - ${classData.section || 'A'}</h5>
+                    <p class="card-text">
+                        Academic Year: ${classData.academicYear}<br>
+                        Class Teacher: ${classData.classTeacher ? classData.classTeacher : 'Not Assigned'}<br>
+                        Students: ${classData.studentCount || 0}<br>
+                        Subjects: ${classData.subjects ? classData.subjects.length : 0}
+                    </p>
+                    <div class="action-buttons" onclick="event.stopPropagation();">
+                        <button class="btn btn-sm btn-primary" ${isDisabled ? 'disabled' : ''} onclick="editClass('${classData._id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger" ${isDisabled ? 'disabled' : ''} onclick="deleteClass('${classData._id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+        // Function to view class students
+        function viewClassStudents(className, section) {
+            window.location.href = `class-students.html?class=${encodeURIComponent(className)}&section=${encodeURIComponent(section)}`;
+        }
+
+        // Function to handle class creation/editing
+        async function handleClassSubmit() {
+            try {
+                const classId = document.getElementById('classId').value;
+                const academicYear = document.getElementById('academicYear').value;
+                const className = document.getElementById('className').value;
+                const section = document.getElementById('section').value || 'A';
+                const classTeacher = document.getElementById('classTeacher').value;
+
+                if (!academicYear || !className || !classTeacher) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                const classData = {
+                    academicYear,
+                    className,
+                    section,
+                    classTeacher
+                };
+
+                console.log('Submitting class data:', classData);
+
+                const url = classId 
+                    ? `${API_BASE_URL}/classes/${classId}`
+                    : `${API_BASE_URL}/classes`;
+                
+                const response = await apiCall(url, {
+                    method: classId ? 'PUT' : 'POST',
+                    body: JSON.stringify(classData)
+                });
+
+                if (!response || !response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP error! status: ${response?.status || 'unknown'}`);
+                }
+
+                const result = await response.json();
+                console.log('Server response:', result);
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addClassModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                loadClasses();
+                resetForm();
+            } catch (error) {
+                console.error('Error saving class:', error);
+                if (error.message.includes('Authentication')) {
+                    window.location.href = '../pages/login.html';
+                } else {
+                    alert(`Failed to save class: ${error.message}`);
+                }
+            }
+        }
+
+        // Function to edit class
+        async function editClass(classId) {
+            try {
+                const response = await apiCall(`${API_BASE_URL}/classes/${classId}`);
+                if (!response || !response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP error! status: ${response?.status || 'unknown'}`);
+                }
+
+                const classData = await response.json();
+                console.log('Edit class data:', classData);
+
+                document.getElementById('classId').value = classData._id;
+                document.getElementById('academicYear').value = classData.academicYear || '';
+                document.getElementById('className').value = classData.className || '';
+                document.getElementById('section').value = classData.section || 'A';
+                document.getElementById('classTeacher').value = classData.classTeacher || '';
+
+                document.getElementById('modalTitle').textContent = 'Edit Class';
+                const modal = new bootstrap.Modal(document.getElementById('addClassModal'));
+                modal.show();
+            } catch (error) {
+                console.error('Error loading class details:', error);
+                if (error.message.includes('Authentication')) {
+                    window.location.href = '../pages/login.html';
+                } else {
+                    alert(`Failed to load class details: ${error.message}`);
+                }
+            }
+        }
+
+        // Function to delete class
+        async function deleteClass(classId) {
+            if (confirm('Are you sure you want to delete this class?')) {
+                try {
+                    const response = await apiCall(`${API_BASE_URL}/classes/${classId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response || !response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || `HTTP error! status: ${response?.status || 'unknown'}`);
+                    }
+
+                    loadClasses();
+                } catch (error) {
+                    console.error('Error deleting class:', error);
+                    if (error.message.includes('Authentication')) {
+                        window.location.href = '../pages/login.html';
+                    } else {
+                        alert(`Failed to delete class: ${error.message}`);
+                    }
+                }
+            }
+        }
+
+        // Function to reset form
+        function resetForm() {
+            const form = document.getElementById('classForm');
+            form.reset();
+            document.getElementById('classId').value = '';
+            document.getElementById('modalTitle').textContent = 'Add New Class';
+        }
+
+        // Event Listeners
+        document.getElementById('saveClass').addEventListener('click', handleClassSubmit);
+        document.getElementById('addClassModal').addEventListener('hidden.bs.modal', resetForm);
+
+        // Load classes when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = '../login.html';
+                return;
+            }
+              loadClasses();
+            userHasPermission();
+          
+          
+        });
+        function userHasPermission() {
+    const userData = localStorage.getItem('skyview_user'); // Fetch stored user data
+    if (!userData) return false; // Return false if no user data found
+
+    try {
+        const user = JSON.parse(userData); // Parse the JSON data
+        return user.role === 'admin'; // Check if the role is admin
+    } catch (error) {
+        console.error("Error parsing user data:", error);
+        return false;
+    }
+}
+
+    </script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Configuration - SKYVIEW</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+        .config-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .exam-config {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .exam-config h4 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .marks-input {
+            width: 80px !important;
+        }
+        .total-marks {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">SKYVIEW</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="exam-config.html">Exam Configuration</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container config-container">
+        <h2 class="mb-4">Exam Configuration</h2>
+        
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <select id="classSelect" class="form-select">
+                    <option value="">Select Class</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select id="sectionSelect" class="form-select">
+                    <option value="">Select Section</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select id="academicYearSelect" class="form-select">
+                    <option value="">Select Academic Year</option>
+                </select>
+            </div>
+        </div>
+
+        <form id="examConfigForm">
+            <div class="exam-config">
+                <h4>Periodic Test 1</h4>
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Written</span>
+                            <input type="number" class="form-control marks-input" id="pt1Written" value="80" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Oral</span>
+                            <input type="number" class="form-control marks-input" id="pt1Oral" value="20" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="total-marks">Total: <span id="pt1Total">100</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="exam-config">
+                <h4>Half Yearly</h4>
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Written</span>
+                            <input type="number" class="form-control marks-input" id="hyWritten" value="80" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Oral</span>
+                            <input type="number" class="form-control marks-input" id="hyOral" value="20" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="total-marks">Total: <span id="hyTotal">100</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="exam-config">
+                <h4>Periodic Test 2</h4>
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Written</span>
+                            <input type="number" class="form-control marks-input" id="pt2Written" value="80" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Oral</span>
+                            <input type="number" class="form-control marks-input" id="pt2Oral" value="20" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="total-marks">Total: <span id="pt2Total">100</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="exam-config">
+                <h4>Final Exam</h4>
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Written</span>
+                            <input type="number" class="form-control marks-input" id="finalWritten" value="80" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Oral</span>
+                            <input type="number" class="form-control marks-input" id="finalOral" value="20" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="total-marks">Total: <span id="finalTotal">100</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary">Save Configuration</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // Initialize variables
+        let classData = [];
+        let currentClass = '';
+        let currentSection = '';
+        let currentAcademicYear = '';
+
+        // Function to update total marks
+        function updateTotal(examType) {
+            const written = parseInt(document.getElementById(examType + 'Written').value) || 0;
+            const oral = parseInt(document.getElementById(examType + 'Oral').value) || 0;
+            document.getElementById(examType + 'Total').textContent = written + oral;
+        }
+
+        // Add event listeners for all marks inputs
+        ['pt1', 'hy', 'pt2', 'final'].forEach(examType => {
+            document.getElementById(examType + 'Written').addEventListener('input', () => updateTotal(examType));
+            document.getElementById(examType + 'Oral').addEventListener('input', () => updateTotal(examType));
+        });
+
+        // Load class data
+        async function loadClassData() {
+            try {
+                const response = await API.class.getClassDetails();
+                const data = response; // API already returns parsed JSON
+                classData = data;
+
+                // Populate class select
+                const classSelect = document.getElementById('classSelect');
+                const classes = [...new Set(data.map(item => item.className))].sort();
+                classSelect.innerHTML = '<option value="">Select Class</option>' +
+                    classes.map(className => `<option value="${className}">${className}</option>`).join('');
+            } catch (error) {
+                console.error('Error loading class data:', error);
+                alert('Error loading class data');
+            }
+        }
+
+        // Load academic years
+        function loadAcademicYears() {
+            const currentYear = new Date().getFullYear();
+            const academicYearSelect = document.getElementById('academicYearSelect');
+            academicYearSelect.innerHTML = '<option value="">Select Academic Year</option>';
+            
+            for (let i = -1; i <= 1; i++) {
+                const year = currentYear + i;
+                const academicYear = `${year}-${year + 1}`;
+                academicYearSelect.innerHTML += `<option value="${academicYear}">${academicYear}</option>`;
+            }
+        }
+
+        // Update sections when class is selected
+        document.getElementById('classSelect').addEventListener('change', function() {
+            currentClass = this.value;
+            const sectionSelect = document.getElementById('sectionSelect');
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            
+            if (currentClass) {
+                const sections = [...new Set(classData
+                    .filter(item => item.className === currentClass)
+                    .map(item => item.section))].sort();
+                
+                sections.forEach(section => {
+                    sectionSelect.innerHTML += `<option value="${section}">${section}</option>`;
+                });
+            }
+        });
+
+        // Update current section when selected
+        document.getElementById('sectionSelect').addEventListener('change', function() {
+            currentSection = this.value;
+        });
+
+        // Update current academic year when selected
+        document.getElementById('academicYearSelect').addEventListener('change', function() {
+            currentAcademicYear = this.value;
+            loadExamConfig();
+        });
+
+        // Load exam configuration
+        async function loadExamConfig() {
+            if (!currentClass || !currentSection || !currentAcademicYear) return;
+
+            try {
+                const response = await API.exam.getExamConfig(currentClass, currentSection, currentAcademicYear);
+                const config = response; // API already returns parsed JSON
+
+                // Update form with configuration
+                ['pt1', 'hy', 'pt2', 'final'].forEach(examType => {
+                    const examConfig = config[examType] || { maxMarksWritten: 80, maxMarksOral: 20 };
+                    document.getElementById(examType + 'Written').value = examConfig.maxMarksWritten;
+                    document.getElementById(examType + 'Oral').value = examConfig.maxMarksOral;
+                    updateTotal(examType);
+                });
+            } catch (error) {
+                console.error('Error loading exam config:', error);
+                // Set default values
+                ['pt1', 'hy', 'pt2', 'final'].forEach(examType => {
+                    document.getElementById(examType + 'Written').value = 80;
+                    document.getElementById(examType + 'Oral').value = 20;
+                    updateTotal(examType);
+                });
+            }
+        }
+
+        // Save exam configuration
+        document.getElementById('examConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (!currentClass || !currentSection || !currentAcademicYear) {
+                alert('Please select Class, Section, and Academic Year');
+                return;
+            }
+
+            try {
+                const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+                const configData = {};
+                
+                // Prepare all exam configurations
+                examTypes.forEach(examType => {
+                    const written = parseInt(document.getElementById(examType + 'Written').value) || 80;
+                    const oral = parseInt(document.getElementById(examType + 'Oral').value) || 20;
+                    configData[examType] = {
+                        maxMarksWritten: written,
+                        maxMarksOral: oral
+                    };
+                });
+
+                // Save all configurations at once
+                await API.exam.saveExamConfig({
+                    class: currentClass,
+                    section: currentSection,
+                    academicYear: currentAcademicYear,
+                    config: configData
+                });
+
+                alert('Exam configuration saved successfully');
+                
+                // Reload configuration to verify changes
+                await loadExamConfig();
+            } catch (error) {
+                console.error('Error saving exam config:', error);
+                alert('Error saving exam configuration');
+            }
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadClassData();
+            loadAcademicYears();
+        });
+    </script>
+</body>
+</html>

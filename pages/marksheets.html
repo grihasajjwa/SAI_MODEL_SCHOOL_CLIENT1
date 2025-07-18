@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marksheets - Skyview Public School</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
+    <link rel="preload" href="../js/auth.js" as="script">
+    <link rel="preload" href="../js/config.js" as="script">
+    
+    <!-- Critical CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    
+    <!-- Deferred CSS -->
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
+    
+    <!-- Inline critical CSS -->
+    <style>
+.class-card{transition:transform .2s;cursor:pointer}.class-card:hover{transform:translateY(-5px)}.student-list,.back-to-classes{display:none}.class-cards{transition:opacity .3s}.student-info{font-size:.9rem}#classCardsContainer{min-height:200px}#studentTable_wrapper{opacity:0;transition:opacity .3s}.loaded #studentTable_wrapper{opacity:1}.loading-spinner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;display:none}.loading .loading-spinner{display:block}
+    </style>
+</head>
+<body>
+    <!-- Loading spinner -->
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-file-alt text-primary"></i> Class Marksheets</h2>
+            <button class="btn btn-secondary back-to-classes">
+                <i class="fas fa-arrow-left"></i> Back to Classes
+            </button>
+        </div>
+
+        <!-- Class Cards -->
+        <div class="class-cards">
+            <div class="row" id="classCardsContainer">
+                <!-- Class cards will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Student List (Initially Hidden) -->
+        <div class="student-list">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" id="selectedClassHeader">Class Students</h5>
+                    <button class="btn btn-light btn-sm" onclick="generateRanks()">
+                        <i class="fas fa-trophy"></i> Generate Ranks
+                    </button>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped" id="studentTable">
+                        <thead>
+                            <tr>
+                                <th>Admission No</th>
+                                <th>Name</th>
+                                <th>Father's Name</th>
+                                <th>PT-1 %</th>
+                                <th>Half Yearly %</th>
+                                <th>PT-2 %</th>
+                                <th>Final %</th>
+                                <th>Overall %</th>
+                                <th>Rank</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Student data will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Core scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    
+    <!-- jQuery and Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    
+    <!-- Components -->
+    <script src="../components/navbar.js"></script>
+    
+    <!-- App Logic -->
+    <script src="../js/marksheets.js"></script>
+</body>
+</html>
+    <!-- <script>
+        let dataTable;
+        const currentAcademicYear = '2024-2025';
+
+        // Check authentication when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            await Navbar.loadNavbar();
+            loadClasses();
+        });
+
+        // Function to load classes
+        async function loadClasses() {
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/classes`, {
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch classes');
+                }
+
+                const data = await response.json();
+                const classCardsContainer = document.getElementById('classCardsContainer');
+                classCardsContainer.innerHTML = '';
+
+                // Sort classes numerically
+                const sortedClasses = data.sort((a, b) => {
+                    return parseInt(a.className) - parseInt(b.className);
+                });
+
+                for (const classInfo of sortedClasses) {
+                    let totalStudents = 0;
+                    const defaultSections = ['A', 'B']; // Default sections if not available from API
+
+                    // Try to get students for each section
+                    for (const section of defaultSections) {
+                        try {
+                            const studentResponse = await fetch(
+                                `${CONFIG.API_URL}/students/class/${classInfo.className}/${section}`, {
+                                headers: {
+                                    'Authorization': `Bearer ${Auth.getToken()}`
+                                }
+                            });
+                            
+                            if (studentResponse.ok) {
+                                const students = await studentResponse.json();
+                                totalStudents += Array.isArray(students) ? students.length : 0;
+                            }
+                        } catch (error) {
+                            console.warn(`Error fetching students for class ${classInfo.className} section ${section}:`, error);
+                        }
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'col-md-4 mb-4';
+                    card.innerHTML = `
+                        <div class="card class-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Class ${classInfo.className}</h5>
+                                <p class="card-text">Total Students: ${totalStudents}</p>
+                                <div class="mt-3">
+                                    ${defaultSections.map(section => `
+                                        <a class="btn btn-sm btn-outline-primary me-2 mb-2" href="class-marksheet.html?class=${classInfo.className}&section=${section}">
+                                            Section ${section}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    classCardsContainer.appendChild(card);
+                }
+            } catch (error) {
+                console.error('Error loading classes:', error);
+                alert('Error loading classes. Please try again.');
+            }
+        }
+
+        // Function to calculate student's overall percentage
+        function calculateStudentPercentage(student) {
+            if (!student.exams) return student;
+            
+            const validPercentages = [];
+            
+            // PT1
+            if (student.exams.pt1 && student.exams.pt1.subjects && student.exams.pt1.subjects.length > 0) {
+                const totalMarks = student.exams.pt1.subjects.reduce((sum, sub) => sum + (sub.marks || 0), 0);
+                const totalMaxMarks = student.exams.pt1.subjects.reduce((sum, sub) => sum + (sub.maxMarks || 0), 0);
+                if (totalMaxMarks > 0) {
+                    const percentage = (totalMarks / totalMaxMarks) * 100;
+                    validPercentages.push(percentage);
+                    student.exams.pt1.percentage = percentage;
+                }
+            }
+
+            // Half Yearly
+            if (student.exams.halfYearly && student.exams.halfYearly.subjects && student.exams.halfYearly.subjects.length > 0) {
+                const totalMarks = student.exams.halfYearly.subjects.reduce((sum, sub) => sum + (sub.marks || 0), 0);
+                const totalMaxMarks = student.exams.halfYearly.subjects.reduce((sum, sub) => sum + (sub.maxMarks || 0), 0);
+                if (totalMaxMarks > 0) {
+                    const percentage = (totalMarks / totalMaxMarks) * 100;
+                    validPercentages.push(percentage);
+                    student.exams.halfYearly.percentage = percentage;
+                }
+            }
+
+            // PT2
+            if (student.exams.pt2 && student.exams.pt2.subjects && student.exams.pt2.subjects.length > 0) {
+                const totalMarks = student.exams.pt2.subjects.reduce((sum, sub) => sum + (sub.marks || 0), 0);
+                const totalMaxMarks = student.exams.pt2.subjects.reduce((sum, sub) => sum + (sub.maxMarks || 0), 0);
+                if (totalMaxMarks > 0) {
+                    const percentage = (totalMarks / totalMaxMarks) * 100;
+                    validPercentages.push(percentage);
+                    student.exams.pt2.percentage = percentage;
+                }
+            }
+
+            // Final
+            if (student.exams.final && student.exams.final.subjects && student.exams.final.subjects.length > 0) {
+                const totalMarks = student.exams.final.subjects.reduce((sum, sub) => sum + (sub.marks || 0), 0);
+                const totalMaxMarks = student.exams.final.subjects.reduce((sum, sub) => sum + (sub.maxMarks || 0), 0);
+                if (totalMaxMarks > 0) {
+                    const percentage = (totalMarks / totalMaxMarks) * 100;
+                    validPercentages.push(percentage);
+                    student.exams.final.percentage = percentage;
+                }
+            }
+
+            // Calculate overall percentage
+            if (validPercentages.length > 0) {
+                student.overallPercentage = validPercentages.reduce((a, b) => a + b) / validPercentages.length;
+            } else {
+                student.overallPercentage = 0;
+            }
+
+            return student;
+        }
+
+        // Function to generate and update ranks
+        async function generateRanks() {
+            try {
+                const students = dataTable.data().toArray();
+                if (!students || students.length === 0) {
+                    alert('No students found to rank!');
+                    return;
+                }
+
+                // Get current class and section from header
+                const headerText = document.getElementById('selectedClassHeader').textContent;
+                const match = headerText.match(/Class (\w+) Section (\w+)/);
+                if (!match) {
+                    alert('Error: Could not determine current class and section');
+                    return;
+                }
+                const [, className, section] = match;
+
+                console.group('Rank Generation Process');
+                console.log('Initial Students:', students);
+
+                // Calculate overall percentages and sort
+                const studentsWithRanks = students.map(student => {
+                    console.log('Processing student:', student);
+                    // Calculate overall percentage
+                    let overallPercentage = 0;
+                    let validPercentages = [];
+
+                    // Check each exam type
+                    if (student.exams) {
+                        console.log('Student exams:', student.exams);
+                        // PT1
+                        if (student.exams.pt1 && student.exams.pt1.percentage) {
+                            validPercentages.push(student.exams.pt1.percentage);
+                        }
+                        // Half Yearly
+                        if (student.exams.halfYearly && student.exams.halfYearly.percentage) {
+                            validPercentages.push(student.exams.halfYearly.percentage);
+                        }
+                        // PT2
+                        if (student.exams.pt2 && student.exams.pt2.percentage) {
+                            validPercentages.push(student.exams.pt2.percentage);
+                        }
+                        // Final
+                        if (student.exams.final && student.exams.final.percentage) {
+                            validPercentages.push(student.exams.final.percentage);
+                        }
+
+                        console.log(`Student: ${student.name} (${student.studentId})`);
+                        console.log('  Exams:', {
+                            'PT-1': student.exams.pt1?.percentage || '-',
+                            'Half Yearly': student.exams.halfYearly?.percentage || '-',
+                            'PT-2': student.exams.pt2?.percentage || '-',
+                            'Final': student.exams.final?.percentage || '-',
+                            'Valid Percentages': validPercentages,
+                            'Overall': overallPercentage.toFixed(2)
+                        });
+                    } else {
+                        console.log(`Student: ${student.name} (${student.studentId}) - No exams found`);
+                    }
+
+                    return {
+                        ...student,
+                        overallPercentage
+                    };
+                }).sort((a, b) => b.overallPercentage - a.overallPercentage);
+
+                console.log('Students Sorted by Percentage:', 
+                    studentsWithRanks.map(s => ({
+                        name: s.name,
+                        studentId: s.studentId,
+                        percentage: s.overallPercentage.toFixed(2)
+                    }))
+                );
+
+                // Assign section ranks with ties handling
+                let currentRank = 1;
+                let currentPercentage = -1;
+                let sameRankCount = 0;
+
+                studentsWithRanks.forEach((student, index) => {
+                    if (student.overallPercentage === 0) {
+                        student.sectionRank = null;
+                    } else {
+                        // If this student has the same percentage as the previous one
+                        if (student.overallPercentage === currentPercentage) {
+                            student.sectionRank = currentRank;
+                            sameRankCount++;
+                        } else {
+                            // Skip ranks for ties
+                            currentRank = index + 1;
+                            student.sectionRank = currentRank;
+                            currentPercentage = student.overallPercentage;
+                            sameRankCount = 0;
+                        }
+                    }
+                });
+
+                console.log('Final Rankings:', 
+                    studentsWithRanks.map(s => ({
+                        name: s.name,
+                        studentId: s.studentId,
+                        percentage: s.overallPercentage.toFixed(2),
+                        rank: s.sectionRank,
+                        exams: s.exams
+                    }))
+                );
+
+                // Update ranks in the database
+                console.log('Updating ranks in database...');
+                const updates = studentsWithRanks.map(async (student) => {
+                    if (student._id && student.sectionRank) {
+                        try {
+                            const response = await fetch(`${CONFIG.API_URL}/students/${student._id}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Authorization': `Bearer ${Auth.getToken()}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ rank: student.sectionRank })
+                            });
+                            console.log(`Updated rank for ${student.name}: ${student.sectionRank}`, 
+                                response.ok ? '✓' : '✗');
+                            return response;
+                        } catch (error) {
+                            console.error(`Error updating rank for student ${student._id}:`, error);
+                        }
+                    }
+                });
+
+                await Promise.all(updates);
+                console.log('Database updates completed');
+
+                // Reload student data from database
+                console.log('Reloading student data...');
+                const response = await fetch(`${CONFIG.API_URL}/students/class/${className}/${section}`, {
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch updated student data');
+                }
+
+                const updatedStudents = await response.json();
+                console.log('Updated Data from Database:', updatedStudents);
+                
+                // Update table with fresh data from database
+                dataTable.clear().rows.add(updatedStudents).draw();
+                console.groupEnd();
+                
+                // Show success message
+                alert('Ranks generated and updated successfully!');
+
+            } catch (error) {
+                console.error('Error generating ranks:', error);
+                alert('Error generating ranks. Please try again.');
+            }
+        }
+
+        // Function to show students for a specific class and section
+        async function showStudents(className, section) {
+            try {
+                console.group(`Loading students for Class ${className} Section ${section}`);
+                
+                // Hide class cards and show student list
+                document.querySelector('.class-cards').style.display = 'none';
+                document.querySelector('.student-list').style.display = 'block';
+                document.querySelector('.back-to-classes').style.display = 'block';
+
+                // Update header
+                document.getElementById('selectedClassHeader').textContent = `Class ${className} Section ${section} - Students`;
+
+                // Load student data first
+                console.log('Fetching students...');
+                const response = await fetch(`${CONFIG.API_URL}/students/class/${className}/${section}`, {
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch students');
+                }
+
+                const students = await response.json();
+                console.log('Students fetched:', students);
+                
+                // Load marks for each student
+                console.log('Fetching marks for each student...');
+                const studentsWithMarks = await Promise.all(students.map(async student => {
+                    try {
+                        console.group(`Fetching marks for student: ${student.name} (${student.studentId})`);
+                        // Using studentId instead of _id for the marks endpoint
+                        const marksResponse = await fetch(`${CONFIG.API_URL}/marks/${student.studentId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${Auth.getToken()}`
+                            }
+                        });
+                        
+                        if (marksResponse.ok) {
+                            const marksData = await marksResponse.json();
+                            console.log('Raw marks data:', marksData);
+
+                            if (!marksData) {
+                                console.log('No marks data found for student');
+                                console.groupEnd();
+                                return student;
+                            }
+
+                            // Calculate exam percentages
+                            const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+                            const percentages = {};
+
+                            examTypes.forEach(examType => {
+                                let totalMarks = 0;
+                                let totalMaxMarks = 0;
+
+                                if (marksData.marks && Array.isArray(marksData.marks)) {
+                                    marksData.marks.forEach(subject => {
+                                        if (subject[examType]) {
+                                            const written = subject[examType].written || 0;
+                                            const oral = subject[examType].oral || 0;
+                                            totalMarks += written + oral;
+                                            totalMaxMarks += 100; // 80 + 20
+                                        }
+                                    });
+                                }
+
+                                if (totalMaxMarks > 0) {
+                                    percentages[examType] = (totalMarks / totalMaxMarks) * 100;
+                                }
+
+                                console.log(`Student: ${student.name} (${student.studentId})`);
+                                console.log('  Exams:', {
+                                    'PT-1': student.exams.pt1?.percentage || '-',
+                                    'Half Yearly': student.exams.halfYearly?.percentage || '-',
+                                    'PT-2': student.exams.pt2?.percentage || '-',
+                                    'Final': student.exams.final?.percentage || '-',
+                                    'Valid Percentages': validPercentages,
+                                    'Overall': Object.values(percentages).length > 0 
+                                        ? (Object.values(percentages).reduce((a, b) => a + b) / Object.values(percentages).length).toFixed(2) + '%'
+                                        : '-'
+                                });
+
+                                console.groupEnd();
+                                return { ...student, marks: marksData.marks };
+                            }
+                        } catch (error) {
+                            console.error(`Error fetching marks for student ${student.studentId}:`, error);
+                            console.groupEnd();
+                            return student;
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching marks for student ${student.studentId}:`, error);
+                        console.groupEnd();
+                        return student;
+                    }
+                }));
+                
+                console.log('All students with marks:', studentsWithMarks);
+
+                // Destroy existing DataTable if it exists
+                if (dataTable) {
+                    dataTable.destroy();
+                }
+
+                // Initialize DataTable
+                dataTable = $('#studentTable').DataTable({
+                    processing: true,
+                    order: [[8, 'asc']], // Sort by rank by default
+                    columns: [
+                        { data: 'studentId' },
+                        { data: 'name' },
+                        { data: 'fatherName' },
+                        { 
+                            data: 'marks',
+                            render: function(data) {
+                                if (!data || !data.length) return '-';
+                                let total = 0;
+                                let maxTotal = 0;
+                                data.forEach(subject => {
+                                    if (subject.pt1) {
+                                        total += (subject.pt1.written || 0) + (subject.pt1.oral || 0);
+                                        maxTotal += 100;
+                                    }
+                                });
+                                return maxTotal > 0 ? (total / maxTotal * 100).toFixed(2) + '%' : '-';
+                            }
+                        },
+                        { 
+                            data: 'marks',
+                            render: function(data) {
+                                if (!data || !data.length) return '-';
+                                let total = 0;
+                                let maxTotal = 0;
+                                data.forEach(subject => {
+                                    if (subject.hy) {
+                                        total += (subject.hy.written || 0) + (subject.hy.oral || 0);
+                                        maxTotal += 100;
+                                    }
+                                });
+                                return maxTotal > 0 ? (total / maxTotal * 100).toFixed(2) + '%' : '-';
+                            }
+                        },
+                        { 
+                            data: 'marks',
+                            render: function(data) {
+                                if (!data || !data.length) return '-';
+                                let total = 0;
+                                let maxTotal = 0;
+                                data.forEach(subject => {
+                                    if (subject.pt2) {
+                                        total += (subject.pt2.written || 0) + (subject.pt2.oral || 0);
+                                        maxTotal += 100;
+                                    }
+                                });
+                                return maxTotal > 0 ? (total / maxTotal * 100).toFixed(2) + '%' : '-';
+                            }
+                        },
+                        { 
+                            data: 'marks',
+                            render: function(data) {
+                                if (!data || !data.length) return '-';
+                                let total = 0;
+                                let maxTotal = 0;
+                                data.forEach(subject => {
+                                    if (subject.final) {
+                                        total += (subject.final.written || 0) + (subject.final.oral || 0);
+                                        maxTotal += 100;
+                                    }
+                                });
+                                return maxTotal > 0 ? (total / maxTotal * 100).toFixed(2) + '%' : '-';
+                            }
+                        },
+                        { 
+                            data: 'marks',
+                            render: function(data) {
+                                if (!data || !data.length) return '-';
+                                
+                                const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+                                const percentages = [];
+
+                                examTypes.forEach(examType => {
+                                    let total = 0;
+                                    let maxTotal = 0;
+                                    
+                                    data.forEach(subject => {
+                                        if (subject[examType]) {
+                                            total += (subject[examType].written || 0) + (subject[examType].oral || 0);
+                                            maxTotal += 100;
+                                        }
+                                    });
+                                    
+                                    if (maxTotal > 0) {
+                                        percentages.push((total / maxTotal) * 100);
+                                    }
+                                });
+
+                                return percentages.length > 0 
+                                    ? (percentages.reduce((a, b) => a + b) / percentages.length).toFixed(2) + '%' 
+                                    : '-';
+                            }
+                        },
+                        { 
+                            data: 'rank',
+                            render: function(data) {
+                                if (!data) return '-';
+                                const suffix = getSuffix(data);
+                                return `${data}${suffix}`;
+                            }
+                        },
+                        {
+                            data: null,
+                            render: function(data) {
+                                const params = new URLSearchParams({
+                                    studentId: data._id,
+                                    className: className,
+                                    section: section,
+                                    studentName: data.name,
+                                    admissionNo: data.studentId,
+                                    fatherName: data.fatherName,
+                                    gender: data.gender,
+                                    contactNo: data.contactNo,
+                                    rank: data.rank || ''
+                                });
+
+                                if (data.dob) {
+                                    try {
+                                        const dobDate = new Date(data.dob);
+                                        if (!isNaN(dobDate.getTime())) {
+                                            const day = dobDate.getDate().toString().padStart(2, '0');
+                                            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                            const month = months[dobDate.getMonth()];
+                                            const year = dobDate.getFullYear();
+                                            params.set('dob', `${day}-${month}-${year}`);
+                                        }
+                                    } catch (error) {
+                                        console.error('Error formatting DOB:', error);
+                                    }
+                                }
+
+                                return `
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-primary me-1" onclick="window.location.href='marksheet-template.html?${params.toString()}'">
+                                            <i class="fas fa-edit"></i> Marks
+                                        </button>
+                                        <button class="btn btn-sm btn-success" onclick="window.open('marksheet-template.html?${params.toString()}&print=true', '_blank')">
+                                            <i class="fas fa-print"></i> Print
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                        }
+                    ]
+                });
+                
+                // Update table with student data including marks
+                dataTable.clear().rows.add(studentsWithMarks).draw();
+                console.groupEnd();
+
+            } catch (error) {
+                console.error('Error loading students:', error);
+                console.groupEnd();
+                alert('Error loading students. Please try again.');
+            }
+        }
+
+        // Helper function to get rank suffix (1st, 2nd, 3rd, etc.)
+        function getSuffix(rank) {
+            if (!rank) return '';
+            
+            if (rank % 100 >= 11 && rank % 100 <= 13) {
+                return 'th';
+            }
+            
+            switch (rank % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        }
+
+        // Handle back button click
+        document.querySelector('.back-to-classes').addEventListener('click', () => {
+            document.querySelector('.class-cards').style.display = 'block';
+            document.querySelector('.student-list').style.display = 'none';
+            document.querySelector('.back-to-classes').style.display = 'none';
+        });
+    </script>
+</body>
+</html> -->

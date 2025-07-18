@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - SKYVIEW</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .user-section {
+            margin: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+        .action-buttons .btn {
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <div class="user-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>User Management</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fas fa-plus"></i> Add New User
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <!-- Users will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label for="newFirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="newFirstName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="newLastName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="newEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="newUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="newPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newRole" class="form-label">Role</label>
+                            <select class="form-select" id="newRole" required>
+                                <option value="teacher">Teacher</option>
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                                <option value="student">Student</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addUser()">Add User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="editUserId">
+                        <div class="mb-3">
+                            <label for="editFirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="editFirstName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="editLastName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRole" class="form-label">Role</label>
+                            <select class="form-select" id="editRole" required>
+                                <option value="teacher">Teacher</option>
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                                <option value="student">Student</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editIsActive">
+                                <label class="form-check-label" for="editIsActive">Active</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updateUser()">Update User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check authentication and admin role
+        if (!Auth.isAuthenticated()) {
+            window.location.href = '../index.html';
+        } else if (Auth.getUserRole() !== 'admin') {
+            window.location.href = 'user-profile.html';
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                console.log('Token:', Auth.getToken());
+                console.log('API URL:', `${CONFIG.API_URL}/users`);
+
+                const response = await fetch(`${CONFIG.API_URL}/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Server error:', errorData);
+                    throw new Error(`Failed to load users: ${errorData.message || 'Unknown error'}`);
+                }
+
+                const users = await response.json();
+                console.log('Users data:', users);
+
+                const tableBody = document.getElementById('userTableBody');
+                tableBody.innerHTML = '';
+
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.firstName} ${user.lastName}</td>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>${user.role}</td>
+                        <td>
+                            <span class="badge ${user.isActive ? 'bg-success' : 'bg-danger'}">
+                                ${user.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                        </td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-primary" onclick="editUser('${user._id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user._id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert(`Failed to load users: ${error.message}`);
+            }
+        }
+
+        // Add new user
+        async function addUser() {
+            const formData = {
+                firstName: document.getElementById('newFirstName').value,
+                lastName: document.getElementById('newLastName').value,
+                email: document.getElementById('newEmail').value,
+                username: document.getElementById('newUsername').value,
+                password: document.getElementById('newPassword').value,
+                role: document.getElementById('newRole').value
+            };
+
+            console.log('Creating user with data:', formData);
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                console.log('Create response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Create error:', errorData);
+                    throw new Error(`Failed to create user: ${errorData.message || 'Unknown error'}`);
+                }
+
+                const result = await response.json();
+                console.log('Create result:', result);
+
+                alert('User created successfully');
+                document.getElementById('addUserForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+                loadUsers();
+            } catch (error) {
+                console.error('Error creating user:', error);
+                alert(`Failed to create user: ${error.message}`);
+            }
+        }
+
+        // Load user data for editing
+        async function editUser(userId) {
+            try {
+                console.log('Loading user for edit:', userId);
+                console.log('API URL:', `${CONFIG.API_URL}/users/${userId}`);
+
+                const response = await fetch(`${CONFIG.API_URL}/users/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                console.log('Edit load response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Edit load error:', errorData);
+                    throw new Error(`Failed to load user data: ${errorData.message || 'Unknown error'}`);
+                }
+
+                const user = await response.json();
+                console.log('User data for edit:', user);
+
+                document.getElementById('editUserId').value = user._id;
+                document.getElementById('editFirstName').value = user.firstName;
+                document.getElementById('editLastName').value = user.lastName;
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editRole').value = user.role;
+                document.getElementById('editIsActive').checked = user.isActive;
+
+                new bootstrap.Modal(document.getElementById('editUserModal')).show();
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                alert(`Failed to load user data: ${error.message}`);
+            }
+        }
+
+        // Update user
+        async function updateUser() {
+            const userId = document.getElementById('editUserId').value;
+            const formData = {
+                firstName: document.getElementById('editFirstName').value,
+                lastName: document.getElementById('editLastName').value,
+                email: document.getElementById('editEmail').value,
+                role: document.getElementById('editRole').value,
+                isActive: document.getElementById('editIsActive').checked
+            };
+
+            console.log('Updating user:', userId);
+            console.log('Update data:', formData);
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                console.log('Update response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Update error:', errorData);
+                    throw new Error(`Failed to update user: ${errorData.message || 'Unknown error'}`);
+                }
+
+                const result = await response.json();
+                console.log('Update result:', result);
+
+                alert('User updated successfully');
+                bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                loadUsers();
+            } catch (error) {
+                console.error('Error updating user:', error);
+                alert(`Failed to update user: ${error.message}`);
+            }
+        }
+
+        // Delete user
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user?')) {
+                return;
+            }
+
+            console.log('Deleting user:', userId);
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                console.log('Delete response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Delete error:', errorData);
+                    throw new Error(`Failed to delete user: ${errorData.message || 'Unknown error'}`);
+                }
+
+                console.log('User deleted successfully');
+                alert('User deleted successfully');
+                loadUsers();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert(`Failed to delete user: ${error.message}`);
+            }
+        }
+
+        // Add logout function
+        function logout() {
+            Auth.logout();
+            window.location.href = '../index.html';
+        }
+
+        // Load users on page load
+        loadUsers();
+    </script>
+</body>
+</html>

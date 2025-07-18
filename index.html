@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .config-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .exam-config {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .exam-config h4 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .marks-input {
+            width: 80px !important;
+        }
+        .total-marks {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .card {
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = 'pages/login.html';
+                return;
+            }
+            Navbar.loadNavbar();
+        });
+    </script>
+</head>
+<body>
+    <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-users text-primary"></i> Student Management
+                        </h5>
+                        <p class="card-text">Manage student records, admissions, and academic information.</p>
+                        <a href="pages/student-database.html" class="btn btn-primary">
+                            <i class="fas fa-arrow-right"></i> Go to Student Database
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-graduation-cap text-success"></i> Academic Records
+                        </h5>
+                        <p class="card-text">View and manage academic records, results, and certificates.</p>
+                        <a href="pages/academic-records.html" class="btn btn-success">
+                            <i class="fas fa-arrow-right"></i> View Academic Records
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-id-card text-info"></i> Admit Cards
+                        </h5>
+                        <p class="card-text">Generate and manage student admit cards for examinations.</p>
+                        <a href="pages/admit-card-generator.html" class="btn btn-info text-white">
+                            <i class="fas fa-arrow-right"></i> Generate Admit Cards
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-file-alt text-warning"></i> Marksheets
+                        </h5>
+                        <p class="card-text">Generate and manage student marksheets and result reports.</p>
+                        <a href="pages/marksheets.html" class="btn btn-warning">
+                            <i class="fas fa-arrow-right"></i> Generate Marksheets
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-comments text-primary"></i> Feedback
+                        </h5>
+                        <p class="card-text">View Parents feedback and reviews.</p>
+                        <a href="pages/view-feedback.html" class="btn btn-primary">
+                            <i class="fas fa-eye"></i> View Feedback
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-cog text-secondary"></i> Lesson Plan
+                        </h5>
+                        <p class="card-text">Lesson Plan ready to entry</p>
+                        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#">
+                            <a href="pages/lesson-plan.html" class="btn btn-primary">
+                            <i class="fas fa-sliders-h"></i> Lesson Plan
+                                 </a>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Configuration Modal -->
+    <div class="modal fade" id="examConfigModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Exam Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <select id="classSelect" class="form-select">
+                                <option value="">Select Class</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="sectionSelect" class="form-select">
+                                <option value="">Select Section</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="academicYearSelect" class="form-select">
+                                <option value="">Select Academic Year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <form id="examConfigForm">
+                        <div class="exam-config">
+                            <h4>Periodic Test 1</h4>
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Written</span>
+                                        <input type="number" class="form-control marks-input" id="pt1Written" value="80" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Oral</span>
+                                        <input type="number" class="form-control marks-input" id="pt1Oral" value="20" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="total-marks">Total: <span id="pt1Total">100</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="exam-config">
+                            <h4>Half Yearly</h4>
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Written</span>
+                                        <input type="number" class="form-control marks-input" id="hyWritten" value="80" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Oral</span>
+                                        <input type="number" class="form-control marks-input" id="hyOral" value="20" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="total-marks">Total: <span id="hyTotal">100</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="exam-config">
+                            <h4>Periodic Test 2</h4>
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Written</span>
+                                        <input type="number" class="form-control marks-input" id="pt2Written" value="80" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Oral</span>
+                                        <input type="number" class="form-control marks-input" id="pt2Oral" value="20" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="total-marks">Total: <span id="pt2Total">100</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="exam-config">
+                            <h4>Final Exam</h4>
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Written</span>
+                                        <input type="number" class="form-control marks-input" id="finalWritten" value="80" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Oral</span>
+                                        <input type="number" class="form-control marks-input" id="finalOral" value="20" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="total-marks">Total: <span id="finalTotal">100</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveExamConfig()">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="components/navbar.js"></script>
+    <script>
+        // Initialize variables
+        let classData = [];
+        let currentClass = '';
+        let currentSection = '';
+        let currentAcademicYear = '';
+
+        // Function to update total marks
+        function updateTotal(examType) {
+            const written = parseInt(document.getElementById(examType + 'Written').value) || 0;
+            const oral = parseInt(document.getElementById(examType + 'Oral').value) || 0;
+            document.getElementById(examType + 'Total').textContent = written + oral;
+        }
+
+        // Add event listeners for all marks inputs
+        ['pt1', 'hy', 'pt2', 'final'].forEach(examType => {
+            document.getElementById(examType + 'Written').addEventListener('input', () => updateTotal(examType));
+            document.getElementById(examType + 'Oral').addEventListener('input', () => updateTotal(examType));
+        });
+
+        // Load class data
+        async function loadClassData() {
+            try {
+                const data = await API.class.getClassDetails();
+                classData = data;
+
+                // Populate class select
+                const classSelect = document.getElementById('classSelect');
+                const uniqueClasses = [...new Set(data.map(item => item.className))].sort();
+                classSelect.innerHTML = '<option value="">Select Class</option>' +
+                    uniqueClasses.map(className => `<option value="${className}">${className}</option>`).join('');
+            } catch (error) {
+                console.error('Error loading class data:', error);
+                alert('Error loading class data. Please ensure you are logged in.');
+            }
+        }
+
+        // Load academic years
+        function loadAcademicYears() {
+            const currentYear = new Date().getFullYear();
+            const academicYearSelect = document.getElementById('academicYearSelect');
+            academicYearSelect.innerHTML = '<option value="">Select Academic Year</option>';
+            
+            for (let i = -1; i <= 1; i++) {
+                const year = currentYear + i;
+                const academicYear = `${year}-${year + 1}`;
+                academicYearSelect.innerHTML += `<option value="${academicYear}">${academicYear}</option>`;
+            }
+        }
+
+        // Update sections when class is selected
+        document.getElementById('classSelect').addEventListener('change', function() {
+            currentClass = this.value;
+            const sectionSelect = document.getElementById('sectionSelect');
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            
+            if (currentClass) {
+                const sections = [...new Set(classData
+                    .filter(item => item.className === currentClass)
+                    .map(item => item.section))].sort();
+                
+                sections.forEach(section => {
+                    sectionSelect.innerHTML += `<option value="${section}">${section}</option>`;
+                });
+            }
+        });
+
+        // Update current section when selected
+        document.getElementById('sectionSelect').addEventListener('change', function() {
+            currentSection = this.value;
+        });
+
+        // Update current academic year when selected
+        document.getElementById('academicYearSelect').addEventListener('change', function() {
+            currentAcademicYear = this.value;
+            loadExamConfig();
+        });
+
+        // Load exam configuration
+        async function loadExamConfig() {
+            if (!currentClass || !currentSection || !currentAcademicYear) return;
+
+            try {
+                const config = await API.exam.getExamConfig(currentClass, currentSection, currentAcademicYear);
+
+                // Update form with configuration
+                ['pt1', 'hy', 'pt2', 'final'].forEach(examType => {
+                    const examConfig = config[examType] || { maxMarksWritten: 80, maxMarksOral: 20 };
+                    document.getElementById(examType + 'Written').value = examConfig.maxMarksWritten;
+                    document.getElementById(examType + 'Oral').value = examConfig.maxMarksOral;
+                    updateTotal(examType);
+                });
+            } catch (error) {
+                console.error('Error loading exam config:', error);
+                // Set default values on error
+                ['pt1', 'hy', 'pt2', 'final'].forEach(examType => {
+                    document.getElementById(examType + 'Written').value = 80;
+                    document.getElementById(examType + 'Oral').value = 20;
+                    updateTotal(examType);
+                });
+            }
+        }
+
+        // Save exam configuration
+        async function saveExamConfig() {
+            if (!currentClass || !currentSection || !currentAcademicYear) {
+                alert('Please select Class, Section, and Academic Year');
+                return;
+            }
+
+            try {
+                const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+                const configData = {};
+                
+                // Prepare all exam configurations
+                examTypes.forEach(examType => {
+                    const written = parseInt(document.getElementById(examType + 'Written').value) || 80;
+                    const oral = parseInt(document.getElementById(examType + 'Oral').value) || 20;
+                    configData[examType] = {
+                        maxMarksWritten: written,
+                        maxMarksOral: oral
+                    };
+                });
+
+                // Save all configurations at once
+                await API.exam.saveExamConfig({
+                    class: currentClass,
+                    section: currentSection,
+                    academicYear: currentAcademicYear,
+                    config: configData
+                });
+
+                alert('Exam configuration saved successfully');
+                
+                // Reload configuration to verify changes
+                await loadExamConfig();
+            } catch (error) {
+                console.error('Error saving exam config:', error);
+                alert('Error saving exam configuration');
+            }
+        }
+
+        // Initialize exam config when modal is shown
+        document.getElementById('examConfigModal').addEventListener('show.bs.modal', () => {
+            loadClassData();
+            loadAcademicYears();
+        });
+    </script>
+</body>
+</html>

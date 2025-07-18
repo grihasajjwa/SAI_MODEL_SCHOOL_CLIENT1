@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKYVIEW Marksheet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f5f5f5; 
+            font-size: 15px;
+            font-family: 'Times New Roman', Times, serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        .marksheet-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #000;
+        }
+        .marksheet-inner {
+            border: 1px solid #000;
+            padding: 20px;
+            position: relative;
+            background: 
+                linear-gradient(45deg, #000 12px, transparent 0) 0 0,
+                linear-gradient(-45deg, #000 12px, transparent 0) 100% 0,
+                linear-gradient(135deg, #000 12px, transparent 0) 0 100%,
+                linear-gradient(-135deg, #000 12px, transparent 0) 100% 100%;
+            background-size: 30px 30px;
+            background-repeat: no-repeat;
+        }
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80px;
+            color: rgba(0, 0, 0, 0.03);
+            white-space: nowrap;
+            pointer-events: none;
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+            z-index: 1;
+            width: 100%;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .school-header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .school-logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 5px;
+        }
+        .school-header h2 {
+            margin: 5px 0;
+            font-size: 28px;
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .school-header p {
+            margin: 2px 0;
+            font-size: 15px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: 500;
+        }
+        .student-info {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: Consolas, monospace; /* font-family: 'Times New Roman', Times, serif;  */
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .student-info p {
+            margin-bottom: 5px;
+        }
+        .student-info strong {
+            font-weight: 600;
+        }
+        .marks-table {
+            font-size: 13px;
+            font-family: Consolas, monospace;
+        }
+        .marks-table th {
+            background-color: #e9ecef !important;
+            text-align: center;
+            vertical-align: middle;
+            padding: 4px !important;
+            font-size: 13px;
+            white-space: nowrap;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            color: #000;
+        }
+        .marks-table td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 3px !important;
+        }
+        .marks-input {
+            width: 45px !important;
+            display: inline-block !important;
+            text-align: center;
+            padding: 1px !important;
+            font-size: 13px !important;
+            height: 24px !important;
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: 500;
+        }
+        .result-summary {
+            display: none;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: Consolas, monospace; /* font-family: 'Times New Roman', Times, serif; */
+        }
+        .result-summary p {
+            margin-bottom: 0;
+        }
+        .result-summary strong {
+            font-weight: 600;
+        }
+        .grade-info {
+            font-size: 13px;
+            margin: 10px 0;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: Consolas, monospace; /* font-family: 'Times New Roman', Times, serif; */
+            background-color: #fff;
+            border-top: 1px solid #dee2e6;
+            padding-top: 10px;
+            margin-top: 15px;
+            font-size: 10px;
+        }
+        .grade-info h6 {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .signatures {
+            margin-top: 30px;
+            padding-top: 20px;
+            /* border-top: 1px solid #ddd; */
+        }
+        .signatures p {
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            width: 80%;
+            margin: 5px auto;
+        }
+        .total-cell {
+            background-color: #f8f9fa !important;
+            font-weight: bold;
+        }
+        .table > :not(caption) > * > * {
+            padding: 0.25rem;
+        }
+        .display-none {
+            display: none;
+        }
+        @media print {
+            @page {
+                size: A4;
+                margin: 0.5cm;
+            }
+            html {
+                zoom: 0.9;
+                -moz-transform: scale(0.9);
+                -moz-transform-origin: 0 0;
+            }
+            body { 
+                margin: 0;
+                padding: 0;
+                font-size: 11px;
+                background-color: #fff;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                width: 100%;
+                height: 100vh;
+                page-break-after: avoid;
+                page-break-before: avoid;
+            }
+            .marksheet-container {
+                max-width: 100%;
+                margin: 0;
+                padding: 15px;
+                box-shadow: none;
+                border: none;
+            }
+            .marksheet-inner {
+                padding: 15px;
+                margin: 0;
+            }
+            /* Reduce some spacing */
+            .school-header {
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+            }
+            .school-header h2 {
+                font-size: 28px;
+                margin: 8px 0;
+            }
+            .school-header p {
+                margin: 2px 0;
+                font-size: 12px;
+            }
+            .student-info {
+                padding: 8px;
+                margin-bottom: 15px;
+            }
+            .marks-table {
+                width: 102%;
+                font-size: 11px;
+                page-break-inside: avoid;
+                position: relative;
+                z-index: 2;
+                transform: scale(0.98);
+                transform-origin: left top;
+                margin-right: -10px;
+            }
+            .marks-table table {
+                border: 2px solid #000 !important;
+                width: 100%;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+            }
+            .marks-table th {
+                background-color: #e9ecef !important;
+                font-weight: bold;
+                border: 1px solid #000 !important;
+                padding: 4px 3px !important;
+                font-size: 10px;
+            }
+            .marks-table td {
+                border: 1px solid #000 !important;
+                padding: 2px 3px !important;
+                font-size: 10px;
+            }
+            .marks-table input {
+                width: 38px !important;
+                font-size: 12px !important;
+            }
+            .result-summary {
+                margin: 15px 0;
+                padding: 10px;
+            }
+            .grade-info {
+                padding: 8px;
+                margin: 15px 0;
+            }
+            .signatures {
+                margin-top: 20px;
+            }
+            .watermark {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 150px;
+                opacity: 0.07;
+                color: #000;
+                z-index: 0;
+                width: 200%;
+                text-align: center;
+                white-space: nowrap;
+                line-height: 1;
+                font-weight: 900;
+                letter-spacing: 8px;
+                font-family: "Times New Roman", serif;
+            }
+            .school-header {
+                text-align: center;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #000;
+                padding-bottom: 15px;
+                background-color: #fff !important;
+                position: relative;
+                z-index: 2;
+            }
+            .school-header h2 {
+                font-size: 32px;
+                font-weight: 900;
+                margin: 10px 0;
+                letter-spacing: 1px;
+            }
+            .school-header p {
+                margin: 3px 0;
+                font-size: 14px;
+            }
+            .student-info {
+                background-color: #f8f9fa !important;
+                border: 1px solid #000;
+                padding: 12px;
+                margin-bottom: 20px;
+                position: relative;
+                z-index: 2;
+                border-radius: 0;
+            }
+            .marks-table {
+                width: 100%;
+                font-size: 11px;
+                page-break-inside: avoid;
+                position: relative;
+                z-index: 2;
+                margin-right: 5px !important;
+            }
+            .marks-table table {
+                border: 2px solid #000 !important;
+            }
+            .marks-table th {
+                background-color: #e9ecef !important;
+                font-weight: bold;
+                border: 1px solid #000 !important;
+                padding: 6px 4px !important;
+            }
+            .marks-table td {
+                border: 1px solid #000 !important;
+                padding: 4px !important;
+            }
+            .total-cell {
+                background-color: #f8f9fa !important;
+                font-weight: bold;
+            }
+            .result-summary {
+                display: none;
+                margin: 20px 0;
+                padding: 15px;
+                background-color: #f8f9fa !important;
+                border: 1px solid #000;
+                position: relative;
+                z-index: 2;
+                border-radius: 0;
+            }
+            .grade-info {
+                background-color: #fff !important;
+                border: 1px solid #000;
+                padding: 12px;
+                margin: 20px 0;
+                position: relative;
+                z-index: 2;
+                border-radius: 0;
+            }
+            .signatures {
+                margin-top: 40px;
+                position: relative;
+                z-index: 2;
+            }
+            .signature-line {
+                border-top: 2px solid #000;
+                width: 80%;
+                margin: 5px auto;
+            }
+            .signatures p {
+                font-weight: bold;
+                margin-top: 5px;
+            }
+            .table > :not(caption) > * > * {
+                padding: 4px !important;
+            }
+            /* Hide all buttons and controls */
+            .no-print, 
+            .btn,
+            button,
+            .d-flex.justify-content-between.mb-3 { 
+                display: none !important; 
+            }
+            .marks-table th.total {
+                width: 110% !important;
+                min-width: 110% !important;
+                max-width: 110% !important;
+            }
+            .marks-table th.oral {
+                width: 90% !important;
+                min-width: 90% !important;
+                max-width: 90% !important;
+            }
+            .marks-input{
+                border: 1px solid #ffffff !important;
+                /* font-weight: 500 !important;
+                font-size: 53px !important; */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container marksheet-container">
+        <div class="marksheet-inner">
+            <div class="watermark">SKYVIEW PUBLIC SCHOOL</div>
+            <div class="d-flex justify-content-between mb-3 no-print">
+                <button id="saveMarks" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Marks
+                </button>
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Marksheet
+                </button>
+            </div>
+            
+            <div class="school-header">
+                <img src="../assets/images/logo.png" alt="School Logo" class="school-logo">
+                <h2>SKYVIEW PUBLIC SCHOOL</h2>
+                <p>Uttar Andaranfulbari, Tufanganj, Coochbehar, WB, PIN- 736160</p>
+                <p>Contact No. +91-86535-54323   |   Email: skyviewpublicschool@gmail.com</p>
+                <h4 class="mt-2">STUDENT PROGRESS REPORT</h4>
+            </div>
+
+            <div class="student-info">
+                <div class="row g-2">
+                    <div class="col-6 col-print-6">
+                        <p class="mb-1"><strong>Student Name:</strong> <span id="studentName"></span></p>
+                        <p class="mb-1"><strong>Class:</strong> <span id="className"></span></p>
+                       <p class="mb-1 no-print display-none"><strong>Date of Birth:</strong> <span id="dob"></span></p>
+                        <p class="mb-1"><strong>Roll No:</strong> <span id="rollNo"></span></p>
+
+                    </div>
+                    <div class="col-6 col-print-6">
+                        <p class="mb-1"><strong>Admission No:</strong> <span id="admissionNo"></span></p>
+                        <p class="mb-1"><strong>Section:</strong> <span id="section"></span></p>
+                        <p class="mb-1"><strong>Academic Year:</strong> <span id="academicYear"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="marks-table">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" >Subject</th>
+                            <th colspan="3">Periodic Test 1</th>
+                            <th colspan="3">Half Yearly</th>
+                            <th colspan="3">Periodic Test 2</th>
+                            <th colspan="3">Final Exam</th>
+                        </tr>
+                        <tr>
+                            <th>Written<br><span id="pt1WrittenMax">(80)</span></th>
+                            <th class="oral">Oral<br><span id="pt1OralMax">(20)</span></th>
+                            <th class="total">Total<br><span id="pt1TotalMax">(100)</span></th>
+                            <th>Written<br><span id="hyWrittenMax">(80)</span></th>
+                            <th class="oral">Oral<br><span id="hyOralMax">(20)</span></th>
+                            <th class="total">Total<br><span id="hyTotalMax">(100)</span></th>
+                            <th>Written<br><span id="pt2WrittenMax">(80)</span></th>
+                            <th class="oral">Oral<br><span id="pt2OralMax">(20)</span></th>
+                            <th class="total">Total<br><span id="pt2TotalMax">(100)</span></th>
+                            <th>Written<br><span id="finalWrittenMax">(80)</span></th>
+                            <th class="oral">Oral<br><span id="finalOralMax">(20)</span></th>
+                            <th class="total">Total<br><span id="finalTotalMax">(100)</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="marksTableBody">
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-secondary">
+                            <td><strong>Grand Total</strong></td>
+                            <td colspan="2"></td>
+                            <td id="pt1Total">0</td>
+                            <td colspan="2"></td>
+                            <td id="hyTotal">0</td>
+                            <td colspan="2"></td>
+                            <td id="pt2Total">0</td>
+                            <td colspan="2"></td>
+                            <td id="finalTotal">0</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td><strong>Percentage</strong></td>
+                            <td colspan="2"></td>
+                            <td id="pt1Percentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="hyPercentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="pt2Percentage">0%</td>
+                            <td colspan="2"></td>
+                            <td id="finalPercentage">0%</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td><strong>Grade</strong></td>
+                            <td colspan="2"></td>
+                            <td id="pt1Grade">-</td>
+                            <td colspan="2"></td>
+                            <td id="hyGrade">-</td>
+                            <td colspan="2"></td>
+                            <td id="pt2Grade">-</td>
+                            <td colspan="2"></td>
+                            <td id="finalGrade">-</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td><strong>Overall Percentage</strong></td>
+                            <td colspan="12" class="text-center" id="overallPercentage">0%</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td><strong>Overall Grade</strong></td>
+                            <td colspan="12" class="text-center" id="overallGrade">-</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td><strong>Class Rank</strong></td>
+                            <td colspan="12" class="text-center" id="classRank">-</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="grade-info">
+                <h6>Grading System:</h6>
+                <div class="row">
+                    <div class="col-6">
+                        <p class="mb-0">A1 (91-100): Outstanding | A2 (81-90): Excellent</p>
+                        <p class="mb-0">B1 (71-80): Very Good | B2 (61-70): Good</p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0">C1 (51-60): Fair | C2 (41-50): Average</p>
+                        <p class="mb-0">D (33-40): Below Average | E (Below 33): Needs Improvement</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-summary">
+                <div class="row mb-1">
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Overall Percentage:</strong> <span id="overallPercentage">0</span>%</p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Overall Grade:</strong> <span id="overallGrade">-</span></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Result:</strong> <span id="finalResult">-</span></p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0"><strong>Rank in Class:</strong> <span id="classRank">-</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="signatures">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Class Teacher</p>
+                    </div>
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Principal</p>
+                    </div>
+                    <div class="col-4">
+                        <div class="signature-line"></div>
+                        <p class="mb-0">Parent's Signature</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script>
+        const API_BASE_URL = CONFIG.API_URL;
+        let studentId, className, section, marksExist = false;
+        let examConfig = {};
+
+        // Function to get authentication token
+        function getAuthToken() {
+            return localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+        }
+
+        // Function to make authenticated API calls
+        async function apiCall(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '../pages/login.html';
+                throw new Error('Authentication required');
+            }
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
+            return fetch(url, { ...options, headers });
+        }
+
+        // Load exam configuration
+        async function loadExamConfig() {
+            try {
+                const academicYear = '2024-2025';
+                const response = await apiCall(`${API_BASE_URL}/exam/config/${encodeURIComponent(className)}/${encodeURIComponent(section)}/${encodeURIComponent(academicYear)}`);
+                
+                if (!response.ok) {
+                    // Create a new config
+                    const defaultConfig = {
+                        class: className,
+                        section: section,
+                        academicYear: academicYear,
+                        config: {
+                            pt1: { maxMarksWritten: 80, maxMarksOral: 20 },
+                            hy: { maxMarksWritten: 80, maxMarksOral: 20 },
+                            pt2: { maxMarksWritten: 80, maxMarksOral: 20 },
+                            final: { maxMarksWritten: 80, maxMarksOral: 20 }
+                        }
+                    };
+
+                    // Save the default config
+                    const saveResponse = await apiCall(`${API_BASE_URL}/exam/config`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(defaultConfig)
+                    });
+
+                    if (!saveResponse.ok) {
+                        console.error('Failed to save default exam config');
+                        return false;
+                    }
+
+                    const savedConfig = await saveResponse.json();
+                    examConfig = savedConfig;
+                } else {
+                    const data = await response.json();
+                    examConfig = data;
+                }
+
+                console.log('Using exam config:', examConfig);
+
+                // Update max marks in the table header for all exam types
+                ['pt1', 'hy', 'pt2', 'final'].forEach(examType => {
+                    const currentConfig = examConfig.examConfigs.find(config => config.examType === examType) || 
+                           { maxMarksWritten: 80, maxMarksOral: 20 };
+            
+                    document.getElementById(`${examType}WrittenMax`).textContent = `(${currentConfig.maxMarksWritten})`;
+                    document.getElementById(`${examType}OralMax`).textContent = `(${currentConfig.maxMarksOral})`;
+                    document.getElementById(`${examType}TotalMax`).textContent = `(${currentConfig.maxMarksWritten + currentConfig.maxMarksOral})`;
+                });
+                return true;
+            } catch (error) {
+                console.error('Error loading exam config:', error);
+                return false;
+            }
+        }
+
+        // Load marksheet data when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            studentId = urlParams.get('studentId');
+            // Get class from either className or class parameter
+            className = urlParams.get('className') || urlParams.get('class');
+            section = urlParams.get('section');
+             rollNo = urlParams.get('rollNo');
+            const studentName = urlParams.get('studentName');
+            const admissionNo = urlParams.get('admissionNo');
+            const dob = urlParams.get('dob');
+            const shouldPrint = urlParams.get('print') === 'true';
+
+            console.log('URL Parameters:', Object.fromEntries(urlParams.entries()));
+
+            if (!studentId || !className || !section) {
+                alert('Required parameters are missing');
+                return;
+            }
+
+            // Set student info
+            document.getElementById('studentName').textContent = studentName || '-';
+            document.getElementById('admissionNo').textContent = admissionNo || '-';
+            document.getElementById('className').textContent = className || '-';
+            document.getElementById('section').textContent = section || '-';
+             document.getElementById('rollNo').textContent = rollNo || '-';
+            document.getElementById('dob').textContent = dob || '-';
+            document.getElementById('academicYear').textContent = '2024-2025';
+            
+            // Load exam config first and ensure it's loaded before proceeding
+            const configLoaded = await loadExamConfig();
+            if (!configLoaded) {
+                alert('Failed to load exam configuration. Please refresh the page.');
+                return;
+            }
+            console.log('Using exam config:', examConfig);
+            
+            await loadMarksheet();
+            
+            // Add save button click handler
+            document.getElementById('saveMarks').addEventListener('click', saveStudentMarks);
+
+            // Auto print if requested
+            if (shouldPrint) {
+                // Hide action buttons before printing
+                const actionButtons = document.querySelectorAll('.no-print');
+                actionButtons.forEach(btn => btn.style.display = 'none');
+                
+                // Wait for a moment to ensure everything is loaded
+                setTimeout(() => {
+                    window.print();
+                }, 1000);
+            }
+        });
+
+        // Function to get marks from inputs
+        function getExamMarks(row, examType) {
+            const writtenInput = row.querySelector(`input[data-exam="${examType}"][data-type="written"]`);
+            const oralInput = row.querySelector(`input[data-exam="${examType}"][data-type="oral"]`);
+
+            if (!writtenInput || !oralInput) {
+                return null;
+            }
+
+            const written = writtenInput.value.trim();
+            const oral = oralInput.value.trim();
+
+            // If both marks are empty, skip this exam
+            if (written === '' && oral === '') {
+                return null;
+            }
+
+            // Convert to numbers, empty values become 0
+            const writtenNum = written === '' ? 0 : Number(written);
+            const oralNum = oral === '' ? 0 : Number(oral);
+
+            // Get max marks from exam config
+            const currentConfig = examConfig.examConfigs.find(config => config.examType === examType) || 
+                           { maxMarksWritten: 80, maxMarksOral: 20 };
+
+            // Validate marks - allow 0 marks without validation
+            if (writtenNum !== 0 && writtenNum > currentConfig.maxMarksWritten) {
+                writtenInput.classList.add('error');
+                writtenInput.title = `Maximum allowed marks is ${currentConfig.maxMarksWritten}`;
+                return null;
+            }
+            if (oralNum !== 0 && oralNum > currentConfig.maxMarksOral) {
+                oralInput.classList.add('error');
+                oralInput.title = `Maximum allowed marks is ${currentConfig.maxMarksOral}`;
+                return null;
+            }
+
+            // Clear any previous validation errors
+            writtenInput.classList.remove('error');
+            writtenInput.title = '';
+            oralInput.classList.remove('error');
+            oralInput.title = '';
+
+            // Return exam data with maxMarks
+            return {
+                written: writtenNum,
+                oral: oralNum,
+                maxMarksWritten: currentConfig.maxMarksWritten,
+                maxMarksOral: currentConfig.maxMarksOral
+            };
+        }
+
+        // Save student marks
+        async function saveStudentMarks() {
+            const saveBtn = document.getElementById('saveMarks');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                
+                // Validate required fields
+                const requiredFields = {
+                    studentId: urlParams.get('studentId'),
+                    className: urlParams.get('className'),
+                    section: urlParams.get('section'),
+                    rollNo: document.getElementById('rollNo').textContent, // Get from the displayed rollNo
+                    studentName: urlParams.get('studentName'),
+                    admissionNo: urlParams.get('admissionNo'),
+                    fatherName: urlParams.get('fatherName'),
+                    academicYear: document.getElementById('academicYear').textContent
+                };
+
+                // Check if any required field is missing
+                for (const [field, value] of Object.entries(requiredFields)) {
+                    if (!value) {
+                        throw new Error(`${field.charAt(0).toUpperCase() + field.slice(1)} is required`);
+                    }
+                }
+
+                // Convert studentId to ObjectId format
+                if (!requiredFields.studentId.match(/^[0-9a-fA-F]{24}$/)) {
+                    throw new Error('Invalid student ID format');
+                }
+
+                // Get all subject rows
+                const subjectRows = document.querySelectorAll('.subject-row');
+                const marksData = [];
+
+                // Collect marks for each subject
+                for (const row of subjectRows) {
+                    const subject = row.getAttribute('data-subject');
+                    if (!subject) {
+                        console.error('Subject not found for row:', row);
+                        continue;
+                    }
+
+                    const marks = {
+                        subject
+                    };
+
+                    // Add exam marks only if they exist
+                    const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+                    let hasMarks = false;
+
+                    for (const examType of examTypes) {
+                        const writtenInput = row.querySelector(`input[data-exam="${examType}"][data-type="written"]`);
+                        const oralInput = row.querySelector(`input[data-exam="${examType}"][data-type="oral"]`);
+                        
+                        const written = writtenInput?.value.trim() || '';
+                        const oral = oralInput?.value.trim() || '';
+
+                        // Skip if both marks are empty
+                        if (written === '' && oral === '') {
+                            continue;
+                        }
+
+                        // Convert to numbers, empty values become 0
+                        const writtenNum = written === '' ? 0 : Number(written);
+                        const oralNum = oral === '' ? 0 : Number(oral);
+
+                        // Get max marks from exam config
+                        const currentConfig = examConfig.examConfigs.find(config => config.examType === examType) || 
+                                           { maxMarksWritten: 80, maxMarksOral: 20 };
+
+                        // Validate marks - allow 0 marks without validation
+                        if (writtenNum !== 0 && writtenNum > currentConfig.maxMarksWritten) {
+                            throw new Error(`${subject}: Written marks (${writtenNum}) exceeds maximum allowed marks (${currentConfig.maxMarksWritten}) for ${examType.toUpperCase()}`);
+                        }
+                        if (oralNum !== 0 && oralNum > currentConfig.maxMarksOral) {
+                            throw new Error(`${subject}: Oral marks (${oralNum}) exceeds maximum allowed marks (${currentConfig.maxMarksOral}) for ${examType.toUpperCase()}`);
+                        }
+
+                        // Add marks for this exam
+                        marks[examType] = {
+                            written: writtenNum,
+                            oral: oralNum,
+                            maxMarksWritten: currentConfig.maxMarksWritten,
+                            maxMarksOral: currentConfig.maxMarksOral
+                        };
+                        hasMarks = true;
+                    }
+
+                    // Only add if at least one exam has marks
+                    if (hasMarks) {
+                        marksData.push(marks);
+                    }
+                }
+
+                if (marksData.length === 0) {
+                    throw new Error('Please enter marks for at least one subject before saving.');
+                }
+
+                // Prepare data for API
+                const data = {
+                    ...requiredFields,
+                    marks: marksData
+                };
+
+                console.log('Saving marks data:', data);
+
+                // First check if marks exist
+                const checkResponse = await apiCall(`${API_BASE_URL}/marks/${data.studentId}`);
+
+                let method, url;
+                if (checkResponse.status === 404) {
+                    method = 'POST';
+                    url = `${API_BASE_URL}/marks`;
+                } else {
+                    method = 'PUT';
+                    url = `${API_BASE_URL}/marks/${data.studentId}`;
+                }
+
+                // Save marks
+                const response = await apiCall(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to save marks');
+                }
+
+                // Success!
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                setTimeout(() => {
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+                    saveBtn.disabled = false;
+                }, 2000);
+
+                // Show success alert
+                alert('Marks saved successfully!');
+
+                // Update UI to show marks are saved
+                marksExist = true;
+
+            } catch (error) {
+                console.error('Error saving marks:', error);
+                saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+                saveBtn.disabled = false;
+                alert('Error saving marks: ' + error.message);
+            }
+        }
+
+        // Create exam cells with input fields
+        function createExamCells(examType, subject, marks = {}) {
+            const exam = marks[examType] || {};
+            const config = examConfig.examConfigs.find(config => config.examType === examType) || 
+                           { maxMarksWritten: 80, maxMarksOral: 20 };
+            
+            return `
+                <td>
+                    <input type="number" class="form-control marks-input" 
+                           data-exam="${examType}" data-type="written" 
+                           value="${exam.written || ''}"
+                           min="0" max="${config.maxMarksWritten}"
+                           onchange="updateTotal(this)">
+                </td>
+                <td>
+                    <input type="number" class="form-control marks-input" 
+                           data-exam="${examType}" data-type="oral" 
+                           value="${exam.oral || ''}"
+                           min="0" max="${config.maxMarksOral}"
+                           onchange="updateTotal(this)">
+                </td>
+                <td class="total-cell">
+                    <span class="total">${(exam.written || 0) + (exam.oral || 0)}</span>
+                </td>`;
+        }
+
+        // Add a row for each subject
+        function addSubjectRow(subject, marks = {}) {
+            const tr = document.createElement('tr');
+            tr.className = 'subject-row';
+            tr.setAttribute('data-subject', subject);
+            tr.innerHTML = `
+                <td>${subject}</td>
+                ${createExamCells('pt1', subject, marks)}
+                ${createExamCells('hy', subject, marks)}
+                ${createExamCells('pt2', subject, marks)}
+                ${createExamCells('final', subject, marks)}`;
+            return tr;
+        }
+
+        // Update total when marks are entered
+        function updateTotal(input) {
+            const tr = input.closest('tr');
+            const examType = input.dataset.exam;
+            const totalCell = tr.querySelector(`td:has(input[data-exam="${examType}"]) + .total-cell`);
+            
+            const writtenInput = tr.querySelector(`input[data-exam="${examType}"][data-type="written"]`);
+            const oralInput = tr.querySelector(`input[data-exam="${examType}"][data-type="oral"]`);
+            
+            const written = Number(writtenInput.value) || 0;
+            const oral = Number(oralInput.value) || 0;
+            const config = examConfig.examConfigs.find(config => config.examType === examType) || 
+                           { maxMarksWritten: 80, maxMarksOral: 20 };
+            
+            // Validate against max marks
+            if (written > config.maxMarksWritten) {
+                writtenInput.value = config.maxMarksWritten;
+                alert(`Written marks cannot exceed ${config.maxMarksWritten}`);
+                return;
+            }
+            if (oral > config.maxMarksOral) {
+                oralInput.value = config.maxMarksOral;
+                alert(`Oral marks cannot exceed ${config.maxMarksOral}`);
+                return;
+            }
+            
+            const total = written + oral;
+            const maxTotal = config.maxMarksWritten + config.maxMarksOral;
+            totalCell.querySelector('.total').textContent = total;
+            totalCell.innerHTML = `<span class="total">${total}</span>/${maxTotal}`;
+            
+            updateExamTotals();
+        }
+
+        // Update exam totals and percentages
+        function updateExamTotals() {
+            try {
+                const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+                const rows = document.getElementsByClassName('subject-row');
+                
+                if (!rows || rows.length === 0) {
+                    console.log('No subject rows found, skipping total calculation');
+                    return;
+                }
+
+                examTypes.forEach(examType => {
+                    let totalMarks = 0;
+                    let maxTotalMarks = 0;
+                    const config = examConfig.examConfigs.find(config => config.examType === examType) || 
+                                   { maxMarksWritten: 80, maxMarksOral: 20 };
+                    
+                    Array.from(rows).forEach(row => {
+                        const writtenInput = row.querySelector(`input[data-exam="${examType}"][data-type="written"]`);
+                        const oralInput = row.querySelector(`input[data-exam="${examType}"][data-type="oral"]`);
+                        
+                        if (writtenInput && oralInput) {
+                            const writtenMarks = Number(writtenInput.value) || 0;
+                            const oralMarks = Number(oralInput.value) || 0;
+                            totalMarks += writtenMarks + oralMarks;
+                            maxTotalMarks += config.maxMarksWritten + config.maxMarksOral;
+                        }
+                    });
+
+                    const totalElement = document.getElementById(`${examType}Total`);
+                    const percentageElement = document.getElementById(`${examType}Percentage`);
+                    const gradeElement = document.getElementById(`${examType}Grade`);
+
+                    if (totalElement && percentageElement && gradeElement) {
+                        const percentage = maxTotalMarks > 0 ? (totalMarks / maxTotalMarks) * 100 : 0;
+                        const grade = calculateGrade(percentage);
+                        
+                        totalElement.textContent = totalMarks;
+                        percentageElement.textContent = percentage.toFixed(2) + '%';
+                        gradeElement.textContent = grade;
+                    }
+                });
+                
+                updateOverallResults();
+            } catch (error) {
+                console.error('Error in updateExamTotals:', error);
+            }
+        }
+
+        // Update overall results
+        function updateOverallResults() {
+            const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+            let totalPercentage = 0;
+            let validExams = 0;
+
+            examTypes.forEach(examType => {
+                const percentageElement = document.getElementById(`${examType}Percentage`);
+                if (percentageElement) {
+                    const percentage = parseFloat(percentageElement.textContent);
+                    if (!isNaN(percentage) && percentage > 0) {
+                        totalPercentage += percentage;
+                        validExams++;
+                    }
+                }
+            });
+
+            const overallPercentage = validExams > 0 ? totalPercentage / validExams : 0;
+            document.getElementById('overallPercentage').textContent = overallPercentage.toFixed(2) + '%';
+            document.getElementById('overallGrade').textContent = calculateGrade(overallPercentage);
+            document.getElementById('finalResult').textContent = overallPercentage >= 33 ? 'PASS' : 'NEEDS IMPROVEMENT';
+        }
+
+        // Calculate grade based on percentage
+        function calculateGrade(percentage) {
+            if (percentage >= 91) return 'A1 - Outstanding';
+            if (percentage >= 81) return 'A2 - Excellent';
+            if (percentage >= 71) return 'B1 - Very Good';
+            if (percentage >= 61) return 'B2 - Good';
+            if (percentage >= 51) return 'C1 - Fair';
+            if (percentage >= 41) return 'C2 - Average';
+            if (percentage >= 33) return 'D - Below Average';
+            return 'E - Needs Improvement';
+        }
+
+        // Load marksheet data
+        async function loadMarksheet() {
+            try {
+                // Get class data to know subjects
+                const classResponse = await apiCall(`${API_BASE_URL}/classes/details/${encodeURIComponent(className)}/${encodeURIComponent(section)}`);
+                if (!classResponse.ok) throw new Error('Failed to fetch class data');
+                const classData = await classResponse.json();
+
+                // Get existing marks if any
+                let marksData = null;
+                try {
+                    const marksResponse = await apiCall(`${API_BASE_URL}/marks/${studentId}`);
+                    if (marksResponse.ok) {
+                        marksData = await marksResponse.json();
+                        console.log('marksData',marksData);
+                        marksExist = true;
+
+                        // Update class rank if it exists
+                        if (marksData.rank) {
+                            document.getElementById('classRank').textContent = marksData.rank;
+                            document.getElementById('classRank').style.backgroundColor = '#e8f9fa';
+                        }
+                    } else {
+                        console.log('No existing marks found, starting fresh');
+                    }
+                } catch (error) {
+                    console.log('No existing marks found, starting fresh');
+                }
+
+                // Create table rows
+                const tbody = document.getElementById('marksTableBody');
+                tbody.innerHTML = '';
+
+                classData.subjects.forEach(subject => {
+                    const subjectMarks = marksData?.marks?.find(m => m.subject === subject.name) || {};
+                    const tr = addSubjectRow(subject.name, subjectMarks);
+                    tbody.appendChild(tr);
+                });
+
+                // Calculate totals if marks exist
+                if (marksData) {
+                    setTimeout(() => {
+                        try {
+                            updateExamTotals();
+                            updateOverallResults();
+                        } catch (error) {
+                            console.error('Error updating totals:', error);
+                        }
+                    }, 0);
+                }
+            } catch (error) {
+                console.error('Error loading marksheet:', error);
+                alert('Failed to load marksheet data');
+            }
+        }
+    </script>
+</body>
+</html>
