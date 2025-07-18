@@ -1,7 +1,8 @@
 const CONFIG = {
     // API_URL: 'http://localhost:5000/api',
     //API_URL: 'https://skyview-server-1.vercel.app/api',
-    API_URL: 'https://skyview-server-3.vercel.app/api',
+    // API_URL: 'https://skyview-server-3.vercel.app/api',
+    API_URL: 'https://sai-model-school-server-1.vercel.app/api',
     CLASSES: [
         'Nursery-A', 'Nursery-B',
         'LKG-A', 'LKG-B',
