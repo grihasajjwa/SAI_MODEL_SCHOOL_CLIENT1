@@ -260,7 +260,10 @@
              .hide-print {
         display: none !important;
     }
-
+body.hide-pt2-final .pt2-cols,
+    body.hide-pt2-final .final-cols {
+        display: none !important;
+    }
             body {
                 margin: 0;
                 padding: 0;
@@ -936,79 +939,7 @@
             }
         }
 
-        // // Load marksheet data when page loads
-        // document.addEventListener('DOMContentLoaded', async () => {
-        //     const urlParams = new URLSearchParams(window.location.search);
-        //     studentId = urlParams.get('studentId');
-        //     // Get class from either className or class parameter
-        //     className = urlParams.get('className') || urlParams.get('class'); 
-        //     section = urlParams.get('section');
-        //     rollNo = urlParams.get('rollNo');
-        //     const studentName = urlParams.get('studentName');
-        //     const admissionNo = urlParams.get('admissionNo');
-        //     const dob = urlParams.get('dob');
-        //     const shouldPrint = urlParams.get('print') === 'true';
-
-        //     console.log('URL Parameters:', Object.fromEntries(urlParams.entries()));
-
-        //     if (!studentId || !className || !section) {
-        //         alert('Required parameters are missing');
-        //         return;
-        //     }
-
-        //     // Set student info
-        //     document.getElementById('studentName').textContent = studentName || '-';
-        //     document.getElementById('admissionNo').textContent = admissionNo || '-';
-        //     document.getElementById('className').textContent = className || '-';
-        //     document.getElementById('section').textContent = section || '-';
-        //     document.getElementById('rollNo').textContent = rollNo || '-';
-        //     document.getElementById('dob').textContent = dob || '-';
-        //     document.getElementById('academicYear').textContent = '2024-2025';
-
-        //      // Load exam config first and ensure it's loaded before proceeding
-        //     const configLoaded = await loadExamConfig();
-        //     if (!configLoaded) {
-        //         alert('Failed to load exam configuration. Please refresh the page.');
-        //         return;
-        //     }
-        //     console.log('Using exam config:', examConfig);
-
-        //     // // Set promoted class before loading marksheet
-        //     // updatePromotionClass();
-
-        //     await loadMarksheet();
-        //      // Set promoted class after loading marksheet
-        //         await updatePromotionClass();
-
-        //     // Add save button click handler
-        //     document.getElementById('saveMarks').addEventListener('click', saveStudentMarks);
-
-        //     // Select all input fields in the co-scholastic area
-        //     // Convert grades inside input fields **after a short delay**
-        //     setTimeout(() => {
-        //         const gradeElements = document.querySelectorAll(".co-scholastic-area input");
-        //         gradeElements.forEach(element => {
-        //             const originalGrade = element.value.trim();
-        //             if (originalGrade) {
-        //                 element.value = convertGrade(originalGrade);
-        //             }
-        //         });
-        //     }, 500); // Delayed execution to ensure inputs are filled
-
-     
-        //     // Auto print if requested
-        //     if (shouldPrint) {
-        //         // Hide action buttons before printing
-        //         const actionButtons = document.querySelectorAll('.no-print');
-        //         actionButtons.forEach(btn => btn.style.display = 'none');
-
-        //         // Wait for a moment to ensure everything is loaded
-        //         setTimeout(() => {
-        //             window.print();
-        //         }, 1000);
-        //     }
-        // });
-
+      
     document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     studentId = urlParams.get('studentId');
@@ -1616,27 +1547,22 @@
     </script>
     <script>
 function togglePT2FinalColumns(checkbox) {
-    const pt2Cols = document.querySelectorAll('.pt2-cols');
-    const finalCols = document.querySelectorAll('.final-cols');
     if (checkbox.checked) {
-        pt2Cols.forEach(el => el.classList.add('hide-print'));
-        finalCols.forEach(el => el.classList.add('hide-print'));
+        document.body.classList.add('hide-pt2-final');
     } else {
-        pt2Cols.forEach(el => el.classList.remove('hide-print'));
-        finalCols.forEach(el => el.classList.remove('hide-print'));
+        document.body.classList.remove('hide-pt2-final');
     }
 }
-
-// Optional: When printing, automatically hide columns if checked
+// Ensure columns are hidden during print if checked
 window.addEventListener('beforeprint', function() {
-    const checkbox = document.getElementById('hidePT2Final');
-    if (checkbox && checkbox.checked) {
-        document.querySelectorAll('.pt2-cols, .final-cols').forEach(el => el.classList.add('hide-print'));
+    if (document.getElementById('hidePT2Final').checked) {
+        document.body.classList.add('hide-pt2-final');
     }
 });
 window.addEventListener('afterprint', function() {
-    document.querySelectorAll('.pt2-cols, .final-cols').forEach(el => el.classList.remove('hide-print'));
+    document.body.classList.remove('hide-pt2-final');
 });
 </script>
+
 </body>
 </html>
