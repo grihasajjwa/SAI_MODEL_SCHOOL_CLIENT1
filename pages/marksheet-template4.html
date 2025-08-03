@@ -1151,26 +1151,49 @@ body.hide-pt2-final .pt2-cols,
 
       
         // Create exam cells with input fields
-        function createExamCells(examType, subject, marks = {}) {
-            const written = marks[examType]?.written || '';
-            const oral = marks[examType]?.oral || '';
-            const total = (written !== '' && oral !== '') ? parseFloat(written) + parseFloat(oral) : '';
+        // function createExamCells(examType, subject, marks = {}) {
+        //     const written = marks[examType]?.written || '';
+        //     const oral = marks[examType]?.oral || '';
+        //     const total = (written !== '' && oral !== '') ? parseFloat(written) + parseFloat(oral) : '';
 
-            return `
-                <td class="text-center">
-                    <input type="number" min="0" max="80" class="form-control form-control-sm text-center marks-input" 
-                        data-subject="${subject}" data-exam="${examType}" data-type="written" value="${written}"
-                        onchange="updateTotal(this)">
-                </td>
-                <td class="text-center">
-                    <input type="number" min="0" max="20" class="form-control form-control-sm text-center marks-input" 
-                        data-subject="${subject}" data-exam="${examType}" data-type="oral" value="${oral}"
-                        onchange="updateTotal(this)">
-                </td>
-                <td class="total-cell text-center">${total}</td>
-            `;
-        }
+        //     return `
+        //         <td class="text-center">
+        //             <input type="number" min="0" max="80" class="form-control form-control-sm text-center marks-input" 
+        //                 data-subject="${subject}" data-exam="${examType}" data-type="written" value="${written}"
+        //                 onchange="updateTotal(this)">
+        //         </td>
+        //         <td class="text-center">
+        //             <input type="number" min="0" max="20" class="form-control form-control-sm text-center marks-input" 
+        //                 data-subject="${subject}" data-exam="${examType}" data-type="oral" value="${oral}"
+        //                 onchange="updateTotal(this)">
+        //         </td>
+        //         <td class="total-cell text-center">${total}</td>
+        //     `;
+        // }
+function createExamCells(examType, subject, marks = {}) {
+    const written = marks[examType]?.written || '';
+    const oral = marks[examType]?.oral || '';
+    const total = (written !== '' && oral !== '') ? parseFloat(written) + parseFloat(oral) : '';
 
+    // Add column class for PT2 and Final
+    let colClass = '';
+    if (examType === 'pt2') colClass = 'pt2-cols';
+    if (examType === 'final') colClass = 'final-cols';
+
+    return `
+        <td class="text-center ${colClass}">
+            <input type="number" min="0" max="80" class="form-control form-control-sm text-center marks-input" 
+                data-subject="${subject}" data-exam="${examType}" data-type="written" value="${written}"
+                onchange="updateTotal(this)">
+        </td>
+        <td class="text-center ${colClass}">
+            <input type="number" min="0" max="20" class="form-control form-control-sm text-center marks-input" 
+                data-subject="${subject}" data-exam="${examType}" data-type="oral" value="${oral}"
+                onchange="updateTotal(this)">
+        </td>
+        <td class="total-cell text-center ${colClass}">${total}</td>
+    `;
+}
         // Add a row for each subject
         function addSubjectRow(subject, marks = {}) {
             const tr = document.createElement('tr');
