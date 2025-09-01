@@ -656,21 +656,21 @@ body.hide-pt2-final .pt2-cols,
                                     <td>Art Education</td>
                                     <td><input type="text" id="artEducation" class="form-control form-control-sm"></td>
                                 </tr>
-                                 <tr class="no-printt display-none">
-                                    <td>Moral Education</td>
+                                 <tr class="no-printt">
+                                    <td>Recitation</td>
                                     <td><input type="text" id="moralEducation" class="form-control form-control-sm"></td>
                                 </tr>
-                                  <tr class="no-printt display-none">
-                                    <td>Cursive</td>
+                                  <tr class="no-printt">
+                                    <td>Spelling & Dictation</td>
                                     <td><input type="text" id="cursive" class="form-control form-control-sm"></td>
                                 </tr>
-                                <tr>
-                                    <td>Recitation</td>
+                                <tr class="display-none">
+                                    <td>Responsibility</td>
                                     <td><input type="text" id="responsibility" class="form-control form-control-sm">
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td>Spelling & Dictation</td>
+                                <tr class="display-none">
+                                    <td>Cleanliness</td>
                                     <td><input type="text" id="cleanliness" class="form-control form-control-sm"></td>
                                 </tr>
                                 <tr>
@@ -811,16 +811,14 @@ body.hide-pt2-final .pt2-cols,
         const API_BASE_URL = CONFIG.API_URL;
         let studentId, className, section, marksExist = false;
         // Global exam config
-        let examConfig = { examConfigs: [] };
-
-        // let examConfig = {
-        //     examConfigs: [
-        //         { examType: 'pt1', maxMarksWritten: 80, maxMarksOral: 20 },
-        //         { examType: 'hy', maxMarksWritten: 80, maxMarksOral: 20 },
-        //         { examType: 'pt2', maxMarksWritten: 80, maxMarksOral: 20 },
-        //         { examType: 'final', maxMarksWritten: 80, maxMarksOral: 20 }
-        //     ]
-        // };
+        let examConfig = {
+            examConfigs: [
+                { examType: 'pt1', maxMarksWritten: 80, maxMarksOral: 20 },
+                { examType: 'hy', maxMarksWritten: 80, maxMarksOral: 20 },
+                { examType: 'pt2', maxMarksWritten: 80, maxMarksOral: 20 },
+                { examType: 'final', maxMarksWritten: 80, maxMarksOral: 20 }
+            ]
+        };
 
         // Function to get authentication token
         function getAuthToken() {
@@ -848,7 +846,7 @@ body.hide-pt2-final .pt2-cols,
           // Load exam configuration
         async function loadExamConfig() {
             try {
-                const academicYear = '2025-2026';
+                const academicYear = '2024-2025';
                 const response = await apiCall(`${API_BASE_URL}/exam/config/${encodeURIComponent(className)}/${encodeURIComponent(section)}/${encodeURIComponent(academicYear)}`);
                 
                 if (!response.ok) {
