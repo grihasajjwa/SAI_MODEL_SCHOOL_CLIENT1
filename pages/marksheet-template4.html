@@ -540,7 +540,8 @@ body.hide-pt2-final .pt2-cols,
                     <div class="col-6 col-print-6">
                         <p class="mb-1"><strong>Admission No:</strong> <span id="admissionNo"></span></p>
                         <p class="mb-1"><strong>Section:</strong> <span id="section"></span></p>
-                        <p class="mb-1"><strong>Academic Year:</strong> <span id="academicYear"></span></p>
+                        <p class="mb-1 display-none"><strong>Academic Year:</strong> <span id="academicYear"></span></p>
+                        <p class="mb-1"><strong>Academic Year:</strong> <span >2025-2026</span></p>
                     </div>
                 </div>
             </div>
@@ -853,7 +854,7 @@ body.hide-pt2-final .pt2-cols,
                     const defaultConfig = {
                         class: className,
                         section: section,
-                        // academicYear: academicYear,
+                        academicYear: academicYear,
                         examConfigs: [
                             { examType: 'pt1', maxMarksWritten: 80, maxMarksOral: 20 },
                             { examType: 'hy', maxMarksWritten: 80, maxMarksOral: 20 },
