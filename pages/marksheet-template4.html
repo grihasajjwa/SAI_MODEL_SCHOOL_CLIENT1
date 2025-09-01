@@ -845,7 +845,7 @@ body.hide-pt2-final .pt2-cols,
           // Load exam configuration
         async function loadExamConfig() {
             try {
-                const academicYear = '2024-2025';
+                const academicYear = '2025-2026';
                 const response = await apiCall(`${API_BASE_URL}/exam/config/${encodeURIComponent(className)}/${encodeURIComponent(section)}/${encodeURIComponent(academicYear)}`);
                 
                 if (!response.ok) {
