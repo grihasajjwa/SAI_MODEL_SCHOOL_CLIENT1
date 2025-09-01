@@ -535,7 +535,7 @@ body.hide-pt2-final .pt2-cols,
                         <p class="mb-1"><strong>Student Name:</strong> <span id="studentName"></span></p>
                         <p class="mb-1"><strong>Class:</strong> <span id="className"></span></p>
                         <p class="mb-1 no-print display-none"><strong>Date of Birth:</strong> <span id="dob"></span></p>
-<!--                         <p class="mb-1"><strong>Roll No:</strong> <span id="rollNo"></span></p> -->
+                        <p class="mb-1 display-none"><strong>Roll No:</strong> <span id="rollNo"></span></p>
                     </div>
                     <div class="col-6 col-print-6">
                         <p class="mb-1"><strong>Admission No:</strong> <span id="admissionNo"></span></p>
@@ -655,11 +655,11 @@ body.hide-pt2-final .pt2-cols,
                                     <td>Art Education</td>
                                     <td><input type="text" id="artEducation" class="form-control form-control-sm"></td>
                                 </tr>
-                                 <tr class="no-printt">
+                                 <tr class="no-printt display-none">
                                     <td>Hindi</td>
                                     <td><input type="text" id="moralEducation" class="form-control form-control-sm"></td>
                                 </tr>
-                                  <tr class="no-printt">
+                                  <tr class="no-printt display-none">
                                     <td>Computer</td>
                                     <td><input type="text" id="cursive" class="form-control form-control-sm"></td>
                                 </tr>
@@ -945,7 +945,7 @@ body.hide-pt2-final .pt2-cols,
     studentId = urlParams.get('studentId');
     className = urlParams.get('className') || urlParams.get('class'); 
     section = urlParams.get('section');
-    // rollNo = urlParams.get('rollNo');
+    rollNo = urlParams.get('rollNo');
     const studentName = urlParams.get('studentName');
     const admissionNo = urlParams.get('admissionNo');
     const dob = urlParams.get('dob');
@@ -963,7 +963,7 @@ body.hide-pt2-final .pt2-cols,
     document.getElementById('admissionNo').textContent = admissionNo || '-';
     document.getElementById('className').textContent = className || '-';
     document.getElementById('section').textContent = section || '-';
-    // document.getElementById('rollNo').textContent = rollNo || '-';
+    document.getElementById('rollNo').textContent = rollNo || '-';
     document.getElementById('dob').textContent = dob || '-';
     document.getElementById('academicYear').textContent = '2024-2025';
 
@@ -1412,7 +1412,7 @@ function createExamCells(examType, subject, marks = {}) {
                     studentId: urlParams.get('studentId'),
                     className: urlParams.get('className'),
                     section: urlParams.get('section'),
-                    // rollNo: document.getElementById('rollNo').textContent,
+                    rollNo: document.getElementById('rollNo').textContent,
                     studentName: urlParams.get('studentName'),
                     admissionNo: urlParams.get('admissionNo'),
                     fatherName: urlParams.get('fatherName'),
