@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let classes = [];
         
         // Define the class sequence
-        const classSequence = ['Nursery', 'LKG', 'UKG', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+        const classSequence = ['PRE', 'L.K.G', 'U.K.G', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
         
         // Function to get class index from the sequence
         function getClassIndex(className) {
