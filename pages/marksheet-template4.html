@@ -169,6 +169,18 @@
             font-weight: 600;
         }
 
+                /* Hide number input spin buttons (Chrome/Safari/Edge) */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        
+        /* Hide spin buttons (Firefox) */
+        input[type="number"] {
+          -moz-appearance: textfield;
+          appearance: textfield;
+        }
         .result-summary {
             display: none;
             margin: 15px 0;
@@ -508,6 +520,7 @@ body.hide-pt2-final .pt2-cols,
                 border: none !important;
                 outline: none !important;
               }
+            
         }
     </style>
 </head>
@@ -947,6 +960,11 @@ body.hide-pt2-final .pt2-cols,
 
       
     document.addEventListener('DOMContentLoaded', async () => {
+        
+         document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+          });
+        
     const urlParams = new URLSearchParams(window.location.search);
     studentId = urlParams.get('studentId');
     className = urlParams.get('className') || urlParams.get('class'); 
