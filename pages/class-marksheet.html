@@ -688,57 +688,120 @@ async function init() {
             }
         }
 
-        async function generateRanks() {
+        // async function generateRanks() {
             
-            const btn = document.querySelector('button[onclick="generateRanks()"]');
-            const originalButtonHtml = btn.innerHTML;
-            const originalButtonClass = btn.className;
+        //     const btn = document.querySelector('button[onclick="generateRanks()"]');
+        //     const originalButtonHtml = btn.innerHTML;
+        //     const originalButtonClass = btn.className;
 
-            function resetButton(success = false, timeout = 2000) {
-                setTimeout(() => {
-                    btn.className = originalButtonClass;
-                    btn.innerHTML = originalButtonHtml;
-                    btn.disabled = false;
-                }, timeout);
-            }
+        //     function resetButton(success = false, timeout = 2000) {
+        //         setTimeout(() => {
+        //             btn.className = originalButtonClass;
+        //             btn.innerHTML = originalButtonHtml;
+        //             btn.disabled = false;
+        //         }, timeout);
+        //     }
 
-            try {
-                // Check authentication first
-                const token = getAuthToken();
-                if (!token) {
-                    throw new Error('Not authenticated');
-                }
+        //     try {
+        //         // Check authentication first
+        //         const token = getAuthToken();
+        //         if (!token) {
+        //             throw new Error('Not authenticated');
+        //         }
 
-                // Show loading state
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Ranks...';
+        //         // Show loading state
+        //         btn.disabled = true;
+        //         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Ranks...';
 
-                console.log('Generating ranks for students...');
+        //         console.log('Generating ranks for students...');
                 
-                if (!marksData || !Array.isArray(marksData) || marksData.length === 0) {
-                    throw new Error('No marks data available');
-                }
+        //         if (!marksData || !Array.isArray(marksData) || marksData.length === 0) {
+        //             throw new Error('No marks data available');
+        //         }
 
-                // Sort students by overall percentage in descending order
-                marksData.sort((a, b) => b.overallPercentage - a.overallPercentage);
+        //         // Sort students by overall percentage in descending order
+        //         marksData.sort((a, b) => b.overallPercentage - a.overallPercentage);
 
-                // Calculate ranks handling ties
-                let currentRank = 1;
-                let previousPercentage = null;
-                let skippedRanks = 0;
+        //         // Calculate ranks handling ties
+        //         let currentRank = 1;
+        //         let previousPercentage = null;
+        //         let skippedRanks = 0;
 
-                // First pass: Calculate new ranks
-                marksData.forEach(student => {
-                    if (previousPercentage !== null && student.overallPercentage < previousPercentage) {
-                        currentRank += skippedRanks + 1;
-                        skippedRanks = 0;
-                    } else if (previousPercentage === student.overallPercentage) {
-                        skippedRanks++;
-                    }
-                    student.newRank = currentRank;
-                    previousPercentage = student.overallPercentage;
-                });
+        //         // First pass: Calculate new ranks
+        //         marksData.forEach(student => {
+        //             if (previousPercentage !== null && student.overallPercentage < previousPercentage) {
+        //                 currentRank += skippedRanks + 1;
+        //                 skippedRanks = 0;
+        //             } else if (previousPercentage === student.overallPercentage) {
+        //                 skippedRanks++;
+        //             }
+        //             student.newRank = currentRank;
+        //             previousPercentage = student.overallPercentage;
+        //         });
 
+        async function generateRanks() {
+    const btn = document.querySelector('button[onclick="generateRanks()"]');
+    const originalButtonHtml = btn.innerHTML;
+    const originalButtonClass = btn.className;
+
+    function resetButton(timeout = 2000) {
+        setTimeout(() => {
+            btn.className = originalButtonClass;
+            btn.innerHTML = originalButtonHtml;
+            btn.disabled = false;
+        }, timeout);
+    }
+
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('Not authenticated');
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Ranks...';
+
+        if (!marksData || !Array.isArray(marksData) || marksData.length === 0) {
+            throw new Error('No marks data available');
+        }
+
+        // Sort students
+        marksData.sort((a, b) => b.overallPercentage - a.overallPercentage);
+
+        let currentRank = 1;
+        let previousPercentage = null;
+        let skippedRanks = 0;
+
+        marksData.forEach(student => {
+            if (previousPercentage !== null && student.overallPercentage < previousPercentage) {
+                currentRank += skippedRanks + 1;
+                skippedRanks = 0;
+            } else if (previousPercentage === student.overallPercentage) {
+                skippedRanks++;
+            }
+            student.newRank = currentRank;
+            previousPercentage = student.overallPercentage;
+        });
+
+        console.log("Ranks generated:", marksData);
+
+        // ✅ SUCCESS UI
+        btn.innerHTML = '✅ Done';
+        btn.classList.add('btn-success');
+
+        // ✅ Refresh AFTER everything is done
+        setTimeout(() => {
+            location.reload();
+        }, 1000);
+
+    } catch (error) {
+        console.error(error);
+        btn.innerHTML = '❌ Error';
+        btn.classList.add('btn-danger');
+    }
+
+    resetButton();
+}
                 console.log('Ranks generated successfully');
 
                 // Update ranks in database
