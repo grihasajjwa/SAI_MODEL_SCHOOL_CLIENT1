@@ -409,39 +409,68 @@
         });
 
         // Initialize everything
-        async function init() {
-            try {
-                console.log('Page loaded, checking auth...');
-                if (!Auth.isAuthenticated()) {
-                    console.log('No auth token, redirecting to login');
-                    window.location.href = '../index.html';
-                    return;
-                }
+        // async function init() {
+        //     try {
+        //         console.log('Page loaded, checking auth...');
+        //         if (!Auth.isAuthenticated()) {
+        //             console.log('No auth token, redirecting to login');
+        //             window.location.href = '../index.html';
+        //             return;
+        //         }
 
-                 //    await loadMarksData();
-                 // // Initialize DataTable with cached data
-                 //    initializeDataTable();
+        //          //    await loadMarksData();
+        //          // // Initialize DataTable with cached data
+        //          //    initializeDataTable();
                 
-                // Load cached data first
-                const useCachedMarks = await loadCachedData();
+        //         // Load cached data first
+        //         const useCachedMarks = await loadCachedData();
                 
-                // If we don't have cached marks, fetch from the server
-                if (!useCachedMarks) {
-                    console.log('Loading marks data from server...');
-                   await loadMarksData();
-                    // console.log('loadMarksData', loadMarksData);
-                    // Cache the new marks data
-                    saveMarksToCache();
-                } else {
-                    // Initialize DataTable with cached data
-                    initializeDataTable();
-                }
-            } catch (error) {
-                console.error('Error during initialization:', error);
-                alert('Error initializing page: ' + error.message);
-            }
+        //         // If we don't have cached marks, fetch from the server
+        //         if (!useCachedMarks) {
+        //             console.log('Loading marks data from server...');
+        //            await loadMarksData();
+        //             // console.log('loadMarksData', loadMarksData);
+        //             // Cache the new marks data
+        //             saveMarksToCache();
+        //         } else {
+        //             // Initialize DataTable with cached data
+        //             initializeDataTable();
+        //         }
+        //     } catch (error) {
+        //         console.error('Error during initialization:', error);
+        //         alert('Error initializing page: ' + error.message);
+        //     }
+        // }
+
+        // Initialize everything
+async function init() {
+    try {
+        console.log('Page loaded, checking auth...');
+        if (!Auth.isAuthenticated()) {
+            console.log('No auth token, redirecting to login');
+            window.location.href = '../index.html';
+            return;
         }
 
+        // Clear only marks cache on page reload (preserves auth tokens)
+        const marksKey = `marks_${selectedClass}_${selectedSection}`;
+        localStorage.removeItem(marksKey);
+        console.log('Marks cache cleared on page reload');
+
+        // Always load fresh data from server
+        console.log('Loading marks data from server...');
+        await loadMarksData();
+        
+        // Cache the new marks data
+        saveMarksToCache();
+        
+        console.log('Page initialization complete');
+    } catch (error) {
+        console.error('Error during initialization:', error);
+        alert('Error initializing page: ' + error.message);
+    }
+}
+        
         // Function to initialize DataTable
         function initializeDataTable() {
             try {
