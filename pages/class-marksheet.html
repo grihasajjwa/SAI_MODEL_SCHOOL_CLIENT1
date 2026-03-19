@@ -689,6 +689,7 @@ async function init() {
         }
 
         async function generateRanks() {
+            location.reload();
             const btn = document.querySelector('button[onclick="generateRanks()"]');
             const originalButtonHtml = btn.innerHTML;
             const originalButtonClass = btn.className;
