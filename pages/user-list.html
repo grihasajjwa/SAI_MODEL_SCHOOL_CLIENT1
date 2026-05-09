@@ -87,6 +87,7 @@
                             <select class="form-select" id="newRole" required>
                                 <option value="teacher">Teacher</option>
                                 <option value="staff">Staff</option>
+                                <option value="accountant">Accountant</option>
                                 <option value="admin">Admin</option>
                                 <option value="student">Student</option>
                             </select>
@@ -129,6 +130,7 @@
                             <select class="form-select" id="editRole" required>
                                 <option value="teacher">Teacher</option>
                                 <option value="staff">Staff</option>
+                                <option value="accountant">Accountant</option>
                                 <option value="admin">Admin</option>
                                 <option value="student">Student</option>
                             </select>
@@ -155,7 +157,7 @@
     <script>
         // Check authentication and admin role
         if (!Auth.isAuthenticated()) {
-            window.location.href = '../index.html';
+            Auth.redirectToLogin();
         } else if (Auth.getUserRole() !== 'admin') {
             window.location.href = 'user-profile.html';
         }
@@ -376,11 +378,12 @@
         // Add logout function
         function logout() {
             Auth.logout();
-            window.location.href = '../index.html';
         }
 
         // Load users on page load
         loadUsers();
     </script>
+    <script src='../js/page-shell.js'></script>
 </body>
 </html>
+

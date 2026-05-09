@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --dashboard-ink: #0f172a;
+            --dashboard-muted: #64748b;
+            --dashboard-surface: #ffffff;
+            --dashboard-line: rgba(148, 163, 184, 0.26);
+            --dashboard-primary: #0f4c81;
+            --dashboard-primary-soft: #d9ebff;
+            --dashboard-success: #0f766e;
+            --dashboard-warning: #b45309;
+            --dashboard-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+        }
+
+        body {
+            min-height: 100vh;
+            color: var(--dashboard-ink);
+            background:
+                radial-gradient(circle at top left, rgba(14, 116, 144, 0.14), transparent 30%),
+                radial-gradient(circle at top right, rgba(37, 99, 235, 0.10), transparent 26%),
+                linear-gradient(180deg, #eef5ff 0%, #f8fbff 32%, #f4f7fb 100%);
+        }
+
+        .dashboard-shell {
+            padding: 28px 0 56px;
+        }
+
+        .dashboard-card,
+        .hero-panel,
+        .stats-card,
+        .topper-card,
+        .insight-card,
+        .class-card,
+        .analytics-card {
+            border: 0;
+            border-radius: 24px;
+            box-shadow: var(--dashboard-shadow);
+            background: var(--dashboard-surface);
+        }
+
+        .hero-panel {
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+            background:
+                radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.22), transparent 18%),
+                radial-gradient(circle at 80% 20%, rgba(125, 211, 252, 0.24), transparent 22%),
+                linear-gradient(130deg, #082f49 0%, #0f4c81 45%, #2563eb 100%);
+        }
+
+        .hero-panel::after {
+            content: "";
+            position: absolute;
+            inset: auto -40px -55px auto;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .hero-kicker {
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            opacity: 0.78;
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 3.2vw, 3.3rem);
+            font-weight: 800;
+            line-height: 1.05;
+            margin-bottom: 0.8rem;
+        }
+
+        .hero-copy {
+            max-width: 52rem;
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 1rem;
+        }
+
+        .hero-session-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 1.25rem;
+        }
+
+        .hero-session-chip {
+            min-width: 170px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+        }
+
+        .hero-session-chip small,
+        .hero-side-note {
+            display: block;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .hero-session-chip strong {
+            display: block;
+            margin-top: 2px;
+            font-size: 1.05rem;
+        }
+
+        .toolbar-card {
+            padding: 18px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .toolbar-card .form-label {
+            margin-bottom: 0.4rem;
+            font-size: 0.82rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.76);
+        }
+
+        .toolbar-card .form-select,
+        .toolbar-card .btn {
+            min-height: 48px;
+        }
+
+        .section-heading {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .section-heading p {
+            margin: 0.35rem 0 0;
+            color: var(--dashboard-muted);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .stats-card {
+            padding: 20px;
+        }
+
+        .stats-label {
+            margin-bottom: 0.45rem;
+            color: var(--dashboard-muted);
+            font-size: 0.86rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .stats-value {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .stats-footnote {
+            margin-top: 0.7rem;
+            color: var(--dashboard-muted);
+            font-size: 0.92rem;
+        }
+
+        .analytics-card {
+            padding: 24px;
+        }
+
+        .carousel-indicators {
+            position: static;
+            margin: 1rem 0 0;
+            justify-content: flex-start;
+        }
+
+        .carousel-indicators [data-bs-target] {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 0;
+            background: rgba(15, 76, 129, 0.18);
+        }
+
+        .carousel-indicators .active {
+            background: var(--dashboard-primary);
+        }
+
+        .topper-card {
+            position: relative;
+            height: 100%;
+            padding: 18px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 34%),
+                linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .topper-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto auto 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #f59e0b, #2563eb, #0f766e);
+        }
+
+        .topper-rank-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--dashboard-primary);
+            background: var(--dashboard-primary-soft);
+        }
+
+        .topper-medal {
+            margin-top: 12px;
+            font-size: 1.35rem;
+        }
+
+        .topper-name {
+            margin: 12px 0 4px;
+            font-size: 1.08rem;
+            font-weight: 800;
+        }
+
+        .topper-meta,
+        .topper-grade,
+        .topper-details {
+            color: var(--dashboard-muted);
+        }
+
+        .topper-score {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: var(--dashboard-ink);
+            margin-bottom: 0.25rem;
+        }
+
+        .topper-details {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .insight-card {
+            height: 100%;
+            padding: 20px;
+            background:
+                linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+        }
+
+        .insight-label {
+            color: var(--dashboard-muted);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.45rem;
+        }
+
+        .insight-card h4 {
+            margin-bottom: 0.35rem;
+            font-size: 1.18rem;
+            font-weight: 800;
+        }
+
+        .insight-value {
+            margin-bottom: 0.35rem;
+            font-weight: 700;
+            color: var(--dashboard-primary);
+        }
+
+        .insight-note {
+            margin: 0;
+            color: var(--dashboard-muted);
+            font-size: 0.92rem;
+        }
+
+        .class-card-body {
+            padding: 24px;
+        }
+
+        .class-card-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .class-card-kicker {
+            color: var(--dashboard-primary);
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.12em;
+            font-weight: 800;
+        }
+
+        .class-card-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .class-card-subtitle {
+            color: var(--dashboard-muted);
+        }
+
+        .class-card-pill {
+            min-width: 82px;
+            padding: 14px 12px;
+            border-radius: 18px;
+            text-align: center;
+            background: linear-gradient(180deg, #0f4c81, #2563eb);
+            color: #fff;
+        }
+
+        .class-card-pill span {
+            display: block;
+            font-size: 1.45rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .class-card-pill small {
+            display: block;
+            margin-top: 4px;
+            opacity: 0.85;
+        }
+
+        .class-card-metrics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .metric-chip {
+            min-width: 110px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: #f8fbff;
+            border: 1px solid var(--dashboard-line);
+        }
+
+        .metric-chip strong {
+            display: block;
+            font-size: 1.05rem;
+        }
+
+        .metric-chip span {
+            display: block;
+            margin-top: 3px;
+            color: var(--dashboard-muted);
+            font-size: 0.85rem;
+        }
+
+        .section-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 12px;
+        }
+
+        .section-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            text-decoration: none;
+            border: 1px solid var(--dashboard-line);
+            background: #fff;
+            color: var(--dashboard-ink);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .section-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+            border-color: rgba(37, 99, 235, 0.3);
+            color: var(--dashboard-primary);
+        }
+
+        .section-link-name {
+            font-weight: 700;
+        }
+
+        .section-link-meta {
+            color: var(--dashboard-muted);
+            font-size: 0.86rem;
+        }
+
+        .table thead th {
+            color: var(--dashboard-muted);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            vertical-align: middle;
+        }
+
+        .empty-state {
+            padding: 42px 20px;
+            text-align: center;
+            border: 1px dashed rgba(148, 163, 184, 0.45);
+            border-radius: 22px;
+            background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+            color: var(--dashboard-muted);
+        }
+
+        .empty-state.compact {
+            padding: 28px 20px;
+        }
+
+        @media (max-width: 1399.98px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .dashboard-shell {
+                padding-top: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .class-card-top,
+            .topper-details {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="dashboard-shell">
+        <div class="container">
+            <section class="hero-panel p-4 p-lg-5 mb-4">
+                <div class="row g-4 align-items-center position-relative">
+                    <div class="col-xl-8">
+                        <p class="hero-kicker mb-2">Academic Performance Center</p>
+                        <h1 class="hero-title">Result Dashboard</h1>
+                        <p class="hero-copy" id="sessionOverviewText">
+                            A consolidated performance view with session-wise toppers, class insights, section strength, and result coverage.
+                        </p>
+                        <div class="hero-session-strip">
+                            <div class="hero-session-chip">
+                                <small>Selected Session</small>
+                                <strong id="heroCurrentSession">-</strong>
+                            </div>
+                            <div class="hero-session-chip">
+                                <small>Default Current Session</small>
+                                <strong id="heroDefaultSession">-</strong>
+                            </div>
+                            <div class="hero-session-chip">
+                                <small>Session Status</small>
+                                <strong id="sessionStatusText">Loading...</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-4">
+                        <div class="toolbar-card">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="sessionSelect" class="form-label">Academic Session</label>
+                                    <select id="sessionSelect" class="form-select"></select>
+                                </div>
+                                <div class="col-12 d-grid">
+                                    <button id="reloadSessionBtn" class="btn btn-light text-primary fw-semibold">
+                                        <i class="fas fa-rotate-right me-2"></i>Refresh Dashboard
+                                    </button>
+                                </div>
+                                <div class="col-12">
+                                    <small class="hero-side-note" id="resultPulseText">Loading result pulse...</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-4">
+                <div class="stats-grid">
+                    <article class="stats-card">
+                        <p class="stats-label">Classes</p>
+                        <div class="stats-value" id="statsClassCount">0</div>
+                        <div class="stats-footnote">Configured classes in session</div>
+                    </article>
+                    <article class="stats-card">
+                        <p class="stats-label">Sections</p>
+                        <div class="stats-value" id="statsSectionCount">0</div>
+                        <div class="stats-footnote">Active class sections</div>
+                    </article>
+                    <article class="stats-card">
+                        <p class="stats-label">Students</p>
+                        <div class="stats-value" id="statsStudentCount">0</div>
+                        <div class="stats-footnote">Registered student count</div>
+                    </article>
+                    <article class="stats-card">
+                        <p class="stats-label">Published Results</p>
+                        <div class="stats-value" id="statsPublishedCount">0</div>
+                        <div class="stats-footnote">Students with usable marks</div>
+                    </article>
+                    <article class="stats-card">
+                        <p class="stats-label">Pass Rate</p>
+                        <div class="stats-value" id="statsPassRate">0%</div>
+                        <div class="stats-footnote">Based on published results</div>
+                    </article>
+                    <article class="stats-card">
+                        <p class="stats-label">Average</p>
+                        <div class="stats-value" id="statsAveragePercentage">0%</div>
+                        <div class="stats-footnote">Overall session average</div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="analytics-card mb-4">
+                <div class="section-heading">
+                    <div>
+                        <h2>Top Rank Holders</h2>
+                        <p id="topperSummaryText">Top 10 performance cards will appear here.</p>
+                    </div>
+                </div>
+                <div id="topPerformersCarousel" class="carousel slide" data-bs-ride="false">
+                    <div class="carousel-inner" id="topPerformersCarouselInner"></div>
+                    <div class="carousel-indicators" id="topPerformersIndicators"></div>
+                </div>
+            </section>
+
+            <section class="mb-4">
+                <div class="section-heading">
+                    <div>
+                        <h2>Performance Spotlight</h2>
+                        <p>Read the session at a glance before drilling down into individual sections.</p>
+                    </div>
+                </div>
+                <div class="row g-3" id="spotlightContainer"></div>
+            </section>
+
+            <section class="mb-4">
+                <div class="section-heading">
+                    <div>
+                        <h2>Class Result Workspaces</h2>
+                        <p>Open any section to review marks, ranks, and printable class-wise results.</p>
+                    </div>
+                </div>
+                <div class="row g-3" id="classCardsContainer"></div>
+            </section>
+
+            <section class="row g-4">
+                <div class="col-12 col-xl-6">
+                    <article class="analytics-card h-100">
+                        <div class="section-heading">
+                            <div>
+                                <h2>Class Leaderboard</h2>
+                                <p>Average result quality by class.</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Class</th>
+                                        <th>Teacher</th>
+                                        <th>Published</th>
+                                        <th>Average</th>
+                                        <th>Pass</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="classPerformanceTableBody"></tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+                <div class="col-12 col-xl-6">
+                    <article class="analytics-card h-100">
+                        <div class="section-heading">
+                            <div>
+                                <h2>Section Leaderboard</h2>
+                                <p>Best performing sections and toppers.</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Section</th>
+                                        <th>Teacher</th>
+                                        <th>Topper</th>
+                                        <th>Average</th>
+                                        <th>Pass</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sectionPerformanceTableBody"></tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+                <div class="col-12">
+                    <article class="analytics-card">
+                        <div class="section-heading">
+                            <div>
+                                <h2>Exam Strength Analysis</h2>
+                                <p>Compare how students are performing across PT1, Half Yearly, PT2, and Final.</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Exam</th>
+                                        <th>Participants</th>
+                                        <th>Average</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="examPerformanceTableBody"></tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script src="../js/marksheets.js"></script>
+</body>
+</html>

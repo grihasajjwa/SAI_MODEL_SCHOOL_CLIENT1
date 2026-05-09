@@ -33,6 +33,12 @@
     color: #3498db;
 }
 
+.dropdown-item.active {
+    background-color: #eef6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
 /* Dropdown styles */
 .dropdown-toggle::after {
     margin-left: 0.5rem;
@@ -105,4 +111,12 @@
 
 .admin-nav {
     background-color: var(--dark-color) !important;
+}
+
+@media print {
+    #navbar-container,
+    .navbar,
+    .user-nav {
+        display: none !important;
+    }
 }

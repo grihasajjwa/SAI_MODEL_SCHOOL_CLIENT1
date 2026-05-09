@@ -48,24 +48,7 @@
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Class Marksheet</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="Auth.logout()">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <div id="navbar-container"></div>
 
     <!-- Print Header -->
     <div class="print-header">
@@ -76,7 +59,7 @@
                 <p><strong>Section:</strong> <span id="printSection"></span></p>
             </div>
             <div>
-                <p><strong>Academic Year:</strong> <span id="printYear">2024-2025</span></p>
+                <p><strong>Academic Year:</strong> <span id="printYear">-</span></p>
             </div>
         </div>
     </div>
@@ -87,7 +70,7 @@
             <div class="col">
                 <h4>
                     Class <span id="className"></span> ( <span id="section"></span>)
-                    <small class="text-muted">Academic Year: <span id="academicYear">2024-2025</span></small>
+                    <small class="text-muted">Academic Year: <span id="academicYear">-</span></small>
                 </h4>
             </div>
         </div>
@@ -116,10 +99,12 @@
         const urlParams = new URLSearchParams(window.location.search);
         const selectedClass = urlParams.get('class');
         const selectedSection = urlParams.get('section');
+        const selectedSession = urlParams.get('session') || CONFIG.CURRENT_SESSION || 'Default';
 
         // Update header and info sections
         document.getElementById('className').textContent = selectedClass || '';
         document.getElementById('section').textContent = selectedSection || '';
+        document.getElementById('academicYear').textContent = selectedSession;
         document.getElementById('printClass').textContent = selectedClass || '';
         document.getElementById('printSection').textContent = selectedSection || '';
         document.getElementById('printYear').textContent = document.getElementById('academicYear').textContent;
@@ -129,7 +114,7 @@
             const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
             if (!token) {
                 console.error('No authentication token found');
-                window.location.href = '../index.html';
+                Auth.redirectToLogin();
                 return null;
             }
             return token;
@@ -154,7 +139,7 @@
                 if (response.status === 401) {
                     console.error('Authentication failed');
                     localStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
-                    window.location.href = '../index.html';
+                    Auth.redirectToLogin();
                     return null;
                 }
                 
@@ -184,12 +169,12 @@
                 const token = getAuthToken();
                 if (!token) {
                     console.error('No valid token found');
-                    window.location.href = '../index.html';
+                    Auth.redirectToLogin();
                     return;
                 }
 
                 console.log('Fetching marks for:', selectedClass, selectedSection);
-                const response = await apiCall(`${CONFIG.API_URL}/marks/class/${selectedClass}/${selectedSection}`);
+                const response = await apiCall(`${CONFIG.API_URL}/marks/class/${selectedClass}/${selectedSection}?academicYear=${encodeURIComponent(selectedSession)}`);
                 
                 if (!response) {
                     console.error('No response from API');
@@ -271,33 +256,9 @@
                     return processedStudent;
                 });
 
-                // Sort by overall percentage and calculate initial ranks
-                marksData.sort((a, b) => b.overallPercentage - a.overallPercentage);
-                let currentRank = 1;
-                let previousPercentage = null;
-                let skippedRanks = 0;
-
-                // First pass: Check if any student has a rank
-                const hasExistingRanks = marksData.some(student => student.rank !== null);
-
-                // Second pass: Calculate ranks
-                marksData.forEach(student => {
-                    if (previousPercentage !== null && student.overallPercentage < previousPercentage) {
-                        currentRank += skippedRanks + 1;
-                        skippedRanks = 0;
-                    } else if (previousPercentage === student.overallPercentage) {
-                        skippedRanks++;
-                    }
-                    
-                    // Only set rank if:
-                    // 1. No students have ranks (fresh data)
-                    // 2. This specific student doesn't have a rank
-                    if (!hasExistingRanks || student.rank === null) {
-                        student.rank = currentRank;
-                    }
-                    
-                    previousPercentage = student.overallPercentage;
-                });
+                // Always rebuild display ranks from the computed percentage order.
+                // This prevents stale saved ranks from surviving after repeated runs.
+                marksData = assignCompetitionRanks(marksData);
 
                 console.log('Processed marks data:', marksData);
                 
@@ -311,7 +272,7 @@
             } catch (error) {
                 console.error('Error loading marks:', error);
                 if (error.message.includes('401')) {
-                    window.location.href = '../index.html';
+                    Auth.redirectToLogin();
                 } else {
                     alert('Error loading marks data: ' + error.message);
                 }
@@ -350,7 +311,7 @@
                 }
 
                 // Cache marks data for faster reloads
-                const marksKey = `marks_${selectedClass}_${selectedSection}`;
+                const marksKey = `marks_${selectedClass}_${selectedSection}_${selectedSession}`;
                 const cachedMarksData = localStorage.getItem(marksKey);
                 if (cachedMarksData) {
                     try {
@@ -375,7 +336,7 @@
         function saveMarksToCache() {
             try {
                 if (marksData && Array.isArray(marksData) && marksData.length > 0) {
-                    const marksKey = `marks_${selectedClass}_${selectedSection}`;
+                    const marksKey = `marks_${selectedClass}_${selectedSection}_${selectedSession}`;
                     localStorage.setItem(marksKey, JSON.stringify(marksData));
                     console.log('Marks data cached successfully');
                 }
@@ -389,7 +350,7 @@
             try {
                 localStorage.removeItem(CONFIG.STORAGE_KEYS.CLASS_DATA);
                 localStorage.removeItem(CONFIG.STORAGE_KEYS.SUBJECT_DATA);
-                const marksKey = `marks_${selectedClass}_${selectedSection}`;
+                const marksKey = `marks_${selectedClass}_${selectedSection}_${selectedSession}`;
                 localStorage.removeItem(marksKey);
                 console.log('Cache cleared successfully');
             } catch (error) {
@@ -403,74 +364,45 @@
                 console.log('Auth token changed:', e.newValue ? 'New token set' : 'Token removed');
                 if (!e.newValue) {
                     clearCachedData();
-                    window.location.href = '../index.html';
+                    Auth.redirectToLogin();
                 }
             }
         });
 
         // Initialize everything
-        // async function init() {
-        //     try {
-        //         console.log('Page loaded, checking auth...');
-        //         if (!Auth.isAuthenticated()) {
-        //             console.log('No auth token, redirecting to login');
-        //             window.location.href = '../index.html';
-        //             return;
-        //         }
+        async function init() {
+            try {
+                console.log('Page loaded, checking auth...');
+                if (!Auth.isAuthenticated()) {
+                    console.log('No auth token, redirecting to login');
+                    Auth.redirectToLogin();
+                    return;
+                }
 
-        //          //    await loadMarksData();
-        //          // // Initialize DataTable with cached data
-        //          //    initializeDataTable();
+                 //    await loadMarksData();
+                 // // Initialize DataTable with cached data
+                 //    initializeDataTable();
                 
-        //         // Load cached data first
-        //         const useCachedMarks = await loadCachedData();
+                // Load cached data first
+                const useCachedMarks = await loadCachedData();
                 
-        //         // If we don't have cached marks, fetch from the server
-        //         if (!useCachedMarks) {
-        //             console.log('Loading marks data from server...');
-        //            await loadMarksData();
-        //             // console.log('loadMarksData', loadMarksData);
-        //             // Cache the new marks data
-        //             saveMarksToCache();
-        //         } else {
-        //             // Initialize DataTable with cached data
-        //             initializeDataTable();
-        //         }
-        //     } catch (error) {
-        //         console.error('Error during initialization:', error);
-        //         alert('Error initializing page: ' + error.message);
-        //     }
-        // }
-
-        // Initialize everything
-async function init() {
-    try {
-        console.log('Page loaded, checking auth...');
-        if (!Auth.isAuthenticated()) {
-            console.log('No auth token, redirecting to login');
-            window.location.href = '../index.html';
-            return;
+                // If we don't have cached marks, fetch from the server
+                if (!useCachedMarks) {
+                    console.log('Loading marks data from server...');
+                   await loadMarksData();
+                    // console.log('loadMarksData', loadMarksData);
+                    // Cache the new marks data
+                    saveMarksToCache();
+                } else {
+                    // Initialize DataTable with cached data
+                    initializeDataTable();
+                }
+            } catch (error) {
+                console.error('Error during initialization:', error);
+                alert('Error initializing page: ' + error.message);
+            }
         }
 
-        // Clear only marks cache on page reload (preserves auth tokens)
-        const marksKey = `marks_${selectedClass}_${selectedSection}`;
-        localStorage.removeItem(marksKey);
-        console.log('Marks cache cleared on page reload');
-
-        // Always load fresh data from server
-        console.log('Loading marks data from server...');
-        await loadMarksData();
-        
-        // Cache the new marks data
-        saveMarksToCache();
-        
-        console.log('Page initialization complete');
-    } catch (error) {
-        console.error('Error during initialization:', error);
-        alert('Error initializing page: ' + error.message);
-    }
-}
-        
         // Function to initialize DataTable
         function initializeDataTable() {
             try {
@@ -669,6 +601,39 @@ async function init() {
             return 'E';
         }
 
+        function compareStudentsForRank(a, b) {
+            const percentageGap = (Number(b.overallPercentage) || 0) - (Number(a.overallPercentage) || 0);
+            if (Math.abs(percentageGap) > 0.0001) {
+                return percentageGap;
+            }
+
+            return String(a.studentName || '').localeCompare(String(b.studentName || ''));
+        }
+
+        function assignCompetitionRanks(students) {
+            const rankedStudents = [...students].sort(compareStudentsForRank);
+            let previousPercentage = null;
+            let currentRank = 0;
+
+            rankedStudents.forEach((student, index) => {
+                const percentage = Number(student.overallPercentage) || 0;
+
+                if (percentage <= 0) {
+                    student.rank = null;
+                    return;
+                }
+
+                if (previousPercentage === null || Math.abs(percentage - previousPercentage) > 0.0001) {
+                    currentRank = index + 1;
+                    previousPercentage = percentage;
+                }
+
+                student.rank = currentRank;
+            });
+
+            return rankedStudents;
+        }
+
         async function deleteMarks(marksId, studentName) {
             if (!confirm(`Are you sure you want to delete marks for ${studentName}?`)) {
                 return;
@@ -689,7 +654,6 @@ async function init() {
         }
 
         async function generateRanks() {
-            
             const btn = document.querySelector('button[onclick="generateRanks()"]');
             const originalButtonHtml = btn.innerHTML;
             const originalButtonClass = btn.className;
@@ -711,7 +675,7 @@ async function init() {
 
                 // Show loading state
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Ranks...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Ranks...';
 
                 console.log('Generating ranks for students...');
                 
@@ -719,28 +683,16 @@ async function init() {
                     throw new Error('No marks data available');
                 }
 
-                // Sort students by overall percentage in descending order
-                marksData.sort((a, b) => b.overallPercentage - a.overallPercentage);
+                marksData = assignCompetitionRanks(
+                    marksData.map(student => ({ ...student, storedRank: student.rank }))
+                ).map(student => ({
+                    ...student,
+                    newRank: student.rank,
+                    rank: student.storedRank ?? null
+                }));
 
-                // Calculate ranks handling ties
-                let currentRank = 1;
-                let previousPercentage = null;
-                let skippedRanks = 0;
-
-                // First pass: Calculate new ranks
-                marksData.forEach(student => {
-                    if (previousPercentage !== null && student.overallPercentage < previousPercentage) {
-                        currentRank += skippedRanks + 1;
-                        skippedRanks = 0;
-                    } else if (previousPercentage === student.overallPercentage) {
-                        skippedRanks++;
-                    }
-                    student.newRank = currentRank;
-                    previousPercentage = student.overallPercentage;
-                });
-
-      
                 console.log('Ranks generated successfully');
+                console.log('Rank distribution:', marksData.map(s => ({name: s.studentName, percentage: s.overallPercentage, rank: s.newRank})));
 
                 // Update ranks in database
                 console.log('Updating ranks in database...');
@@ -750,31 +702,34 @@ async function init() {
                 // Second pass: Only update ranks that have changed
                 for (const student of marksData) {
                     try {
-                        // Skip if rank hasn't changed
+                        // Always update since we cleared previous ranks
                         if (student.rank === student.newRank) {
-                            console.log(`Skipping rank update for ${student.studentName} (rank unchanged: ${student.rank})`);
+                            console.log(`Rank same for ${student.studentName}: ${student.newRank}`);
                             successfulUpdates.push(student.studentName);
-                            continue;
+                        } else {
+                            console.log(`Updating rank for ${student.studentName}: ${student.rank} → ${student.newRank}`);
+                            
+                            const response = await fetch(`${CONFIG.API_URL}/marks/${student._id}/rank`, {
+                                method: 'PATCH',
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Authorization": `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ rank: student.newRank }),
+                            });
+
+                            if (!response.ok) {
+                                throw new Error(`Failed to update rank for student ${student.studentName}`);
+                            }
+
+                            // Update the rank in our local data
+                            student.rank = student.newRank;
+                            console.log(`Successfully updated rank for ${student.studentName} to ${student.rank}`);
+                            successfulUpdates.push(student.studentName);
                         }
-
-                        console.log(`Updating rank for ${student.studentName} from ${student.rank} to ${student.newRank}`);
-                        
-                        const response = await apiCall(`${CONFIG.API_URL}/marks/${student._id}/rank`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ rank: student.newRank })
-                        });
-
-                        if (!response) {
-                            throw new Error(`Failed to update rank for student ${student.studentName}`);
-                        }
-
-                        // Update the rank in our local data
-                        student.rank = student.newRank;
-                        console.log(`Successfully updated rank for ${student.studentName} to ${student.rank}`);
-                        successfulUpdates.push(student.studentName);
                     } catch (error) {
                         console.error(`Error updating rank for ${student.studentName}:`, error);
-                        failedUpdates.push(`${student.studentName} (${error.message})`);
+                        failedUpdates.push(`${student.studentName}: ${error.message}`);
                     }
                 }
 
@@ -817,9 +772,9 @@ async function init() {
                 if (error.message.includes('Not authenticated')) {
                     // Clear cached data when authentication fails
                     clearCachedData();
-                    window.location.href = '../index.html';
+                    Auth.redirectToLogin();
                 } else {
-                    alert('Error generating ranks: ' + error.message);
+                    alert('Failed to generate ranks. Please try again.');
                 }
             }
         }
@@ -832,10 +787,20 @@ async function init() {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Ranks...';
 
-        console.log('Updating ranks in database:');
+        console.log('Updating ranks in database...');
+
+        marksData = assignCompetitionRanks(
+            marksData.map(student => ({ ...student, storedRank: student.rank }))
+        ).map(student => ({
+            ...student,
+            newRank: student.rank,
+            rank: student.storedRank ?? null
+        }));
+
+        console.log('New ranks calculated:', marksData.map(s => ({name: s.studentName, percentage: s.overallPercentage, rank: s.newRank})));
 
         for (const student of marksData) {
-            console.log(`ID: ${student._id}, Name: ${student.studentName}, Rank: ${student.rank}`);
+            console.log(`ID: ${student._id}, Name: ${student.studentName}, New Rank: ${student.newRank}`);
 
             try {
                 // API call to update only the rank
@@ -843,8 +808,9 @@ async function init() {
                     method: 'PATCH',
                     headers: {
                         "Content-Type": "application/json",
+                        "Authorization": `Bearer ${getAuthToken()}`
                     },
-                    body: JSON.stringify({ rank: student.rank }),
+                    body: JSON.stringify({ rank: student.newRank }),
                 });
 
                 // Ensure response is valid before parsing JSON
@@ -854,10 +820,19 @@ async function init() {
                 }
 
                 const data = await response.json(); // Now safe to parse JSON
-                console.log(`ID: ${student._id}, Name: ${student.studentName}, Rank: ${student.rank} - Updated in DB`, data);
+                console.log(`ID: ${student._id}, Name: ${student.studentName}, Rank: ${student.newRank} - Updated in DB`, data);
+                
+                // Update the rank in our local data
+                student.rank = student.newRank;
             } catch (error) {
-                console.error(`Error updating rank for student ${student.studentName}:`, error.message);
+                console.error(`Error updating rank for ${student.studentName}:`, error.message);
             }
+        }
+
+        // Update DataTable with new ranks
+        if (dataTable) {
+            dataTable.clear().rows.add(marksData).draw();
+            console.log('DataTable updated with new ranks');
         }
 
         // Show success state
@@ -886,5 +861,6 @@ async function init() {
 }
         document.addEventListener('DOMContentLoaded', init);
     </script>
+    <script src="../js/page-shell.js"></script>
 </body>
 </html>

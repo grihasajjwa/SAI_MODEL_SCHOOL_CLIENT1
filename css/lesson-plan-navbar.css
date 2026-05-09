@@ -1,0 +1,134 @@
+/* Lesson Plan Navbar Styles */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #ffffff;
+    padding: 0.5rem 1rem;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.navbar-brand img {
+    margin-right: 10px;
+    height: 40px;
+}
+
+.navbar-nav .nav-link {
+    color: #2c3e50;
+    font-weight: 500;
+    padding: 0.5rem 0.85rem;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.navbar-nav .nav-link i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    font-size: 1rem;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus {
+    color: #3498db;
+}
+
+.navbar-nav .nav-link.active {
+    color: #3498db;
+}
+
+.dropdown-item.active {
+    background-color: #eef6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+.dropdown-toggle::after {
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    transition: transform 0.2s ease;
+}
+
+.show .dropdown-toggle::after {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+    min-width: 200px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #2c3e50;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+
+.dropdown-item i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    width: auto;
+    margin-right: 0;
+    font-size: 1rem;
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #3498db;
+}
+
+.dropdown-divider {
+    margin: 0.5rem 0;
+    border-top: 1px solid #e9ecef;
+}
+
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        padding: 1rem 0;
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 0.5rem 0;
+    }
+    
+    .dropdown-menu {
+        border: none;
+        box-shadow: none;
+        padding: 0 1rem;
+        margin-top: 0;
+    }
+    
+    .dropdown-item {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+.admin-nav {
+    background-color: var(--dark-color) !important;
+}
+
+@media print {
+    #navbar-container,
+    .navbar,
+    .user-nav {
+        display: none !important;
+    }
+}

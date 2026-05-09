@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Form Builder Pro - FINAL MASTER PRO</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/navbar.css">
+
+  <!-- Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-dark: #1e3a8a;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --secondary: #64748b;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #dbeafe;
+      --shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+      --radius: 20px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #eaf2ff, #f8fbff);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 0;
+    }
+
+    .page-shell {
+      max-width: 1700px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 430px 1fr;
+      gap: 18px;
+      max-width: 1700px;
+      margin: auto;
+    }
+
+    .sidebar,
+    .workspace {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 36px);
+    }
+
+    .sidebar-header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 24px 22px;
+    }
+
+    .sidebar-header h1 {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-header p {
+      font-size: 14px;
+      opacity: 0.92;
+    }
+
+    .sidebar-content {
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .section {
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      color: var(--primary-dark);
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      margin-top: 12px;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    button {
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-grid-2,
+    .btn-grid-3 {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .btn-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .btn-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+    .primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
+    .success { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+    .warning { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; }
+    .danger { background: linear-gradient(135deg, #f87171, #ef4444); color: white; }
+    .secondary { background: linear-gradient(135deg, #94a3b8, #64748b); color: white; }
+    .dark { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; }
+
+    .field-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .field-card {
+      background: #f8fbff;
+      border: 1px dashed #93c5fd;
+      border-radius: 16px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .field-card h4 {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .field-card p {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .field-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .field-actions button {
+      width: auto;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 36px);
+    }
+
+    .workspace-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      background: linear-gradient(135deg, #f8fbff, #ffffff);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .workspace-header h2 {
+      font-size: 26px;
+      margin-bottom: 4px;
+    }
+
+    .workspace-header p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .preview-wrapper {
+      padding: 24px;
+      overflow-y: auto;
+      background: linear-gradient(135deg, #f7fbff, #eef5ff);
+    }
+
+    .paper {
+      background: white;
+      width: 210mm;
+      min-height: 297mm;
+      max-width: 210mm;
+      margin: auto;
+      border-radius: 16px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+      border: 1px solid #dbeafe;
+      padding: 14mm 12mm 12mm;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+    }
+
+    .official-pad {
+      border: 2px solid #1d4ed8;
+      box-shadow: inset 0 0 0 6px rgba(37, 99, 235, 0.08);
+    }
+
+.top-head {
+  border-bottom: 3px solid #1d4ed8;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  background: rgba(255,255,255,0.92);
+  border-radius: 12px;
+  padding: 14px 14px 18px;
+  position: relative;
+  z-index: 2;
+  min-height: 190px;
+}
+
+  .school-head-row {
+  display: grid;
+  grid-template-columns: 95px 1fr 135px;
+  gap: 12px;
+  align-items: start;
+}
+
+    .logo-box,
+    .student-photo-box,
+    .sign-box,
+    .stamp-box {
+      border: 2px solid #cbd5e1;
+      background: #f8fafc;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .logo-box {
+      width: 95px;
+      height: 95px;
+    }
+
+    .logo-box img,
+    .student-photo-box img,
+    .sign-box img,
+    .stamp-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .school-center {
+      text-align: center;
+    }
+
+ .school-center h1 {
+  font-size: 22px;
+  color: #1e3a8a;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-family: Georgia, "Times New Roman", "Cambria", serif;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+    .school-center p {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    #schoolName {
+      font-family: Georgia, "Times New Roman", "Cambria", serif;
+      font-weight: 700;
+      font-size: 18px;
+      padding: 8px 12px;
+    }
+
+    .school-center .tagline {
+      font-size: 12px;
+      color: #64748b;
+      font-style: italic;
+      margin-top: 3px;
+    }
+
+ .student-photo-box {
+  width: 110px;
+  height: 130px;
+  position: absolute;
+  right: 10mm;
+  top: 8mm;
+  z-index: 10;
+  border: 2px solid #1e3a8a;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+    .title-bar {
+      text-align: center;
+      margin: 18px 0 12px;
+    }
+
+    .title-bar h2 {
+      display: inline-block;
+      font-size: 22px;
+      color: #0f172a;
+      border-bottom: 2px solid #1d4ed8;
+      padding: 0 18px 6px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: rgba(255,255,255,0.92);
+    }
+
+    .meta-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: center;
+      margin: 12px 0 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      background: rgba(255,255,255,0.92);
+      padding: 10px 12px;
+      border-radius: 10px;
+    }
+
+    .meta-item {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .meta-label {
+      color: #334155;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .meta-value {
+      border-bottom: 1px dashed #64748b;
+      min-width: 120px;
+      padding-bottom: 2px;
+      width: 100%;
+    }
+
+    .grid-form {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      grid-auto-flow: dense;
+      margin-top: 8px;
+      background: rgba(255,255,255,0.94);
+      padding: 16px;
+      border-radius: 14px;
+      min-height: 200px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(255,255,255,0.78);
+      border: 1px dashed transparent;
+      border-radius: 12px;
+      padding: 10px;
+      transition: 0.2s ease;
+    }
+
+    .form-group.draggable-on {
+      cursor: grab;
+    }
+
+    .form-group.draggable-on:hover {
+      border-color: #93c5fd;
+      background: rgba(239,246,255,0.95);
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      margin: 0;
+      font-size: 14px;
+      color: #334155;
+      font-weight: 800;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .checkbox-group,
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 10px 0;
+    }
+
+    .checkbox-item,
+    .radio-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      width: auto;
+    }
+
+    .checkbox-item input,
+    .radio-item input {
+      width: auto;
+      transform: scale(1.1);
+      margin: 0;
+    }
+
+    .divider {
+      border-top: 2px dashed #cbd5e1;
+      margin: 12px 0;
+      grid-column: 1 / -1;
+    }
+
+    .section-heading {
+      grid-column: 1 / -1;
+      font-size: 18px;
+      font-weight: 800;
+      color: #1e3a8a;
+      background: #eff6ff;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border-left: 5px solid #2563eb;
+    }
+
+    .section-heading.draggable-on {
+      cursor: grab;
+    }
+
+    .readonly-box {
+      background: #f8fafc;
+      border: 1px dashed #94a3b8;
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+.signature-row {
+  margin-top: 50px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+  background: rgba(255,255,255,0.94);
+  padding: 12px;
+  border-radius: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+    .signature-row.three-signatures {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .signature-row.two-signatures {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .signature-row.one-signature {
+      grid-template-columns: repeat(1, 1fr);
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .sign-section {
+      text-align: center;
+    }
+
+.sign-box {
+  width: 100%;
+  max-width: 160px;
+  height: 70px;
+  margin: 0 auto 10px;
+}
+
+    .stamp-box {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin: 0 auto 10px;
+    }
+
+.sign-line {
+  border-top: 1px solid #0f172a;
+  padding-top: 8px;
+  font-weight: 800;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+    .footer {
+      margin-top: 26px;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 14px;
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      background: rgba(255,255,255,0.94);
+      border-radius: 10px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .watermark {
+      position: absolute;
+      top: 52%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 56px;
+      font-weight: 900;
+      pointer-events: none;
+      white-space: nowrap;
+      text-transform: uppercase;
+      text-align: center;
+      width: 95%;
+      overflow: hidden;
+      z-index: 1;
+      user-select: none;
+      letter-spacing: 2px;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .required-star {
+      color: red;
+      margin-left: 4px;
+    }
+
+    .dragging {
+      opacity: 0.5;
+      transform: scale(0.98);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-top: 14px;
+    }
+
+    .toggle-row input {
+      width: auto;
+      transform: scale(1.15);
+      margin: 0;
+    }
+
+    .toggle-row label {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+      color: #1e3a8a;
+      cursor: pointer;
+    }
+
+    .range-wrap {
+      margin-top: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .range-wrap input[type="range"] {
+      width: 100%;
+      padding: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    /* TABLE FIELD */
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      background: white;
+    }
+
+    .dynamic-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    .dynamic-table th,
+    .dynamic-table td {
+      border: 1px solid #cbd5e1;
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .dynamic-table th {
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-weight: 800;
+    }
+
+    .dynamic-table input {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      padding: 6px;
+      border-radius: 6px;
+    }
+
+    .table-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .table-controls button {
+      width: auto;
+      padding: 8px 12px;
+      font-size: 13px;
+      border-radius: 10px;
+    }
+
+    @media (max-width: 1200px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar,
+      .workspace {
+        max-height: unset;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .grid-form,
+      .signature-row,
+      .school-head-row,
+      .meta-row {
+        grid-template-columns: 1fr;
+      }
+
+      .btn-grid-2,
+      .btn-grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .paper {
+        width: 100%;
+        max-width: 100%;
+        min-height: auto;
+        padding: 20px;
+      }
+
+      .school-center h1 {
+        font-size: 24px;
+      }
+
+      .watermark {
+        font-size: 34px;
+      }
+
+      .student-photo-box {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        margin: 12px auto 0 !important;
+      }
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        background: white;
+        padding: 0;
+        margin: 0;
+      }
+
+      .sidebar,
+      .workspace-header,
+      .table-controls {
+        display: none !important;
+      }
+
+      .app {
+        display: block;
+      }
+
+      .workspace {
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      .preview-wrapper {
+        background: white;
+        padding: 0;
+      }
+
+      .paper {
+        width: 210mm !important;
+        min-height: 297mm !important;
+        max-width: 210mm !important;
+        box-shadow: none;
+        border: none;
+        border-radius: 0;
+        margin: 0 auto;
+        page-break-inside: avoid;
+      }
+
+      .form-group,
+      .section-heading {
+        border: none !important;
+        background: transparent !important;
+      }
+
+      .student-photo-box {
+        cursor: default !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-container"></div>
+  <div class="page-shell">
+
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>📄 Smart Form Builder Pro</h1>
+        <p>Create professional school & office forms with live preview and PDF export.</p>
+      </div>
+
+      <div class="sidebar-content">
+        <div class="section">
+          <div class="section-title">⚙️ Form Settings</div>
+
+          <label>Form Type</label>
+          <select id="formType" onchange="handleFormTypeChange()">
+            <option value="Admission Form">Admission Form</option>
+            <option value="Leave Application">Leave Application</option>
+            <option value="Certificate">Certificate</option>
+            <option value="ID Card">ID Card</option>
+            <option value="Fee Receipt">Fee Receipt</option>
+            <option value="Transfer Certificate">Transfer Certificate</option>
+            <option value="Student Record">Student Record</option>
+            <option value="Bonafide Certificate">Bonafide Certificate</option>
+          </select>
+
+          <label>School / Office Name</label>
+          <input type="text" id="schoolName" value="Skyview Public School" oninput="renderPreview(); autoSave();" />
+
+          <label>Address Line 1</label>
+          <input type="text" id="schoolAddress" value="Uttar Andaranfulbari, Tufanganj, Coochbehar, West Bengal, PIN- 736160" oninput="renderPreview(); autoSave();" />
+
+          <label>Address Line 2</label>
+          <input type="text" id="schoolAddress2" value="Email- skyviewpublicschool@gmail.com | Phone: +91 86535 54323" oninput="renderPreview(); autoSave();" />
+
+          <label>Footer Note</label>
+          <input type="text" id="footerNote" value="Generated using Smart Form Builder Pro" oninput="renderPreview(); autoSave();" />
+
+          <label>Auto Serial Number</label>
+          <input type="text" id="serialNumber" readonly />
+
+          <label>Editable Date</label>
+          <input type="date" id="editableDate" oninput="renderPreview(); autoSave();" />
+
+          <label>Left Text (example: Ref No / Session / Form No)</label>
+          <input type="text" id="leftTextLabel" value="Form Serial No:" oninput="renderPreview(); autoSave();" />
+
+          <!-- CHECKBOXES -->
+          <div class="toggle-row">
+            <input type="checkbox" id="enableDragDrop" onchange="toggleDragDrop()" />
+            <label for="enableDragDrop">Enable Drag & Drop</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="officialPad" onchange="renderPreview(); autoSave();" />
+            <label for="officialPad">Use Official Pad Style</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showStudentPhoto" checked onchange="renderPreview(); autoSave();" />
+            <label for="showStudentPhoto">Show Student Photo</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showParentSignature" checked onchange="renderPreview(); autoSave();" />
+            <label for="showParentSignature">Show Parent Signature</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showStudentSignature" checked onchange="renderPreview(); autoSave();" />
+            <label for="showStudentSignature">Show Student Signature</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showAuthorizedSignature" checked onchange="renderPreview(); autoSave();" />
+            <label for="showAuthorizedSignature">Show Authorized Signature</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showPrincipalSignature" checked onchange="renderPreview(); autoSave();" />
+            <label for="showPrincipalSignature">Show Principal Signature</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showSerialNo" checked onchange="renderPreview(); autoSave();" />
+            <label for="showSerialNo">Show Form Serial No</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showLeftText" checked onchange="renderPreview(); autoSave();" />
+            <label for="showLeftText">Show Left Text</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showRightDate" checked onchange="renderPreview(); autoSave();" />
+            <label for="showRightDate">Show Date at Right</label>
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="showStamp" checked onchange="renderPreview(); autoSave();" />
+            <label for="showStamp">Show School Stamp / Seal</label>
+          </div>
+
+          <div class="range-wrap">
+            <label>Watermark Opacity: <span id="opacityValue">0.06</span></label>
+            <input type="range" id="watermarkOpacity" min="0.01" max="0.20" step="0.01" value="0.06" oninput="updateOpacityDisplay(); renderPreview(); autoSave();" />
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">🖼 Uploads</div>
+
+          <label>Upload School Logo</label>
+          <input type="file" accept="image/*" onchange="handleImage(event, 'logo')" />
+
+          <label>Upload Student Image</label>
+          <input type="file" accept="image/*" onchange="handleImage(event, 'student')" />
+
+          <label>Upload Authorized Signature / Seal</label>
+          <input type="file" accept="image/*" onchange="handleImage(event, 'signature')" />
+
+          <label>Upload Principal Signature</label>
+          <input type="file" accept="image/*" onchange="handleImage(event, 'principal')" />
+
+          <label>Upload School Stamp / Round Seal</label>
+          <input type="file" accept="image/*" onchange="handleImage(event, 'stamp')" />
+
+          <label>Upload Background Image</label>
+          <input type="file" accept="image/*" onchange="handleImage(event, 'background')" />
+        </div>
+
+        <div class="section">
+          <div class="section-title">🧩 Add Field Tools</div>
+
+          <label>Field Label / Content</label>
+          <input type="text" id="fieldLabel" placeholder="e.g. Student Name or Section Title" />
+
+          <label>Field Type</label>
+          <select id="fieldType">
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="date">Date</option>
+            <option value="textarea">Textarea</option>
+            <option value="email">Email</option>
+            <option value="tel">Phone</option>
+            <option value="select">Dropdown</option>
+            <option value="checkbox">Checkbox</option>
+            <option value="radio">Radio Buttons</option>
+            <option value="file">File Upload</option>
+            <option value="section">Section Heading</option>
+            <option value="divider">Divider Line</option>
+            <option value="paragraph">Paragraph Text</option>
+            <option value="readonly">Read Only Text</option>
+            <option value="todaydate">Auto Today Date</option>
+            <option value="table">Table</option>
+          </select>
+
+          <label id="optionsLabel" style="display:none;">Options / Columns (comma separated)</label>
+          <textarea id="fieldOptions" placeholder="e.g. Male, Female, Other OR Roll No, Name, Class"></textarea>
+
+          <label>
+            <input type="checkbox" id="isRequired" style="width:auto; margin-right:8px;" />
+            Mark as Required
+          </label>
+
+          <div class="btn-grid-2">
+            <button class="primary" onclick="addField()">➕ Add Field</button>
+            <button class="danger" onclick="clearFields()">🗑 Clear All</button>
+          </div>
+
+          <div class="field-list" id="fieldList"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">💾 Templates & Save</div>
+
+          <div class="btn-grid-2">
+            <button class="success" onclick="saveTemplate()">💾 Save Template</button>
+            <button class="secondary" onclick="loadTemplate()">📂 Load Template</button>
+          </div>
+
+          <div class="btn-grid-2">
+            <button class="dark" onclick="downloadJSON()">⬇ Export JSON</button>
+            <button class="warning" onclick="document.getElementById('jsonLoader').click()">⬆ Import JSON</button>
+          </div>
+
+          <input type="file" id="jsonLoader" accept=".json" style="display:none;" onchange="importJSON(event)" />
+        </div>
+
+        <div class="section">
+          <div class="section-title">📤 Export / Save</div>
+
+          <div class="btn-grid-2">
+            <button class="success" onclick="printForm()">🖨 Print</button>
+            <button class="warning" onclick="downloadPDF()">📄 Save PDF</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- WORKSPACE -->
+    <main class="workspace">
+      <div class="workspace-header">
+        <div>
+          <h2>Live Professional Preview</h2>
+          <p>Enable drag mode only when you want to rearrange form elements.</p>
+        </div>
+        <div style="font-size:13px; color:#64748b; font-weight:700;">
+          Auto Save: <span id="autosaveStatus" style="color:#16a34a;">Enabled</span>
+        </div>
+      </div>
+
+      <div class="preview-wrapper">
+        <div class="paper" id="formPreview"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../components/navbar.js"></script>
+  <script>
+    if (!Auth.isAuthenticated()) {
+      Auth.redirectToLogin();
+    }
+
+    let fields = [];
+    let logoData = "";
+    let studentPhotoData = "";
+    let signatureData = "";
+    let principalSignatureData = "";
+    let stampData = "";
+    let backgroundData = "";
+
+    let sidebarSortable = null;
+    let previewSortable = null;
+
+    let photoPosition = { top: 18, left: null, right: 12 };
+
+    const fieldType = document.getElementById("fieldType");
+    fieldType.addEventListener("change", function () {
+      const showOptions = ["select", "checkbox", "radio", "table"].includes(this.value);
+      document.getElementById("optionsLabel").style.display = showOptions ? "block" : "none";
+      document.getElementById("fieldOptions").style.display = showOptions ? "block" : "none";
+    });
+
+    function updateOpacityDisplay() {
+      document.getElementById("opacityValue").textContent = document.getElementById("watermarkOpacity").value;
+    }
+
+    function isDragEnabled() {
+      return document.getElementById("enableDragDrop").checked;
+    }
+
+    function toggleDragDrop() {
+      renderFieldList();
+      renderPreview();
+      initSidebarSortable();
+      initPreviewSortable();
+      autoSave();
+    }
+
+    function getWatermarkText() {
+      const schoolName = document.getElementById("schoolName").value.trim() || "SKYVIEW PUBLIC SCHOOL";
+      return schoolName.toUpperCase();
+    }
+
+    function generateSerial() {
+      const now = new Date();
+      const serial = "SFB-" +
+        now.getFullYear() +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0") +
+        "-" + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById("serialNumber").value = serial;
+    }
+
+    function formatDateForDisplay(dateValue) {
+      if (!dateValue) return "";
+      const date = new Date(dateValue);
+      return date.toLocaleDateString("en-GB");
+    }
+
+    function handleFormTypeChange() {
+      const formType = document.getElementById("formType").value;
+
+      if (formType === "Transfer Certificate") {
+        const alreadyExists = fields.some(f => f.type === "textarea" && f.label === "Certificate Content");
+        if (!alreadyExists) {
+          fields.push({
+            label: "Certificate Content",
+            type: "textarea",
+            value: "This is to certify that the student named above was a bonafide student of this institution. He/She studied in this school up to the class mentioned and is hereby granted this Transfer Certificate on request. We wish him/her success in future academic pursuits.",
+            options: [],
+            required: true
+          });
+        }
+      }
+
+      renderFieldList();
+      renderPreview();
+      autoSave();
+    }
+
+    function addField() {
+      const label = document.getElementById("fieldLabel").value.trim();
+      const type = document.getElementById("fieldType").value;
+      const options = document.getElementById("fieldOptions").value.trim();
+      const required = document.getElementById("isRequired").checked;
+
+      if (!label && !["divider", "todaydate"].includes(type)) {
+        alert("Please enter field label/content.");
+        return;
+      }
+
+      const newField = {
+        label,
+        type,
+        value: type === "todaydate" ? new Date().toISOString().split("T")[0] : "",
+        options: ["select", "checkbox", "radio", "table"].includes(type)
+          ? options.split(",").map(o => o.trim()).filter(Boolean)
+          : [],
+        required
+      };
+
+      if (type === "table") {
+        const columns = options.split(",").map(o => o.trim()).filter(Boolean);
+        if (!columns.length) {
+          alert("Please enter table columns, separated by commas.");
+          return;
+        }
+        newField.value = [
+          Object.fromEntries(columns.map(col => [col, ""]))
+        ];
+      }
+
+      fields.push(newField);
+
+      document.getElementById("fieldLabel").value = "";
+      document.getElementById("fieldOptions").value = "";
+      document.getElementById("isRequired").checked = false;
+
+      renderFieldList();
+      renderPreview();
+      autoSave();
+    }
+
+    function clearFields() {
+      if (confirm("Are you sure you want to remove all fields?")) {
+        fields = [];
+        renderFieldList();
+        renderPreview();
+        autoSave();
+      }
+    }
+
+    function removeField(index) {
+      fields.splice(index, 1);
+      renderFieldList();
+      renderPreview();
+      autoSave();
+    }
+
+    function updateFieldValue(index, value) {
+      fields[index].value = value;
+      autoSave();
+    }
+
+    function updateCheckboxValue(index, option, checked) {
+      if (!Array.isArray(fields[index].value)) fields[index].value = [];
+      if (checked) {
+        if (!fields[index].value.includes(option)) fields[index].value.push(option);
+      } else {
+        fields[index].value = fields[index].value.filter(v => v !== option);
+      }
+      autoSave();
+    }
+
+    function addTableRow(index) {
+      const field = fields[index];
+      if (!field || field.type !== "table") return;
+      const newRow = Object.fromEntries(field.options.map(col => [col, ""]));
+      field.value.push(newRow);
+      renderPreview();
+      autoSave();
+    }
+
+    function removeTableRow(index, rowIndex) {
+      const field = fields[index];
+      if (!field || field.type !== "table") return;
+      if (field.value.length <= 1) {
+        alert("At least one row should remain.");
+        return;
+      }
+      field.value.splice(rowIndex, 1);
+      renderPreview();
+      autoSave();
+    }
+
+    function updateTableCell(index, rowIndex, column, value) {
+      fields[index].value[rowIndex][column] = value;
+      autoSave();
+    }
+
+    function handleImage(event, type) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        if (type === "logo") logoData = e.target.result;
+        if (type === "student") studentPhotoData = e.target.result;
+        if (type === "signature") signatureData = e.target.result;
+        if (type === "principal") principalSignatureData = e.target.result;
+        if (type === "stamp") stampData = e.target.result;
+        if (type === "background") backgroundData = e.target.result;
+
+        renderPreview();
+        autoSave();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderFieldList() {
+      const list = document.getElementById("fieldList");
+      list.innerHTML = "";
+
+      if (!fields.length) {
+        list.innerHTML = `<div style="font-size:13px;color:#64748b;padding:10px 0;">No fields added yet.</div>`;
+        initSidebarSortable();
+        return;
+      }
+
+      fields.forEach((field, index) => {
+        const card = document.createElement("div");
+        card.className = "field-card";
+        card.setAttribute("data-index", index);
+        card.style.cursor = isDragEnabled() ? "grab" : "default";
+
+        card.innerHTML = `
+          <div>
+            <h4>${isDragEnabled() ? "☰ " : ""}${field.label || field.type}</h4>
+            <p>Type: ${field.type}${field.required ? ' | Required' : ''}${field.options.length ? ' | Options: ' + field.options.join(', ') : ''}</p>
+          </div>
+          <div class="field-actions">
+            <button class="danger" onclick="removeField(${index})">✖</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      initSidebarSortable();
+    }
+
+    function initSidebarSortable() {
+      const list = document.getElementById("fieldList");
+      if (!list) return;
+
+      if (sidebarSortable) {
+        sidebarSortable.destroy();
+        sidebarSortable = null;
+      }
+
+      if (!isDragEnabled() || !fields.length) return;
+
+      sidebarSortable = Sortable.create(list, {
+        animation: 180,
+        ghostClass: "dragging",
+        onEnd: function (evt) {
+          if (evt.oldIndex == null || evt.newIndex == null) return;
+          const movedItem = fields.splice(evt.oldIndex, 1)[0];
+          fields.splice(evt.newIndex, 0, movedItem);
+          renderFieldList();
+          renderPreview();
+          autoSave();
+        }
+      });
+    }
+
+    function initPreviewSortable() {
+      const grid = document.getElementById("formGrid");
+      if (!grid) return;
+
+      if (previewSortable) {
+        previewSortable.destroy();
+        previewSortable = null;
+      }
+
+      if (!isDragEnabled() || !fields.length) return;
+
+      previewSortable = Sortable.create(grid, {
+        animation: 180,
+        ghostClass: "dragging",
+        draggable: "[data-index]",
+        filter: "input, textarea, select, option, button, label, table, th, td",
+        preventOnFilter: false,
+        onMove: function(evt) {
+          return evt.related && evt.dragged;
+        },
+        onEnd: function (evt) {
+          if (evt.oldIndex == null || evt.newIndex == null) return;
+          const movedItem = fields.splice(evt.oldIndex, 1)[0];
+          fields.splice(evt.newIndex, 0, movedItem);
+          renderFieldList();
+          renderPreview();
+          autoSave();
+        }
+      });
+    }
+
+    function enablePhotoDrag() {
+      const photo = document.getElementById("draggableStudentPhoto");
+      const paper = document.getElementById("formPreview");
+      if (!photo || !paper) return;
+
+      let isDragging = false;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      photo.onmousedown = function(e) {
+        isDragging = true;
+        const rect = photo.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        document.body.style.userSelect = "none";
+      };
+
+      document.onmousemove = function(e) {
+        if (!isDragging) return;
+
+        const paperRect = paper.getBoundingClientRect();
+        let left = e.clientX - paperRect.left - offsetX;
+        let top = e.clientY - paperRect.top - offsetY;
+
+        left = Math.max(0, Math.min(left, paperRect.width - photo.offsetWidth));
+        top = Math.max(0, Math.min(top, paperRect.height - photo.offsetHeight));
+
+        photo.style.left = left + "px";
+        photo.style.top = top + "px";
+        photo.style.right = "auto";
+
+        photoPosition = {
+          top: top,
+          left: left,
+          right: null
+        };
+      };
+
+      document.onmouseup = function() {
+        if (isDragging) {
+          autoSave();
+        }
+        isDragging = false;
+        document.body.style.userSelect = "auto";
+      };
+    }
+
+    function renderPreview() {
+      const schoolName = document.getElementById("schoolName").value || "Skyview Public School";
+      const schoolAddress = document.getElementById("schoolAddress").value || "Barddhaman, West Bengal";
+      const schoolAddress2 = document.getElementById("schoolAddress2").value || "";
+      const formType = document.getElementById("formType").value;
+      const serialNumber = document.getElementById("serialNumber").value;
+      const footerNote = document.getElementById("footerNote").value || "Generated using Smart Form Builder Pro";
+      const editableDate = formatDateForDisplay(document.getElementById("editableDate").value);
+      const dragClass = isDragEnabled() ? "draggable-on" : "";
+      const officialPad = document.getElementById("officialPad").checked;
+      const showStudentPhoto = document.getElementById("showStudentPhoto").checked;
+      const showParentSignature = document.getElementById("showParentSignature").checked;
+      const showStudentSignature = document.getElementById("showStudentSignature").checked;
+      const showAuthorizedSignature = document.getElementById("showAuthorizedSignature").checked;
+      const showPrincipalSignature = document.getElementById("showPrincipalSignature").checked;
+      const showSerialNo = document.getElementById("showSerialNo").checked;
+      const showLeftText = document.getElementById("showLeftText").checked;
+      const showRightDate = document.getElementById("showRightDate").checked;
+      const showStamp = document.getElementById("showStamp").checked;
+      const leftTextLabel = document.getElementById("leftTextLabel").value || "Form Serial No:";
+      const watermarkText = getWatermarkText();
+      const watermarkOpacity = document.getElementById("watermarkOpacity").value;
+
+      let formFieldsHTML = "";
+
+      fields.forEach((field, index) => {
+        const requiredStar = field.required ? `<span class="required-star">*</span>` : "";
+
+        if (field.type === "section") {
+          formFieldsHTML += `<div class="section-heading ${dragClass}" data-index="${index}">${field.label}</div>`;
+          return;
+        }
+
+        if (field.type === "divider") {
+          formFieldsHTML += `<div class="divider" data-index="${index}"></div>`;
+          return;
+        }
+
+        if (field.type === "paragraph") {
+          formFieldsHTML += `<div class="readonly-box full" data-index="${index}">${field.label}</div>`;
+          return;
+        }
+
+        if (field.type === "readonly") {
+          formFieldsHTML += `
+            <div class="form-group full ${dragClass}" data-index="${index}">
+              <label>${field.label}</label>
+              <div class="readonly-box">${field.label}</div>
+            </div>
+          `;
+          return;
+        }
+
+        if (field.type === "todaydate") {
+          formFieldsHTML += `
+            <div class="form-group ${dragClass}" data-index="${index}">
+              <label>${field.label || "Date"}${requiredStar}</label>
+              <input type="date" value="${new Date().toISOString().split("T")[0]}" readonly />
+            </div>
+          `;
+          return;
+        }
+
+        if (field.type === "textarea") {
+          formFieldsHTML += `
+            <div class="form-group full ${dragClass}" data-index="${index}">
+              <label>${field.label}${requiredStar}</label>
+              <textarea placeholder="Enter ${field.label}" oninput="updateFieldValue(${index}, this.value)">${field.value || ""}</textarea>
+            </div>
+          `;
+          return;
+        }
+
+        if (field.type === "select") {
+          formFieldsHTML += `
+            <div class="form-group ${dragClass}" data-index="${index}">
+              <label>${field.label}${requiredStar}</label>
+              <select onchange="updateFieldValue(${index}, this.value)">
+                <option value="">Select ${field.label}</option>
+                ${field.options.map(opt => `<option value="${opt}" ${field.value === opt ? 'selected' : ''}>${opt}</option>`).join("")}
+              </select>
+            </div>
+          `;
+          return;
+        }
+
+        if (field.type === "checkbox") {
+          formFieldsHTML += `
+            <div class="form-group ${dragClass}" data-index="${index}">
+              <label>${field.label}${requiredStar}</label>
+              <div class="checkbox-group">
+                ${field.options.map(opt => `
+                  <label class="checkbox-item">
+                    <input type="checkbox"
+                      ${Array.isArray(field.value) && field.value.includes(opt) ? 'checked' : ''}
+                      onchange="updateCheckboxValue(${index}, '${opt.replace(/'/g, "\\'")}', this.checked)" />
+                    ${opt}
+                  </label>
+                `).join("")}
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        if (field.type === "radio") {
+          formFieldsHTML += `
+            <div class="form-group ${dragClass}" data-index="${index}">
+              <label>${field.label}${requiredStar}</label>
+              <div class="radio-group">
+                ${field.options.map(opt => `
+                  <label class="radio-item">
+                    <input type="radio" name="radio_${index}"
+                      value="${opt}"
+                      ${field.value === opt ? 'checked' : ''}
+                      onchange="updateFieldValue(${index}, this.value)" />
+                    ${opt}
+                  </label>
+                `).join("")}
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        if (field.type === "file") {
+          formFieldsHTML += `
+            <div class="form-group ${dragClass}" data-index="${index}">
+              <label>${field.label}${requiredStar}</label>
+              <input type="file" />
+            </div>
+          `;
+          return;
+        }
+
+        if (field.type === "table") {
+          formFieldsHTML += `
+            <div class="form-group full ${dragClass}" data-index="${index}">
+              <label>${field.label}${requiredStar}</label>
+              <div class="table-wrapper">
+                <table class="dynamic-table">
+                  <thead>
+                    <tr>
+                      ${field.options.map(col => `<th>${col}</th>`).join("")}
+                      <th style="width:90px;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(field.value || []).map((row, rowIndex) => `
+                      <tr>
+                        ${field.options.map(col => `
+                          <td>
+                            <input 
+                              type="text" 
+                              value="${row[col] || ""}" 
+                              oninput="updateTableCell(${index}, ${rowIndex}, '${col.replace(/'/g, "\\'")}', this.value)"
+                            />
+                          </td>
+                        `).join("")}
+                        <td>
+                          <button type="button" class="danger" onclick="removeTableRow(${index}, ${rowIndex})">Remove</button>
+                        </td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-controls">
+                <button type="button" class="primary" onclick="addTableRow(${index})">➕ Add Row</button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        formFieldsHTML += `
+          <div class="form-group ${dragClass}" data-index="${index}">
+            <label>${field.label}${requiredStar}</label>
+            <input type="${field.type}" placeholder="Enter ${field.label}" value="${field.value || ""}" oninput="updateFieldValue(${index}, this.value)" />
+          </div>
+        `;
+      });
+
+      const preview = document.getElementById("formPreview");
+      preview.className = officialPad ? "paper official-pad" : "paper";
+      preview.style.backgroundImage = backgroundData ? `url('${backgroundData}')` : "none";
+
+      let signatureBlocks = [];
+
+      if (showParentSignature) {
+        signatureBlocks.push(`
+          <div class="sign-section">
+            <div class="sign-box"></div>
+            <div class="sign-line">Parent's Signature</div>
+          </div>
+        `);
+      }
+
+      if (showStudentSignature) {
+        signatureBlocks.push(`
+          <div class="sign-section">
+            <div class="sign-box"></div>
+            <div class="sign-line">Student's Signature</div>
+          </div>
+        `);
+      }
+
+      if (showAuthorizedSignature) {
+        signatureBlocks.push(`
+          <div class="sign-section">
+            <div class="sign-box">
+              ${signatureData ? `<img src="${signatureData}" alt="Authorized Signature" />` : ``}
+            </div>
+            <div class="sign-line">Authorized Signature</div>
+          </div>
+        `);
+      }
+
+      if (showPrincipalSignature) {
+        signatureBlocks.push(`
+          <div class="sign-section">
+            <div class="sign-box">
+              ${principalSignatureData ? `<img src="${principalSignatureData}" alt="Principal Signature" />` : ``}
+            </div>
+            <div class="sign-line">Principal Signature</div>
+          </div>
+        `);
+      }
+
+      let signatureClass = "signature-row";
+      if (signatureBlocks.length === 3) signatureClass += " three-signatures";
+      if (signatureBlocks.length === 2) signatureClass += " two-signatures";
+      if (signatureBlocks.length === 1) signatureClass += " one-signature";
+
+      preview.innerHTML = `
+        <div class="watermark" style="color: rgba(37, 99, 235, ${watermarkOpacity});">${watermarkText}</div>
+
+        <div class="top-head">
+          <div class="school-head-row">
+            <div class="logo-box">
+              ${logoData ? `<img src="${logoData}" alt="Logo" />` : `<span>School Logo</span>`}
+            </div>
+
+            <div class="school-center">
+              <h1>${schoolName}</h1>
+              <p>${schoolAddress}</p>
+              <p>${schoolAddress2}</p>
+              <div class="tagline">An Institution of Excellence</div>
+            </div>
+
+            <div></div>
+          </div>
+
+          ${showStudentPhoto ? `
+            <div class="student-photo-box" 
+                 id="draggableStudentPhoto"
+                 style="
+                   top:${photoPosition.top}${typeof photoPosition.top === 'number' ? 'px' : 'mm'};
+                   ${photoPosition.left !== null ? `left:${photoPosition.left}px;` : ''}
+                   ${photoPosition.right !== null ? `right:${photoPosition.right}mm;` : ''}
+                 ">
+              ${studentPhotoData ? `<img src="${studentPhotoData}" alt="Student Photo" />` : `<span>Student Photo</span>`}
+            </div>
+          ` : ``}
+
+          <div class="title-bar">
+            <h2>${formType}</h2>
+          </div>
+
+          ${(showLeftText || showRightDate) ? `
+            <div class="meta-row">
+              <div class="meta-item">
+                ${showLeftText ? `
+                  <span class="meta-label">${leftTextLabel}</span>
+                  <span class="meta-value">${showSerialNo ? serialNumber : "________________"}</span>
+                ` : ``}
+              </div>
+              <div class="meta-item" style="justify-content:flex-end;">
+                ${showRightDate ? `
+                  <span class="meta-label">Date:</span>
+                  <span class="meta-value">${editableDate || "________________"}</span>
+                ` : ``}
+              </div>
+            </div>
+          ` : ``}
+        </div>
+
+        <div class="grid-form" id="formGrid">
+          ${formFieldsHTML || `<div class="readonly-box full">No fields added yet. Use the left panel to build the form.</div>`}
+        </div>
+
+        ${signatureBlocks.length ? `<div class="${signatureClass}">${signatureBlocks.join("")}</div>` : ""}
+
+        ${showStamp ? `
+          <div style="margin-top:20px; text-align:right; position:relative; z-index:2;">
+            <div class="stamp-box" style="margin-left:auto;">
+              ${stampData ? `<img src="${stampData}" alt="School Stamp" />` : `<span>School Stamp</span>`}
+            </div>
+          </div>
+        ` : ""}
+
+        <div class="footer">${footerNote}</div>
+      `;
+
+      initPreviewSortable();
+      enablePhotoDrag();
+    }
+
+    function printForm() {
+      window.print();
+    }
+
+    async function downloadPDF() {
+      const element = document.getElementById("formPreview");
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff"
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const formType = document.getElementById("formType").value;
+      const serialNumber = document.getElementById("serialNumber").value;
+      pdf.save(`${formType.replace(/\s+/g, "_")}_${serialNumber}.pdf`);
+    }
+
+    function getStudentNameForFile() {
+      const studentField = fields.find(f =>
+        f.label &&
+        ["student name", "name of student", "student full name", "name"].includes(f.label.trim().toLowerCase())
+      );
+
+      let studentName = fieldValueSafe(studentField?.value) || "student_form";
+      studentName = studentName.replace(/[^\w\s-]/g, "").replace(/\s+/g, "_");
+      return studentName || "student_form";
+    }
+
+    function fieldValueSafe(v) {
+      if (Array.isArray(v)) return v.join("_");
+      return (v || "").toString().trim();
+    }
+
+    function downloadJSON() {
+      const data = collectData();
+      const fileName = getStudentNameForFile();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${fileName}.json`;
+      link.click();
+    }
+
+    function saveTemplate() {
+      localStorage.setItem("smartFormBuilderTemplate", JSON.stringify(collectData()));
+      alert("Template saved successfully!");
+    }
+
+    function loadTemplate() {
+      const saved = localStorage.getItem("smartFormBuilderTemplate");
+      if (!saved) {
+        alert("No saved template found.");
+        return;
+      }
+
+      applyData(JSON.parse(saved));
+      alert("Template loaded successfully!");
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          applyData(JSON.parse(e.target.result));
+          alert("JSON template imported successfully!");
+        } catch (error) {
+          alert("Invalid JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function collectData() {
+      return {
+        formType: document.getElementById("formType").value,
+        schoolName: document.getElementById("schoolName").value,
+        schoolAddress: document.getElementById("schoolAddress").value,
+        schoolAddress2: document.getElementById("schoolAddress2").value,
+        footerNote: document.getElementById("footerNote").value,
+        serialNumber: document.getElementById("serialNumber").value,
+        editableDate: document.getElementById("editableDate").value,
+        leftTextLabel: document.getElementById("leftTextLabel").value,
+        enableDragDrop: document.getElementById("enableDragDrop").checked,
+        officialPad: document.getElementById("officialPad").checked,
+        showStudentPhoto: document.getElementById("showStudentPhoto").checked,
+        showParentSignature: document.getElementById("showParentSignature").checked,
+        showStudentSignature: document.getElementById("showStudentSignature").checked,
+        showAuthorizedSignature: document.getElementById("showAuthorizedSignature").checked,
+        showPrincipalSignature: document.getElementById("showPrincipalSignature").checked,
+        showSerialNo: document.getElementById("showSerialNo").checked,
+        showLeftText: document.getElementById("showLeftText").checked,
+        showRightDate: document.getElementById("showRightDate").checked,
+        showStamp: document.getElementById("showStamp").checked,
+        watermarkOpacity: document.getElementById("watermarkOpacity").value,
+        photoPosition,
+        fields,
+        logoData,
+        studentPhotoData,
+        signatureData,
+        principalSignatureData,
+        stampData,
+        backgroundData
+      };
+    }
+
+    function applyData(data) {
+      document.getElementById("formType").value = data.formType || "Admission Form";
+      document.getElementById("schoolName").value = data.schoolName || "Skyview Public School";
+      document.getElementById("schoolAddress").value = data.schoolAddress || "";
+      document.getElementById("schoolAddress2").value = data.schoolAddress2 || "";
+      document.getElementById("footerNote").value = data.footerNote || "";
+      document.getElementById("serialNumber").value = data.serialNumber || "";
+      document.getElementById("editableDate").value = data.editableDate || "";
+      document.getElementById("leftTextLabel").value = data.leftTextLabel || "Form Serial No:";
+      document.getElementById("enableDragDrop").checked = data.enableDragDrop || false;
+      document.getElementById("officialPad").checked = data.officialPad || false;
+      document.getElementById("showStudentPhoto").checked = data.showStudentPhoto !== undefined ? data.showStudentPhoto : true;
+      document.getElementById("showParentSignature").checked = data.showParentSignature !== undefined ? data.showParentSignature : true;
+      document.getElementById("showStudentSignature").checked = data.showStudentSignature !== undefined ? data.showStudentSignature : true;
+      document.getElementById("showAuthorizedSignature").checked = data.showAuthorizedSignature !== undefined ? data.showAuthorizedSignature : true;
+      document.getElementById("showPrincipalSignature").checked = data.showPrincipalSignature !== undefined ? data.showPrincipalSignature : true;
+      document.getElementById("showSerialNo").checked = data.showSerialNo !== undefined ? data.showSerialNo : true;
+      document.getElementById("showLeftText").checked = data.showLeftText !== undefined ? data.showLeftText : true;
+      document.getElementById("showRightDate").checked = data.showRightDate !== undefined ? data.showRightDate : true;
+      document.getElementById("showStamp").checked = data.showStamp !== undefined ? data.showStamp : true;
+      document.getElementById("watermarkOpacity").value = data.watermarkOpacity || 0.06;
+
+      photoPosition = data.photoPosition || { top: 18, left: null, right: 12 };
+
+      fields = data.fields || [];
+      logoData = data.logoData || "";
+      studentPhotoData = data.studentPhotoData || "";
+      signatureData = data.signatureData || "";
+      principalSignatureData = data.principalSignatureData || "";
+      stampData = data.stampData || "";
+      backgroundData = data.backgroundData || "";
+
+      updateOpacityDisplay();
+      renderFieldList();
+      renderPreview();
+      initSidebarSortable();
+      initPreviewSortable();
+    }
+
+    function autoSave() {
+      localStorage.setItem("smartFormBuilderAutoSave", JSON.stringify(collectData()));
+      const status = document.getElementById("autosaveStatus");
+      status.textContent = "Saved";
+      status.style.color = "#16a34a";
+
+      setTimeout(() => {
+        status.textContent = "Enabled";
+        status.style.color = "#16a34a";
+      }, 1200);
+    }
+
+    function loadAutoSave() {
+      const saved = localStorage.getItem("smartFormBuilderAutoSave");
+      if (saved) {
+        try {
+          applyData(JSON.parse(saved));
+        } catch (e) {
+          console.error("Autosave load failed", e);
+        }
+      }
+    }
+
+    generateSerial();
+    loadAutoSave();
+
+    if (!document.getElementById("serialNumber").value) generateSerial();
+
+    if (!document.getElementById("editableDate").value) {
+      document.getElementById("editableDate").value = new Date().toISOString().split("T")[0];
+    }
+
+    updateOpacityDisplay();
+    renderFieldList();
+    handleFormTypeChange();
+    renderPreview();
+    initSidebarSortable();
+    initPreviewSortable();
+  </script>
+</div>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

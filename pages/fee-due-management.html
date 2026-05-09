@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Due Management - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #f2f7ff, #ffffff);
+        }
+
+        .summary-card,
+        .table-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(34, 73, 129, 0.08);
+        }
+
+        .metric-box {
+            border-radius: 16px;
+            background: linear-gradient(135deg, #f6faff, #edf4ff);
+            border: 1px solid #dfebff;
+            padding: 18px;
+            height: 100%;
+        }
+
+        .metric-box span {
+            display: block;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .metric-box strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 1.55rem;
+            color: #12407d;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid py-4" style="max-width: 1450px;">
+        <div class="card summary-card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Due Management</h4>
+                <div class="d-flex gap-2">
+                    <a href="fee-collection.html" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus me-2"></i>New Collection
+                    </a>
+                    <a href="expense-record.html" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-wallet me-2"></i>Record Expense
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Total Outstanding</span>
+                            <strong>Rs. <span id="dueSummaryOutstanding">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Students With Due</span>
+                            <strong id="dueSummaryStudents">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Total Fee Collected</span>
+                            <strong>Rs. <span id="dueSummaryCollected">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Net Balance</span>
+                            <strong>Rs. <span id="dueSummaryNet">0.00</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <div class="card-body">
+                <form id="dueFilterForm" class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label" for="dueSearch">Search</label>
+                        <input type="text" class="form-control" id="dueSearch" placeholder="Admission no, student or receipt no">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="dueClassFilter">Class</label>
+                        <input type="text" class="form-control" id="dueClassFilter" placeholder="Filter by class">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="dueSectionFilter">Section</label>
+                        <input type="text" class="form-control" id="dueSectionFilter" placeholder="Section">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1" id="applyDueFilterBtn">
+                            <i class="fas fa-search me-2"></i>Apply Filters
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="resetDueFiltersBtn">Reset</button>
+                    </div>
+                </form>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="text-muted">
+                        Total Outstanding: <strong>Rs. <span id="dueReportTotal">0.00</span></strong>
+                    </div>
+                    <div class="text-muted">
+                        Students: <strong id="dueReportCount">0</strong>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Admission No.</th>
+                                <th>Student</th>
+                                <th>Father's Name</th>
+                                <th>Class</th>
+                                <th>Roll</th>
+                                <th>Last Receipt Date</th>
+                                <th>Total Charges</th>
+                                <th>Total Paid</th>
+                                <th>Outstanding</th>
+                                <th>Excess Payment</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dueTableBody">
+                            <tr>
+                                <td colspan="11" class="text-center text-muted py-4">Loading due report...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/fee-due-management.js"></script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

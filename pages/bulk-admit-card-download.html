@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Admit Card PDF</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #f6f8fc 0%, #eaf1ff 100%);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .panel-card,
+        .preview-card {
+            border: 0;
+            border-radius: 22px;
+            box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f4c81, #2563eb 55%, #7dd3fc);
+            color: #fff;
+        }
+
+        .hero-card .badge {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
+        .hero-stat {
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.13);
+            padding: 14px 16px;
+            min-height: 100%;
+        }
+
+        .panel-card .form-label {
+            font-weight: 600;
+        }
+
+        .panel-card textarea.form-control {
+            min-height: 86px;
+        }
+
+        .editor-table th,
+        .editor-table td,
+        .student-table th,
+        .student-table td {
+            vertical-align: middle;
+        }
+
+        .editor-table input,
+        .editor-table select,
+        .student-table input[type="text"] {
+            min-width: 110px;
+        }
+
+        .editor-actions,
+        .filter-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .student-picker {
+            max-height: 420px;
+            overflow: auto;
+        }
+
+        .preview-stage {
+            background: linear-gradient(180deg, #dce8ff, #f6f9ff);
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 420px;
+        }
+
+        .preview-empty {
+            min-height: 320px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            color: #64748b;
+            border: 2px dashed rgba(37, 99, 235, 0.2);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        .preview-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 20px;
+            background: #fff;
+            color: #0f172a;
+            padding: 10mm;
+            box-sizing: border-box;
+            box-shadow: 0 22px 55px rgba(15, 23, 42, 0.18);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            page-break-after: always;
+        }
+
+        .preview-sheet:last-child {
+            margin-bottom: 0;
+            page-break-after: auto;
+        }
+
+        .admit-frame {
+            border: 2px solid #0f172a;
+            min-height: calc(297mm - 20mm);
+            padding: 8mm;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .admit-watermark {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 54px;
+            font-weight: 700;
+            color: rgba(37, 99, 235, 0.07);
+            transform: rotate(-28deg);
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        .admit-header,
+        .admit-meta,
+        .admit-table-wrap,
+        .admit-signatures,
+        .admit-instructions {
+            position: relative;
+            z-index: 1;
+        }
+
+        .admit-header {
+            text-align: center;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+
+        .admit-header img {
+            height: 58px;
+            width: 58px;
+            object-fit: contain;
+        }
+
+        .school-name {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .admit-title-pill {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 999px;
+            background: #0f172a;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            margin-top: 8px;
+        }
+
+        .admit-meta,
+        .admit-instructions {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .admit-meta {
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .admit-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+
+        .admit-table th,
+        .admit-table td {
+            border: 1px solid #334155;
+            padding: 6px 5px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .admit-table th {
+            background: #eff6ff;
+            font-weight: 700;
+        }
+
+        .admit-table td:first-child,
+        .admit-table th:first-child {
+            text-align: left;
+        }
+
+        .admit-signatures {
+            margin-top: 18px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #0f172a;
+            margin-top: 22px;
+            padding-top: 6px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        #pdfCapture {
+            position: fixed;
+            top: 0;
+            left: -10000px;
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        #pdfCapture .preview-sheet {
+            margin: 0;
+            box-shadow: none;
+            border: 0;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+
+            #navbar-container,
+            .page-shell {
+                display: none !important;
+            }
+
+            #pdfCapture {
+                display: block !important;
+                position: static;
+                left: auto;
+                top: auto;
+                width: 210mm;
+                min-height: auto;
+                z-index: auto;
+            }
+
+            body {
+                background: #fff;
+            }
+
+            .preview-sheet {
+                margin: 0;
+                box-shadow: none;
+                border: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row align-items-center g-4">
+                        <div class="col-lg-8">
+                            <span class="badge rounded-pill px-3 py-2 mb-3">Documents</span>
+                            <h1 class="h2 mb-3">Bulk admit cards with dynamic class datesheets</h1>
+                            <p class="mb-0 text-white-50">
+                                Choose a session, class, and section, build the exam schedule row by row, preview every student admit card, then export one PDF bundle.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Students</div>
+                                        <div class="fs-4 fw-semibold" id="statStudents">0</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Exams</div>
+                                        <div class="fs-4 fw-semibold" id="statExams">0</div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Selected</div>
+                                        <div class="fw-semibold" id="previewStatus">Choose filters to load students</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card panel-card mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label" for="sessionSelect">Academic Session</label>
+                            <select class="form-select" id="sessionSelect"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="classSelect">Class</label>
+                            <select class="form-select" id="classSelect">
+                                <option value="">Select class</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label" for="sectionSelect">Section</label>
+                            <select class="form-select" id="sectionSelect">
+                                <option value="">Select section</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="examTitle">Exam Title</label>
+                            <input type="text" class="form-control" id="examTitle" value="Annual Examination">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="admitNote">Admit Card Footer Note</label>
+                            <textarea class="form-control" id="admitNote" placeholder="Optional short note for all students">Students must carry this admit card every examination day.</textarea>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="fileName">PDF File Name</label>
+                            <input type="text" class="form-control" id="fileName" value="admit-cards-bulk">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="pdfQuality">Render Quality</label>
+                            <select class="form-select" id="pdfQuality">
+                                <option value="1.6">Balanced</option>
+                                <option value="2" selected>Sharp</option>
+                                <option value="2.4">High</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <div class="filter-actions">
+                                <button class="btn btn-outline-primary" id="loadStudentsBtn" type="button">
+                                    <i class="fas fa-users me-2"></i>Load Students
+                                </button>
+                                <button class="btn btn-outline-secondary" id="saveDraftBtn" type="button">
+                                    <i class="fas fa-floppy-disk me-2"></i>Save Datesheet Draft
+                                </button>
+                                <button class="btn btn-outline-dark" id="resetDraftBtn" type="button">
+                                    <i class="fas fa-rotate-left me-2"></i>Reset Draft
+                                </button>
+                                <button class="btn btn-primary" id="previewBtn" type="button" disabled>
+                                    <i class="fas fa-eye me-2"></i>Preview Admit Cards
+                                </button>
+                                <button class="btn btn-success" id="downloadBtn" type="button" disabled>
+                                    <i class="fas fa-file-pdf me-2"></i>Download PDF
+                                </button>
+                                <button class="btn btn-warning" id="printAdmitsBtn" type="button" disabled>
+                                    <i class="fas fa-print me-2"></i>Print Admits
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <section class="card panel-card h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h2 class="h4 mb-1">Exam Datesheet Builder</h2>
+                                    <p class="text-muted mb-0">Add, edit, and reorder the schedule for this class and session.</p>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary" id="addExamRowBtn" type="button">
+                                    <i class="fas fa-plus me-1"></i>Add Exam
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle editor-table mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="min-width: 150px;">Subject</th>
+                                            <th style="min-width: 140px;">Date</th>
+                                            <th style="min-width: 130px;">Day</th>
+                                            <th style="min-width: 180px;">Time</th>
+                                            <th style="min-width: 140px;">Venue</th>
+                                            <th style="width: 72px;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="datesheetBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="col-lg-5">
+                    <section class="card panel-card h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h2 class="h4 mb-1">Student Selection</h2>
+                                    <p class="text-muted mb-0">Choose which students should be included in the bulk admit-card bundle.</p>
+                                </div>
+                                <span class="badge bg-light text-dark border" id="selectedBadge">0 selected</span>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-sm-7">
+                                    <input type="text" class="form-control" id="studentSearch" placeholder="Search by name, admission no, or roll no">
+                                </div>
+                                <div class="col-sm-5">
+                                    <div class="editor-actions">
+                                        <button class="btn btn-sm btn-outline-primary" id="selectAllBtn" type="button">Select All</button>
+                                        <button class="btn btn-sm btn-outline-secondary" id="clearAllBtn" type="button">Clear</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="student-picker">
+                                <table class="table table-hover student-table mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 48px;"><input type="checkbox" id="masterCheckbox"></th>
+                                            <th>Student</th>
+                                            <th>Roll</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentTableBody">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted py-4">Load a class to see students.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <section class="card preview-card mt-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Preview</h2>
+                            <p class="text-muted mb-0">Generated admit-card pages appear here before export.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border" id="pageCountBadge">0 pages</span>
+                    </div>
+                    <div class="preview-stage">
+                        <div class="preview-empty" id="previewEmpty">
+                            <div>
+                                <i class="fas fa-id-card fa-2x mb-3"></i>
+                                <p class="mb-1 fw-semibold">No admit-card bundle loaded yet.</p>
+                                <p class="mb-0">Load students, prepare the datesheet, then click Preview Admit Cards.</p>
+                            </div>
+                        </div>
+                        <div id="previewPages"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="pdfCapture"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script src="../components/navbar.js"></script>
+
+    <script>
+        const DEFAULT_EXAMS = [
+            { subject: 'English', date: '', day: '', timing: '10:30 AM - 12:30 PM', venue: 'Main Hall' },
+            { subject: 'Mathematics', date: '', day: '', timing: '10:30 AM - 12:30 PM', venue: 'Main Hall' },
+            { subject: 'Science', date: '', day: '', timing: '10:30 AM - 12:30 PM', venue: 'Main Hall' }
+        ];
+
+        const sessionSelect = document.getElementById('sessionSelect');
+        const classSelect = document.getElementById('classSelect');
+        const sectionSelect = document.getElementById('sectionSelect');
+        const examTitleInput = document.getElementById('examTitle');
+        const admitNoteInput = document.getElementById('admitNote');
+        const fileNameInput = document.getElementById('fileName');
+        const pdfQualitySelect = document.getElementById('pdfQuality');
+        const loadStudentsBtn = document.getElementById('loadStudentsBtn');
+        const saveDraftBtn = document.getElementById('saveDraftBtn');
+        const resetDraftBtn = document.getElementById('resetDraftBtn');
+        const previewBtn = document.getElementById('previewBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const printAdmitsBtn = document.getElementById('printAdmitsBtn');
+        const addExamRowBtn = document.getElementById('addExamRowBtn');
+        const datesheetBody = document.getElementById('datesheetBody');
+        const studentTableBody = document.getElementById('studentTableBody');
+        const studentSearch = document.getElementById('studentSearch');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const masterCheckbox = document.getElementById('masterCheckbox');
+        const selectedBadge = document.getElementById('selectedBadge');
+        const previewPages = document.getElementById('previewPages');
+        const previewEmpty = document.getElementById('previewEmpty');
+        const pageCountBadge = document.getElementById('pageCountBadge');
+        const previewStatus = document.getElementById('previewStatus');
+
+        let sessions = [];
+        let classesByName = [];
+        let currentStudents = [];
+        let selectedStudentIds = new Set();
+        let datesheetRows = cloneExamRows(DEFAULT_EXAMS);
+        let currentSchoolProfile = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) {
+                return;
+            }
+
+            sessionSelect.addEventListener('change', async () => {
+                await loadClassesForSession();
+                loadDraftForCurrentScope();
+            });
+            classSelect.addEventListener('change', () => {
+                populateSections();
+                loadDraftForCurrentScope();
+            });
+            sectionSelect.addEventListener('change', loadDraftForCurrentScope);
+            loadStudentsBtn.addEventListener('click', handleLoadStudents);
+            saveDraftBtn.addEventListener('click', handleSaveDraft);
+            resetDraftBtn.addEventListener('click', handleResetDraft);
+            previewBtn.addEventListener('click', handlePreview);
+            downloadBtn.addEventListener('click', handleDownload);
+            printAdmitsBtn.addEventListener('click', handlePrintAdmits);
+            addExamRowBtn.addEventListener('click', () => {
+                datesheetRows.push(createEmptyExamRow());
+                renderDatesheetTable();
+                persistDraftSilently();
+            });
+            studentSearch.addEventListener('input', renderStudentTable);
+            selectAllBtn.addEventListener('click', () => toggleAllVisibleStudents(true));
+            clearAllBtn.addEventListener('click', () => toggleAllVisibleStudents(false));
+            masterCheckbox.addEventListener('change', () => toggleAllVisibleStudents(masterCheckbox.checked));
+            examTitleInput.addEventListener('input', persistDraftSilently);
+            admitNoteInput.addEventListener('input', persistDraftSilently);
+
+            renderDatesheetTable();
+            await initializePage();
+        });
+
+        async function initializePage() {
+            previewBtn.disabled = true;
+            downloadBtn.disabled = true;
+            printAdmitsBtn.disabled = true;
+
+            try {
+                const [sessionsResponse, currentResponse, schoolResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/sessions`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/sessions/current`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/school-profile`, { headers: authHeaders() })
+                ]);
+
+                const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+                const currentPayload = currentResponse.ok ? await currentResponse.json() : {};
+                const schoolPayload = schoolResponse.ok ? await schoolResponse.json() : null;
+                currentSchoolProfile = schoolPayload?.profile || window.SchoolProfile?.getCachedProfile?.() || null;
+
+                sessions = Array.isArray(sessionsPayload.sessions) && sessionsPayload.sessions.length
+                    ? sessionsPayload.sessions
+                    : [{ name: 'Default', active: true, isCurrent: true }];
+
+                const currentSession = currentPayload?.session?.name
+                    || sessions.find((entry) => entry.isCurrent)?.name
+                    || sessions[0]?.name
+                    || 'Default';
+
+                sessionSelect.innerHTML = sessions
+                    .map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`)
+                    .join('');
+                sessionSelect.value = currentSession;
+
+                await loadClassesForSession();
+                loadDraftForCurrentScope();
+            } catch (error) {
+                console.error('Failed to initialize bulk admit-card page:', error);
+                previewStatus.textContent = 'Unable to load sessions right now';
+                alert('Unable to load the bulk admit-card workspace right now.');
+            }
+        }
+
+        async function loadClassesForSession() {
+            const session = sessionSelect.value;
+            classSelect.innerHTML = '<option value="">Loading classes...</option>';
+            sectionSelect.innerHTML = '<option value="">Select section</option>';
+            previewBtn.disabled = true;
+            downloadBtn.disabled = true;
+            printAdmitsBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/classes/year/${encodeURIComponent(session)}`, {
+                    headers: authHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch classes');
+                }
+
+                const classes = await response.json();
+                const grouped = new Map();
+
+                (Array.isArray(classes) ? classes : []).forEach((entry) => {
+                    const className = entry.className || 'Unknown';
+                    if (!grouped.has(className)) {
+                        grouped.set(className, []);
+                    }
+                    grouped.get(className).push(entry);
+                });
+
+                classesByName = Array.from(grouped.entries())
+                    .map(([className, sections]) => ({
+                        className,
+                        sections: sections
+                            .map((entry) => ({
+                                id: entry._id,
+                                section: entry.section || 'A',
+                                studentCount: Number(entry.studentCount) || 0
+                            }))
+                            .sort((a, b) => String(a.section).localeCompare(String(b.section)))
+                    }))
+                    .sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
+
+                classSelect.innerHTML = '<option value="">Select class</option>' + classesByName
+                    .map((entry) => `<option value="${escapeHtml(entry.className)}">${escapeHtml(entry.className)}</option>`)
+                    .join('');
+
+                populateSections();
+                previewStatus.textContent = `Session ready: ${session}`;
+            } catch (error) {
+                console.error('Failed to load classes:', error);
+                classSelect.innerHTML = '<option value="">No classes found</option>';
+                previewStatus.textContent = 'No class data available';
+            }
+        }
+
+        function populateSections() {
+            const selectedClass = classSelect.value;
+            const classEntry = classesByName.find((entry) => entry.className === selectedClass);
+            const sectionOptions = classEntry
+                ? classEntry.sections.map((entry) => `<option value="${escapeHtml(entry.section)}">${escapeHtml(entry.section)}</option>`).join('')
+                : '';
+
+            sectionSelect.innerHTML = '<option value="">Select section</option>' + sectionOptions;
+        }
+
+        async function handleLoadStudents() {
+            const selectedClass = classSelect.value;
+            const selectedSection = sectionSelect.value;
+            const selectedSession = sessionSelect.value;
+
+            if (!selectedClass || !selectedSection) {
+                alert('Choose class and section first.');
+                return;
+            }
+
+            loadStudentsBtn.disabled = true;
+            previewBtn.disabled = true;
+            downloadBtn.disabled = true;
+            printAdmitsBtn.disabled = true;
+            previewStatus.textContent = 'Loading students...';
+
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_URL}/students/class/${encodeURIComponent(selectedClass)}/${encodeURIComponent(selectedSection)}?session=${encodeURIComponent(selectedSession)}`,
+                    { headers: authHeaders() }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch students');
+                }
+
+                const students = await response.json();
+                currentStudents = Array.isArray(students) ? students.filter(Boolean) : [];
+                selectedStudentIds = new Set(currentStudents.map((student) => String(student._id)));
+                renderStudentTable();
+                updateSummaryStats();
+
+                if (!currentStudents.length) {
+                    renderEmpty('No students found for the selected class and section.');
+                    previewStatus.textContent = 'No students found';
+                    return;
+                }
+
+                previewStatus.textContent = `${currentStudents.length} students loaded`;
+                previewBtn.disabled = false;
+            } catch (error) {
+                console.error('Failed to load students:', error);
+                currentStudents = [];
+                selectedStudentIds = new Set();
+                renderStudentTable();
+                updateSummaryStats();
+                renderEmpty('Unable to load students for the selected class and section.');
+                previewStatus.textContent = 'Student load failed';
+            } finally {
+                loadStudentsBtn.disabled = false;
+            }
+        }
+
+        function renderDatesheetTable() {
+            if (!datesheetRows.length) {
+                datesheetRows = [createEmptyExamRow()];
+            }
+
+            datesheetBody.innerHTML = datesheetRows.map((row, index) => `
+                <tr>
+                    <td><input type="text" class="form-control form-control-sm" data-row="${index}" data-field="subject" value="${escapeAttribute(row.subject)}" placeholder="Subject"></td>
+                    <td><input type="date" class="form-control form-control-sm" data-row="${index}" data-field="date" value="${escapeAttribute(row.date)}"></td>
+                    <td><input type="text" class="form-control form-control-sm" data-row="${index}" data-field="day" value="${escapeAttribute(row.day)}" placeholder="Day"></td>
+                    <td><input type="text" class="form-control form-control-sm" data-row="${index}" data-field="timing" value="${escapeAttribute(row.timing)}" placeholder="10:30 AM - 12:30 PM"></td>
+                    <td><input type="text" class="form-control form-control-sm" data-row="${index}" data-field="venue" value="${escapeAttribute(row.venue)}" placeholder="Venue"></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" type="button" data-remove-row="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            datesheetBody.querySelectorAll('input').forEach((input) => {
+                input.addEventListener('input', handleDatesheetInput);
+                input.addEventListener('change', handleDatesheetInput);
+            });
+
+            datesheetBody.querySelectorAll('[data-remove-row]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const index = Number(button.dataset.removeRow);
+                    datesheetRows.splice(index, 1);
+                    renderDatesheetTable();
+                    persistDraftSilently();
+                });
+            });
+
+            updateSummaryStats();
+        }
+
+        function handleDatesheetInput(event) {
+            const index = Number(event.target.dataset.row);
+            const field = event.target.dataset.field;
+            const value = event.target.value;
+
+            if (!datesheetRows[index]) {
+                return;
+            }
+
+            datesheetRows[index][field] = value;
+
+            if (field === 'date') {
+                datesheetRows[index].day = inferDayFromDate(value);
+            }
+
+            renderDatesheetTable();
+            persistDraftSilently();
+        }
+
+        function renderStudentTable() {
+            const query = studentSearch.value.trim().toLowerCase();
+            const filtered = getFilteredStudents(query);
+
+            if (!currentStudents.length) {
+                studentTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Load a class to see students.</td></tr>';
+                masterCheckbox.checked = false;
+                updateSelectedBadge();
+                return;
+            }
+
+            if (!filtered.length) {
+                studentTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No students match your search.</td></tr>';
+                masterCheckbox.checked = false;
+                updateSelectedBadge();
+                return;
+            }
+
+            studentTableBody.innerHTML = filtered.map((student) => {
+                const id = String(student._id);
+                const checked = selectedStudentIds.has(id) ? 'checked' : '';
+                return `
+                    <tr>
+                        <td><input type="checkbox" class="student-check" value="${escapeAttribute(id)}" ${checked}></td>
+                        <td>
+                            <div class="fw-semibold">${escapeHtml(student.name || '-')}</div>
+                            <div class="small text-muted">${escapeHtml(student.studentId || '-')}</div>
+                        </td>
+                        <td>${escapeHtml(String(student.rollNo || '-'))}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            studentTableBody.querySelectorAll('.student-check').forEach((checkbox) => {
+                checkbox.addEventListener('change', () => {
+                    const id = checkbox.value;
+                    if (checkbox.checked) {
+                        selectedStudentIds.add(id);
+                    } else {
+                        selectedStudentIds.delete(id);
+                    }
+                    updateSelectedBadge();
+                });
+            });
+
+            masterCheckbox.checked = filtered.length > 0 && filtered.every((student) => selectedStudentIds.has(String(student._id)));
+            updateSelectedBadge();
+        }
+
+        function toggleAllVisibleStudents(checked) {
+            const filtered = getFilteredStudents(studentSearch.value.trim().toLowerCase());
+            filtered.forEach((student) => {
+                const id = String(student._id);
+                if (checked) {
+                    selectedStudentIds.add(id);
+                } else {
+                    selectedStudentIds.delete(id);
+                }
+            });
+            renderStudentTable();
+        }
+
+        function getFilteredStudents(query) {
+            return currentStudents.filter((student) => {
+                if (!query) return true;
+                const haystack = [
+                    student.name,
+                    student.studentId,
+                    student.rollNo
+                ].map((value) => String(value || '').toLowerCase()).join(' ');
+                return haystack.includes(query);
+            });
+        }
+
+        function updateSummaryStats() {
+            document.getElementById('statStudents').textContent = currentStudents.length;
+            document.getElementById('statExams').textContent = getActiveDatesheetRows().length;
+            updateSelectedBadge();
+        }
+
+        function updateSelectedBadge() {
+            const selectedCount = currentStudents.filter((student) => selectedStudentIds.has(String(student._id))).length;
+            selectedBadge.textContent = `${selectedCount} selected`;
+        }
+
+        function handlePreview() {
+            const selectedClass = classSelect.value;
+            const selectedSection = sectionSelect.value;
+            const selectedSession = sessionSelect.value;
+            const selectedStudents = getSelectedStudents();
+            const datesheet = getActiveDatesheetRows();
+
+            if (!selectedClass || !selectedSection) {
+                alert('Choose class and section first.');
+                return;
+            }
+
+            if (!selectedStudents.length) {
+                alert('Select at least one student for preview.');
+                return;
+            }
+
+            if (!datesheet.length) {
+                alert('Add at least one exam row to the datesheet.');
+                return;
+            }
+
+            renderPreviewPages(selectedStudents, selectedClass, selectedSection, selectedSession, datesheet);
+            previewStatus.textContent = `${selectedStudents.length} admit cards ready for export`;
+            downloadBtn.disabled = false;
+            printAdmitsBtn.disabled = false;
+        }
+
+        function renderPreviewPages(students, className, section, session, datesheet) {
+            const markup = students.map((student) => renderSheet(student, className, section, session, datesheet)).join('');
+            previewPages.innerHTML = markup;
+            previewEmpty.style.display = 'none';
+            pageCountBadge.textContent = `${students.length} pages`;
+        }
+
+        function renderEmpty(message) {
+            previewPages.innerHTML = '';
+            previewEmpty.style.display = 'grid';
+            previewEmpty.querySelector('p.fw-semibold').textContent = message;
+            previewEmpty.querySelector('p.mb-0').textContent = 'Adjust the filters and try again.';
+            pageCountBadge.textContent = '0 pages';
+            downloadBtn.disabled = true;
+            printAdmitsBtn.disabled = true;
+        }
+
+        async function handleDownload() {
+            const selectedClass = classSelect.value;
+            const selectedSection = sectionSelect.value;
+            const selectedSession = sessionSelect.value;
+            const selectedStudents = getSelectedStudents();
+            const datesheet = getActiveDatesheetRows();
+            const capture = document.getElementById('pdfCapture');
+
+            if (!selectedStudents.length || !datesheet.length) {
+                return;
+            }
+
+            capture.innerHTML = selectedStudents
+                .map((student) => renderSheet(student, selectedClass, selectedSection, selectedSession, datesheet))
+                .join('');
+
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Generating PDF';
+
+            try {
+                await waitForPdfAssets(capture);
+
+                await html2pdf()
+                    .set({
+                        margin: 0,
+                        filename: buildFileName(selectedClass, selectedSection, selectedSession),
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: {
+                            scale: Number(pdfQualitySelect.value) || 2,
+                            useCORS: true,
+                            letterRendering: true,
+                            backgroundColor: '#ffffff'
+                        },
+                        jsPDF: {
+                            unit: 'mm',
+                            format: 'a4',
+                            orientation: 'portrait'
+                        },
+                        pagebreak: { mode: ['css', 'legacy'] }
+                    })
+                    .from(capture)
+                    .save();
+            } catch (error) {
+                console.error('PDF download failed:', error);
+                alert('Unable to generate the PDF file right now.');
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = '<i class="fas fa-file-pdf me-2"></i>Download PDF';
+                capture.innerHTML = '';
+            }
+        }
+
+        async function handlePrintAdmits() {
+            const selectedClass = classSelect.value;
+            const selectedSection = sectionSelect.value;
+            const selectedSession = sessionSelect.value;
+            const selectedStudents = getSelectedStudents();
+            const datesheet = getActiveDatesheetRows();
+            const capture = document.getElementById('pdfCapture');
+
+            if (!selectedStudents.length || !datesheet.length) {
+                alert('Preview admit cards before printing.');
+                return;
+            }
+
+            capture.innerHTML = selectedStudents
+                .map((student) => renderSheet(student, selectedClass, selectedSection, selectedSession, datesheet))
+                .join('');
+
+            printAdmitsBtn.disabled = true;
+            printAdmitsBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Preparing Print';
+
+            let cleanupTimer = 0;
+            const cleanupPrint = () => {
+                window.removeEventListener('afterprint', cleanupPrint);
+                window.clearTimeout(cleanupTimer);
+                capture.innerHTML = '';
+                printAdmitsBtn.disabled = false;
+                printAdmitsBtn.innerHTML = '<i class="fas fa-print me-2"></i>Print Admits';
+            };
+
+            try {
+                await waitForPdfAssets(capture);
+                window.addEventListener('afterprint', cleanupPrint, { once: true });
+                window.print();
+                cleanupTimer = window.setTimeout(cleanupPrint, 60000);
+            } catch (error) {
+                console.error('Print admit cards failed:', error);
+                alert('Unable to open the print dialog right now.');
+                cleanupPrint();
+            }
+        }
+
+        async function waitForPdfAssets(container) {
+            const images = Array.from(container.querySelectorAll('img'));
+            if (!images.length) {
+                return;
+            }
+
+            await Promise.all(images.map((image) => {
+                if (image.complete) {
+                    return Promise.resolve();
+                }
+
+                return new Promise((resolve) => {
+                    image.addEventListener('load', resolve, { once: true });
+                    image.addEventListener('error', resolve, { once: true });
+                });
+            }));
+
+            await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+        }
+
+        function handleSaveDraft() {
+            if (!currentDraftKey()) {
+                alert('Choose session, class, and section before saving a datesheet draft.');
+                return;
+            }
+            persistDraftSilently();
+            alert('Datesheet draft saved for this session, class, and section.');
+        }
+
+        function handleResetDraft() {
+            if (currentDraftKey()) {
+                localStorage.removeItem(currentDraftKey());
+            }
+            examTitleInput.value = 'Annual Examination';
+            admitNoteInput.value = 'Students must carry this admit card every examination day.';
+            datesheetRows = cloneExamRows(DEFAULT_EXAMS);
+            renderDatesheetTable();
+            updateSummaryStats();
+        }
+
+        function loadDraftForCurrentScope() {
+            const key = currentDraftKey();
+            if (!key) {
+                datesheetRows = cloneExamRows(DEFAULT_EXAMS);
+                renderDatesheetTable();
+                return;
+            }
+
+            const raw = localStorage.getItem(key);
+            if (!raw) {
+                datesheetRows = cloneExamRows(DEFAULT_EXAMS);
+                renderDatesheetTable();
+                return;
+            }
+
+            try {
+                const saved = JSON.parse(raw);
+                examTitleInput.value = saved.examTitle || 'Annual Examination';
+                admitNoteInput.value = saved.admitNote || 'Students must carry this admit card every examination day.';
+                datesheetRows = Array.isArray(saved.datesheetRows) && saved.datesheetRows.length
+                    ? cloneExamRows(saved.datesheetRows)
+                    : cloneExamRows(DEFAULT_EXAMS);
+                renderDatesheetTable();
+            } catch (error) {
+                console.error('Failed to load saved datesheet draft:', error);
+                datesheetRows = cloneExamRows(DEFAULT_EXAMS);
+                renderDatesheetTable();
+            }
+        }
+
+        function persistDraftSilently() {
+            const key = currentDraftKey();
+            if (!key) {
+                return;
+            }
+
+            const payload = {
+                examTitle: examTitleInput.value.trim(),
+                admitNote: admitNoteInput.value.trim(),
+                datesheetRows
+            };
+            localStorage.setItem(key, JSON.stringify(payload));
+        }
+
+        function currentDraftKey() {
+            const session = sessionSelect.value;
+            const className = classSelect.value;
+            const section = sectionSelect.value;
+            if (!session || !className || !section) {
+                return '';
+            }
+            return `bulk-admit-datesheet::${session}::${className}::${section}`;
+        }
+
+        function getSelectedStudents() {
+            return currentStudents.filter((student) => selectedStudentIds.has(String(student._id)));
+        }
+
+        function getActiveDatesheetRows() {
+            return datesheetRows
+                .map((row) => ({
+                    subject: String(row.subject || '').trim(),
+                    date: String(row.date || '').trim(),
+                    day: String(row.day || '').trim(),
+                    timing: String(row.timing || '').trim(),
+                    venue: String(row.venue || '').trim()
+                }))
+                .filter((row) => row.subject || row.date || row.day || row.timing || row.venue);
+        }
+
+        function renderSheet(student, className, section, session, datesheet) {
+            const studentName = student.name || 'Unknown Student';
+            const fatherName = student.fatherName || '-';
+            const motherName = student.motherName || '-';
+            const admissionNo = student.studentId || '-';
+            const rollNo = student.rollNo || '-';
+            const dob = formatDobDisplay(student.dob);
+            const profile = getResolvedSchoolProfile();
+            const schoolName = profile.name;
+            const schoolAddress = profile.address;
+            const schoolContact = profile.phone;
+            const schoolEmail = profile.email;
+            const logo = profile.logo;
+            const examTitle = examTitleInput.value.trim() || 'Annual Examination';
+            const admitNote = admitNoteInput.value.trim();
+
+            return `
+                <section class="preview-sheet">
+                    <div class="admit-frame">
+                        <div class="admit-watermark">${escapeHtml(schoolName)}</div>
+                        <header class="admit-header">
+                            <img src="${escapeAttribute(logo)}" alt="School Logo">
+                            <div class="school-name">${escapeHtml(schoolName)}</div>
+                            <div>${escapeHtml(schoolAddress)}</div>
+                            <div>${escapeHtml([schoolContact, schoolEmail].filter(Boolean).join(' | ') || 'Examination Admit Card')}</div>
+                            <div class="mt-2 fw-semibold">${escapeHtml(examTitle)} - ${escapeHtml(session)}</div>
+                            <div class="admit-title-pill">ADMIT CARD</div>
+                        </header>
+
+                        <section class="admit-meta">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div><strong>Student:</strong> ${escapeHtml(studentName)}</div>
+                                    <div><strong>Admission No:</strong> ${escapeHtml(admissionNo)}</div>
+                                    <div><strong>Father's Name:</strong> ${escapeHtml(fatherName)}</div>
+                                    <div><strong>Mother's Name:</strong> ${escapeHtml(motherName)}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div><strong>Class:</strong> ${escapeHtml(className)}</div>
+                                    <div><strong>Section:</strong> ${escapeHtml(section)}</div>
+                                    <div><strong>Roll No:</strong> ${escapeHtml(String(rollNo))}</div>
+                                    <div><strong>Date of Birth:</strong> ${escapeHtml(dob || '-')}</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div class="admit-table-wrap">
+                            <table class="admit-table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Exam Date</th>
+                                        <th>Day</th>
+                                        <th>Timing</th>
+                                        <th>Venue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${datesheet.map((row) => `
+                                        <tr>
+                                            <td>${escapeHtml(row.subject || '-')}</td>
+                                            <td>${escapeHtml(formatDateDisplay(row.date) || '-')}</td>
+                                            <td>${escapeHtml(row.day || '-')}</td>
+                                            <td>${escapeHtml(row.timing || '-')}</td>
+                                            <td>${escapeHtml(row.venue || '-')}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <section class="admit-instructions">
+                            <div class="fw-semibold mb-2">Instructions</div>
+                            <ol class="mb-0 ps-3">
+                                <li>Students must bring this admit card on every examination day.</li>
+                                <li>Reporting time should be at least 15 minutes before the exam starts.</li>
+                                <li>Use only permitted writing materials and follow all exam hall instructions.</li>
+                                ${admitNote ? `<li>${escapeHtml(admitNote)}</li>` : ''}
+                            </ol>
+                        </section>
+
+                        <section class="admit-signatures">
+                            <div class="row g-4">
+                                <div class="col-4">
+                                    <div class="signature-line">Guardian Signature</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="signature-line">Class Teacher</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="signature-line">Exam In-Charge</div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            `;
+        }
+
+        function createEmptyExamRow() {
+            return { subject: '', date: '', day: '', timing: '10:30 AM - 12:30 PM', venue: 'Main Hall' };
+        }
+
+        function cloneExamRows(rows) {
+            return (Array.isArray(rows) ? rows : []).map((row) => ({
+                subject: row.subject || '',
+                date: row.date || '',
+                day: row.day || '',
+                timing: row.timing || '10:30 AM - 12:30 PM',
+                venue: row.venue || 'Main Hall'
+            }));
+        }
+
+        function inferDayFromDate(value) {
+            if (!value) return '';
+            const date = new Date(`${value}T00:00:00`);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('en-US', { weekday: 'long' });
+        }
+
+        function formatDateDisplay(value) {
+            if (!value) return '';
+            const date = new Date(`${value}T00:00:00`);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function formatDobDisplay(value) {
+            if (!value) return '';
+            const raw = String(value).trim();
+            const isoDateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (isoDateMatch) {
+                return isoDateMatch[1];
+            }
+
+            const date = new Date(raw);
+            if (Number.isNaN(date.getTime())) return raw;
+
+            const year = String(date.getFullYear());
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function buildFileName(className, section, session) {
+            const preferred = fileNameInput.value.trim();
+            if (preferred) {
+                return preferred.toLowerCase().endsWith('.pdf') ? preferred : `${preferred}.pdf`;
+            }
+
+            return `admit-cards-${slugify(className)}-${slugify(section)}-${slugify(session)}.pdf`;
+        }
+
+        function authHeaders() {
+            return {
+                Authorization: `Bearer ${Auth.getToken()}`
+            };
+        }
+
+        function getResolvedSchoolProfile() {
+            const profile = currentSchoolProfile || window.SchoolProfile?.getCachedProfile?.() || {};
+            const schoolName = profile.name || profile.schoolName || 'Skyview Public School';
+            const schoolAddress = [profile.addressLine1, profile.addressLine2]
+                .filter(Boolean)
+                .join(' | ') || profile.address || 'School address not configured';
+
+            return {
+                name: schoolName,
+                address: schoolAddress,
+                phone: profile.phone || profile.contactNo || '',
+                email: profile.email || '',
+                logo: profile.logo || profile.logoUrl || '../assets/images/logo.png'
+            };
+        }
+
+        function slugify(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '') || 'admit-cards-bulk';
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeAttribute(value) {
+            return escapeHtml(value);
+        }
+    </script>
+</body>
+</html>

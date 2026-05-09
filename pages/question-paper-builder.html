@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Paper Builder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: #eef2f7;
+        }
+
+        .builder-shell {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr) 300px;
+            gap: 16px;
+            padding: 16px;
+        }
+
+        .builder-panel {
+            background: #fff;
+            border: 1px solid #d8dee9;
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .builder-panel .panel-body {
+            padding: 14px;
+        }
+
+        .toolbar-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .toolbar-grid .btn {
+            min-height: 42px;
+            font-size: 13px;
+        }
+
+        .workspace {
+            min-width: 0;
+            overflow: auto;
+            height: calc(100vh - 104px);
+            padding: 20px;
+            background:
+                linear-gradient(90deg, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
+                linear-gradient(rgba(148, 163, 184, 0.16) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .paper-page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 24px;
+            background: #fff;
+            color: #111827;
+            position: relative;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.20);
+            overflow: hidden;
+            transform-origin: top center;
+        }
+
+        .paper-element {
+            position: absolute;
+            min-width: 80px;
+            min-height: 34px;
+            border: 1px solid transparent;
+            outline: 0;
+            background: transparent;
+        }
+
+        .paper-element.selected {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16);
+        }
+
+        .paper-element .drag-handle {
+            position: absolute;
+            top: -18px;
+            left: 0;
+            display: none;
+            height: 18px;
+            padding: 0 7px;
+            border-radius: 5px 5px 0 0;
+            background: #2563eb;
+            color: #fff;
+            font-size: 11px;
+            line-height: 18px;
+            cursor: move;
+            user-select: none;
+        }
+
+        .paper-element.selected .drag-handle,
+        .paper-element:hover .drag-handle {
+            display: block;
+        }
+
+        .element-content {
+            width: 100%;
+            height: 100%;
+            padding: 6px;
+            overflow: hidden;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .element-content:focus {
+            outline: 0;
+        }
+
+        .paper-element img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .question-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            background: #fff;
+        }
+
+        .question-table th,
+        .question-table td {
+            border: 1px solid #111827;
+            padding: 6px 8px;
+            vertical-align: middle;
+            min-width: 32px;
+            word-break: break-word;
+        }
+
+        .question-table th {
+            background: #f1f5f9;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .question-table [contenteditable="true"]:focus {
+            outline: 2px solid rgba(37, 99, 235, 0.35);
+            outline-offset: -2px;
+        }
+
+        .resize-handle {
+            position: absolute;
+            right: -6px;
+            bottom: -6px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #2563eb;
+            border: 2px solid #fff;
+            cursor: nwse-resize;
+            display: none;
+        }
+
+        .paper-element.selected .resize-handle {
+            display: block;
+        }
+
+        .paper-header-guides {
+            position: absolute;
+            inset: 12mm;
+            border: 1px dashed rgba(100, 116, 139, 0.25);
+            pointer-events: none;
+        }
+
+        .element-list {
+            max-height: 220px;
+            overflow: auto;
+        }
+
+        .element-list button {
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .compact-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        @media (max-width: 1200px) {
+            .builder-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .workspace {
+                height: auto;
+            }
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+
+            #navbar-container,
+            .builder-panel,
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: #fff;
+            }
+
+            .builder-shell,
+            .workspace {
+                display: block;
+                padding: 0;
+                height: auto;
+                overflow: visible;
+                background: #fff;
+            }
+
+            .paper-page {
+                margin: 0;
+                box-shadow: none;
+                transform: none !important;
+                width: 210mm;
+                min-height: 297mm;
+            }
+
+            .paper-element {
+                border-color: transparent !important;
+                box-shadow: none !important;
+            }
+
+            .drag-handle,
+            .resize-handle,
+            .paper-header-guides {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="builder-shell">
+        <aside class="builder-panel no-print">
+            <div class="panel-body">
+                <h1 class="h5 mb-3">Question Paper Builder</h1>
+
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label compact-label" for="sessionSelect">Session</label>
+                        <select id="sessionSelect" class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="classSelect">Class</label>
+                        <select id="classSelect" class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="subjectSelect">Subject</label>
+                        <select id="subjectSelect" class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label compact-label" for="examNameInput">Exam Name</label>
+                        <select id="examNameInput" class="form-select form-select-sm">
+                            <option value="PERIODIC TEST-1 EXAMINATION">PERIODIC TEST-1 EXAMINATION</option>
+                            <option value="HALF YEARLY EXAMINATION">HALF YEARLY EXAMINATION</option>
+                            <option value="PERIODIC TEST-2 EXAMINATION">PERIODIC TEST-2 EXAMINATION</option>
+                            <option value="ANNUAL EXAMINATION">ANNUAL EXAMINATION</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label compact-label" for="paperTitleInput">Paper Title</label>
+                        <input id="paperTitleInput" class="form-control form-control-sm" value="Question Paper" placeholder="Question Paper">
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="toolbar-grid">
+                    <button class="btn btn-outline-primary" type="button" data-add="schoolHeader"><i class="fa-solid fa-school me-1"></i>Header</button>
+                    <button class="btn btn-outline-primary" type="button" data-add="text"><i class="fa-solid fa-font me-1"></i>Text</button>
+                    <button class="btn btn-outline-primary" type="button" data-add="question"><i class="fa-solid fa-list-ol me-1"></i>Question</button>
+                    <button class="btn btn-outline-primary" type="button" data-add="section"><i class="fa-solid fa-heading me-1"></i>Section</button>
+                    <button class="btn btn-outline-primary" type="button" data-add="instructions"><i class="fa-solid fa-circle-info me-1"></i>Instructions</button>
+                    <button class="btn btn-outline-primary" type="button" data-add="table"><i class="fa-solid fa-table-cells me-1"></i>Table</button>
+                    <button class="btn btn-outline-primary" type="button" data-add="line"><i class="fa-solid fa-minus me-1"></i>Line</button>
+                    <button class="btn btn-outline-primary" type="button" id="addImageUrlBtn"><i class="fa-solid fa-image me-1"></i>Image URL</button>
+                </div>
+
+                <div class="mt-3">
+                    <div class="compact-label mb-2">Question Types</div>
+                    <div class="toolbar-grid">
+                        <button class="btn btn-outline-dark" type="button" data-add="mcq"><i class="fa-solid fa-circle-check me-1"></i>MCQ</button>
+                        <button class="btn btn-outline-dark" type="button" data-add="fillBlank"><i class="fa-solid fa-ellipsis me-1"></i>Fill Blank</button>
+                        <button class="btn btn-outline-dark" type="button" data-add="trueFalse"><i class="fa-solid fa-check-double me-1"></i>True/False</button>
+                        <button class="btn btn-outline-dark" type="button" data-add="matching"><i class="fa-solid fa-right-left me-1"></i>Matching</button>
+                        <button class="btn btn-outline-dark" type="button" data-add="answerLines"><i class="fa-solid fa-grip-lines me-1"></i>Answer Lines</button>
+                        <button class="btn btn-outline-dark" type="button" data-add="wordBank"><i class="fa-solid fa-box-archive me-1"></i>Word Bank</button>
+                        <button class="btn btn-outline-dark" type="button" data-add="pictureQuestion"><i class="fa-solid fa-images me-1"></i>Picture Q</button>
+                        <button class="btn btn-outline-dark" type="button" data-add="marksBox"><i class="fa-solid fa-square-poll-horizontal me-1"></i>Marks Box</button>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <div class="compact-label mb-2">Smart Build</div>
+                    <div class="toolbar-grid">
+                        <button class="btn btn-outline-success" type="button" data-smart="lower"><i class="fa-solid fa-child-reaching me-1"></i>Lower Class</button>
+                        <button class="btn btn-outline-success" type="button" data-smart="objective"><i class="fa-solid fa-list-check me-1"></i>Objective</button>
+                        <button class="btn btn-outline-success" type="button" data-smart="formal"><i class="fa-solid fa-file-lines me-1"></i>Formal</button>
+                        <button class="btn btn-outline-success" type="button" data-smart="writing"><i class="fa-solid fa-pen-nib me-1"></i>Writing</button>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label compact-label" for="imageUploadInput">Upload Image</label>
+                    <input id="imageUploadInput" class="form-control form-control-sm" type="file" accept="image/*">
+                </div>
+
+                <hr>
+
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" type="button" id="saveBtn"><i class="fa-solid fa-floppy-disk me-2"></i>Save Paper</button>
+                    <button class="btn btn-outline-dark" type="button" id="loadBtn"><i class="fa-solid fa-folder-open me-2"></i>Load Saved</button>
+                    <button class="btn btn-outline-secondary" type="button" id="duplicateBtn"><i class="fa-solid fa-clone me-2"></i>Duplicate Selected</button>
+                    <button class="btn btn-outline-secondary" type="button" id="bringForwardBtn"><i class="fa-solid fa-arrow-up me-2"></i>Bring Forward</button>
+                    <button class="btn btn-outline-secondary" type="button" id="sendBackwardBtn"><i class="fa-solid fa-arrow-down me-2"></i>Send Backward</button>
+                    <button class="btn btn-outline-danger" type="button" id="deleteBtn"><i class="fa-solid fa-trash me-2"></i>Delete Selected</button>
+                    <button class="btn btn-primary" type="button" id="printBtn"><i class="fa-solid fa-print me-2"></i>Print / Save PDF</button>
+                </div>
+
+                <div class="alert alert-info small mt-3 mb-0">
+                    <div>Paste text or copied images directly on the paper. Drag blocks by their blue handle.</div>
+                    <div class="mt-1 fw-semibold" id="builderStatus">Ready</div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="workspace" id="workspace">
+            <div class="paper-page" id="paperPage" tabindex="0">
+                <div class="paper-header-guides"></div>
+            </div>
+        </section>
+
+        <aside class="builder-panel no-print">
+            <div class="panel-body">
+                <h2 class="h6 mb-3">Selected Element</h2>
+
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label compact-label" for="fontFamilySelect">Font Family</label>
+                        <select id="fontFamilySelect" class="form-select form-select-sm">
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="'Times New Roman', serif">Times New Roman</option>
+                            <option value="'Courier New', monospace">Courier New</option>
+                            <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Segoe UI</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="fontSizeInput">Font</label>
+                        <input id="fontSizeInput" class="form-control form-control-sm" type="number" min="8" max="72" value="16">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="fontWeightSelect">Weight</label>
+                        <select id="fontWeightSelect" class="form-select form-select-sm">
+                            <option value="400">Regular</option>
+                            <option value="600">Semi Bold</option>
+                            <option value="700">Bold</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="alignSelect">Align</label>
+                        <select id="alignSelect" class="form-select form-select-sm">
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="colorInput">Color</label>
+                        <input id="colorInput" class="form-control form-control-sm form-control-color w-100" type="color" value="#111827">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="xInput">X</label>
+                        <input id="xInput" class="form-control form-control-sm" type="number" value="40">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="yInput">Y</label>
+                        <input id="yInput" class="form-control form-control-sm" type="number" value="40">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="widthInput">Width</label>
+                        <input id="widthInput" class="form-control form-control-sm" type="number" value="300">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label compact-label" for="heightInput">Height</label>
+                        <input id="heightInput" class="form-control form-control-sm" type="number" value="80">
+                    </div>
+                </div>
+
+                <div id="tableOptions" class="mt-3 d-none">
+                    <div class="compact-label mb-2">Table Size</div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label compact-label" for="tableRowsInput">Rows</label>
+                            <input id="tableRowsInput" class="form-control form-control-sm" type="number" min="1" max="30" value="4">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label compact-label" for="tableColumnsInput">Columns</label>
+                            <input id="tableColumnsInput" class="form-control form-control-sm" type="number" min="1" max="10" value="4">
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h2 class="h6 mb-2">Elements</h2>
+                <div id="elementList" class="element-list d-grid gap-1"></div>
+            </div>
+        </aside>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script src="../components/navbar.js"></script>
+
+    <script>
+        const paperPage = document.getElementById('paperPage');
+        const sessionSelect = document.getElementById('sessionSelect');
+        const classSelect = document.getElementById('classSelect');
+        const subjectSelect = document.getElementById('subjectSelect');
+        const examNameInput = document.getElementById('examNameInput');
+        const paperTitleInput = document.getElementById('paperTitleInput');
+        const elementList = document.getElementById('elementList');
+        const builderStatus = document.getElementById('builderStatus');
+        const tableOptions = document.getElementById('tableOptions');
+        const tableRowsInput = document.getElementById('tableRowsInput');
+        const tableColumnsInput = document.getElementById('tableColumnsInput');
+        const controls = {
+            fontFamily: document.getElementById('fontFamilySelect'),
+            fontSize: document.getElementById('fontSizeInput'),
+            fontWeight: document.getElementById('fontWeightSelect'),
+            align: document.getElementById('alignSelect'),
+            color: document.getElementById('colorInput'),
+            x: document.getElementById('xInput'),
+            y: document.getElementById('yInput'),
+            width: document.getElementById('widthInput'),
+            height: document.getElementById('heightInput')
+        };
+
+        let classes = [];
+        let elements = [];
+        let selectedId = '';
+        let dragState = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) {
+                return;
+            }
+
+            document.querySelectorAll('[data-add]').forEach((button) => {
+                button.addEventListener('click', () => addElement(button.dataset.add));
+            });
+            document.querySelectorAll('[data-smart]').forEach((button) => {
+                button.addEventListener('click', () => buildSmartLayout(button.dataset.smart));
+            });
+
+            document.getElementById('addImageUrlBtn').addEventListener('click', addImageFromUrl);
+            document.getElementById('imageUploadInput').addEventListener('change', handleImageUpload);
+            document.getElementById('saveBtn').addEventListener('click', savePaper);
+            document.getElementById('loadBtn').addEventListener('click', loadPaper);
+            document.getElementById('duplicateBtn').addEventListener('click', duplicateSelected);
+            document.getElementById('bringForwardBtn').addEventListener('click', () => moveSelectedLayer(1));
+            document.getElementById('sendBackwardBtn').addEventListener('click', () => moveSelectedLayer(-1));
+            document.getElementById('deleteBtn').addEventListener('click', deleteSelected);
+            document.getElementById('printBtn').addEventListener('click', () => window.print());
+            tableRowsInput.addEventListener('change', applyTableSizeChanges);
+            tableColumnsInput.addEventListener('change', applyTableSizeChanges);
+            sessionSelect.addEventListener('change', autoLoadPaper);
+            classSelect.addEventListener('change', () => {
+                populateSubjects();
+                autoLoadPaper();
+            });
+            examNameInput.addEventListener('change', autoLoadPaper);
+            subjectSelect.addEventListener('change', autoLoadPaper);
+            paperPage.addEventListener('paste', handlePaste);
+            paperPage.addEventListener('pointerdown', (event) => {
+                if (event.target === paperPage) {
+                    selectElement('');
+                }
+            });
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+
+            Object.values(controls).forEach((control) => {
+                control.addEventListener('input', applyControlChanges);
+                control.addEventListener('change', applyControlChanges);
+            });
+
+            await initializeSelectors();
+            addElement('schoolHeader');
+            addElement('section');
+            addElement('question');
+        });
+
+        async function initializeSelectors() {
+            const token = Auth.getToken();
+            const [sessionsResponse, classesResponse] = await Promise.all([
+                fetch(`${CONFIG.API_URL}/sessions`, { headers: { Authorization: `Bearer ${token}` } }),
+                fetch(`${CONFIG.API_URL}/classes`, { headers: { Authorization: `Bearer ${token}` } })
+            ]);
+
+            const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+            classes = classesResponse.ok ? await classesResponse.json() : [];
+            const sessions = Array.isArray(sessionsPayload.sessions) && sessionsPayload.sessions.length
+                ? sessionsPayload.sessions
+                : [{ name: '2025-2026' }];
+
+            sessionSelect.innerHTML = sessions
+                .map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`)
+                .join('');
+
+            const classNames = [...new Set(classes.map((entry) => entry.className).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            classSelect.innerHTML = '<option value="">Select Class</option>' + classNames
+                .map((className) => `<option value="${escapeHtml(className)}">${escapeHtml(className)}</option>`)
+                .join('');
+            populateSubjects();
+        }
+
+        function populateSubjects() {
+            const className = classSelect.value;
+            const subjectNames = new Set();
+            classes
+                .filter((entry) => entry.className === className)
+                .forEach((entry) => {
+                    (entry.subjects || []).forEach((subject) => {
+                        const name = subject.name || subject.subjectName || subject;
+                        if (name) subjectNames.add(String(name));
+                    });
+                });
+
+            subjectSelect.innerHTML = '<option value="">Select Subject</option>' + [...subjectNames]
+                .sort((a, b) => a.localeCompare(b))
+                .map((subject) => `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`)
+                .join('');
+        }
+
+        function addElement(type, overrides = {}) {
+            const defaults = elementDefaults(type);
+            const element = {
+                id: crypto.randomUUID ? crypto.randomUUID() : `el-${Date.now()}-${Math.random()}`,
+                type,
+                ...defaults,
+                ...overrides
+            };
+
+            elements.push(element);
+            renderElements();
+            selectElement(element.id);
+        }
+
+        function elementDefaults(type) {
+            const nextY = 36 + elements.length * 54;
+            if (type === 'schoolHeader') {
+                return {
+                    x: 52,
+                    y: 34,
+                    width: 690,
+                    height: 120,
+                    content: buildHeaderText(),
+                    fontSize: 18,
+                    fontWeight: '700',
+                    align: 'center',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'section') {
+                return {
+                    x: 52,
+                    y: nextY + 110,
+                    width: 690,
+                    height: 42,
+                    content: 'Section A',
+                    fontSize: 18,
+                    fontWeight: '700',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'question') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 76,
+                    content: '1. Write your question here. [2]',
+                    fontSize: 16,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'instructions') {
+                return {
+                    x: 52,
+                    y: nextY + 130,
+                    width: 690,
+                    height: 78,
+                    content: 'General Instructions:\n1. Read all questions carefully.\n2. Write answers neatly.\n3. Marks are shown against each question.',
+                    fontSize: 14,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'table') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 148,
+                    content: 'Table',
+                    rows: [
+                        ['Question', 'Answer', 'Marks', 'Remark'],
+                        ['1.', '', '', ''],
+                        ['2.', '', '', ''],
+                        ['3.', '', '', '']
+                    ],
+                    headerRows: 1,
+                    fontSize: 14,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'mcq') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 118,
+                    content: '1. Choose the correct answer. [1]\n   a) Option 1        b) Option 2\n   c) Option 3        d) Option 4',
+                    fontSize: 15,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'fillBlank') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 70,
+                    content: '1. Fill in the blank: The sun rises in the __________. [1]',
+                    fontSize: 16,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'trueFalse') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 92,
+                    content: 'Write True or False. [1 each]\n1. A triangle has three sides. ______\n2. Plants need sunlight to grow. ______',
+                    fontSize: 16,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'matching') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 168,
+                    content: 'Match the following. [1 each]\n\nColumn A                         Column B\n1. Apple                         a) Vegetable\n2. Carrot                        b) Fruit\n3. Cow                           c) Animal\n4. Rose                          d) Flower',
+                    fontSize: 15,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'answerLines') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 132,
+                    content: 'Answer:\n____________________________________________________________\n____________________________________________________________\n____________________________________________________________\n____________________________________________________________',
+                    fontSize: 16,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'wordBank') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 64,
+                    content: 'Word Bank:  school    flower    river    honest    festival',
+                    fontSize: 16,
+                    fontWeight: '600',
+                    align: 'center',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'pictureQuestion') {
+                return {
+                    x: 52,
+                    y: nextY + 150,
+                    width: 690,
+                    height: 138,
+                    content: 'Look at the picture and answer the questions. [3]\n\n[Paste or add an image near this question]\n1. What do you see in the picture?\n2. Write two sentences about it.',
+                    fontSize: 15,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'marksBox') {
+                return {
+                    x: 620,
+                    y: nextY + 150,
+                    width: 120,
+                    height: 48,
+                    content: 'Marks: ____',
+                    fontSize: 15,
+                    fontWeight: '700',
+                    align: 'center',
+                    color: '#111827'
+                };
+            }
+
+            if (type === 'line') {
+                return {
+                    x: 52,
+                    y: nextY + 160,
+                    width: 690,
+                    height: 8,
+                    content: '',
+                    fontSize: 16,
+                    fontWeight: '400',
+                    align: 'left',
+                    color: '#111827'
+                };
+            }
+
+            return {
+                x: 52,
+                y: nextY,
+                width: 320,
+                height: 72,
+                content: 'Type or paste text here',
+                fontSize: 16,
+                fontWeight: '400',
+                align: 'left',
+                color: '#111827'
+            };
+        }
+
+        function buildHeaderText() {
+            const className = classSelect.value || '____';
+            const subject = subjectSelect.value || '____';
+            const examName = examNameInput.value || 'Question Paper';
+            const session = sessionSelect.value || '____';
+            return `SKYVIEW PUBLIC SCHOOL\n${examName}\nSession: ${session}    Class: ${className}    Subject: ${subject}\nTime: ____    Marks: ____`;
+        }
+
+        function renderElements() {
+            paperPage.querySelectorAll('.paper-element').forEach((node) => node.remove());
+
+            elements.forEach((element) => {
+                const node = document.createElement('div');
+                node.className = `paper-element ${element.id === selectedId ? 'selected' : ''}`;
+                node.dataset.id = element.id;
+                node.style.left = `${element.x}px`;
+                node.style.top = `${element.y}px`;
+                node.style.width = `${element.width}px`;
+                node.style.height = `${element.height}px`;
+                node.style.color = element.color || '#111827';
+                node.style.fontSize = `${element.fontSize || 16}px`;
+                node.style.fontWeight = element.fontWeight || '400';
+                node.style.fontFamily = element.fontFamily || getDefaultFontFamily();
+                node.style.textAlign = element.align || 'left';
+
+                const handle = document.createElement('div');
+                handle.className = 'drag-handle';
+                handle.textContent = 'move';
+                handle.addEventListener('pointerdown', startDrag);
+                node.appendChild(handle);
+
+                const content = document.createElement('div');
+                content.className = 'element-content';
+                if (element.type === 'image') {
+                    const image = document.createElement('img');
+                    image.src = element.src;
+                    image.alt = 'Question paper image';
+                    content.appendChild(image);
+                } else if (element.type === 'line') {
+                    content.style.borderTop = `2px solid ${element.color || '#111827'}`;
+                    content.style.marginTop = '4px';
+                } else if (element.type === 'table') {
+                    content.style.padding = '0';
+                    content.style.whiteSpace = 'normal';
+                    content.appendChild(createTableElement(element));
+                } else {
+                    content.contentEditable = 'true';
+                    content.textContent = element.content || '';
+                    content.addEventListener('input', () => {
+                        element.content = content.textContent;
+                        renderElementList();
+                    });
+                }
+                node.appendChild(content);
+
+                const resize = document.createElement('div');
+                resize.className = 'resize-handle';
+                resize.addEventListener('pointerdown', startResize);
+                node.appendChild(resize);
+
+                node.addEventListener('pointerdown', () => selectElement(element.id));
+                paperPage.appendChild(node);
+            });
+
+            renderElementList();
+            syncControls();
+        }
+
+        function renderElementList() {
+            elementList.innerHTML = elements.map((element, index) => {
+                const label = getElementLabel(element);
+                return `<button class="btn btn-sm ${element.id === selectedId ? 'btn-primary' : 'btn-outline-secondary'}" type="button" data-select="${element.id}">${index + 1}. ${escapeHtml(label)}</button>`;
+            }).join('');
+
+            elementList.querySelectorAll('[data-select]').forEach((button) => {
+                button.addEventListener('click', () => selectElement(button.dataset.select));
+            });
+        }
+
+        function createTableElement(element) {
+            const table = document.createElement('table');
+            table.className = 'question-table';
+            const rows = normalizeTableRows(element);
+            const headerRows = Number(element.headerRows || 0);
+
+            rows.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                row.forEach((cell, columnIndex) => {
+                    const cellNode = document.createElement(rowIndex < headerRows ? 'th' : 'td');
+                    cellNode.contentEditable = 'true';
+                    cellNode.textContent = cell;
+                    cellNode.addEventListener('input', () => {
+                        element.rows[rowIndex][columnIndex] = cellNode.textContent;
+                        renderElementList();
+                    });
+                    cellNode.addEventListener('pointerdown', (event) => {
+                        event.stopPropagation();
+                        selectElement(element.id);
+                    });
+                    tr.appendChild(cellNode);
+                });
+                table.appendChild(tr);
+            });
+
+            return table;
+        }
+
+        function normalizeTableRows(element) {
+            if (!Array.isArray(element.rows) || !element.rows.length) {
+                element.rows = [
+                    ['Question', 'Answer', 'Marks'],
+                    ['1.', '', ''],
+                    ['2.', '', '']
+                ];
+            }
+
+            const maxColumns = Math.max(...element.rows.map((row) => Array.isArray(row) ? row.length : 0), 1);
+            element.rows = element.rows.map((row) => {
+                const normalizedRow = Array.isArray(row) ? row.map((cell) => String(cell ?? '')) : [''];
+                while (normalizedRow.length < maxColumns) {
+                    normalizedRow.push('');
+                }
+                return normalizedRow;
+            });
+
+            return element.rows;
+        }
+
+        function getElementLabel(element) {
+            if (element.type === 'image') {
+                return 'Image';
+            }
+
+            if (element.type === 'table') {
+                const rows = normalizeTableRows(element);
+                const columns = rows[0]?.length || 0;
+                return `Table (${rows.length} x ${columns})`;
+            }
+
+            return (element.content || element.type).slice(0, 38);
+        }
+
+        function selectElement(id) {
+            selectedId = id;
+            paperPage.querySelectorAll('.paper-element').forEach((node) => {
+                node.classList.toggle('selected', node.dataset.id === selectedId);
+            });
+            renderElementList();
+            syncControls();
+        }
+
+        function syncControls() {
+            const element = getSelectedElement();
+            const disabled = !element;
+            Object.values(controls).forEach((control) => {
+                control.disabled = disabled;
+            });
+            if (!element) {
+                tableOptions.classList.add('d-none');
+                return;
+            }
+
+            controls.fontFamily.value = element.fontFamily || getDefaultFontFamily();
+            controls.fontSize.value = element.fontSize || 16;
+            controls.fontWeight.value = element.fontWeight || '400';
+            controls.align.value = element.align || 'left';
+            controls.color.value = element.color || '#111827';
+            controls.x.value = Math.round(element.x);
+            controls.y.value = Math.round(element.y);
+            controls.width.value = Math.round(element.width);
+            controls.height.value = Math.round(element.height);
+
+            const isTable = element.type === 'table';
+            tableOptions.classList.toggle('d-none', !isTable);
+            if (isTable) {
+                const rows = normalizeTableRows(element);
+                tableRowsInput.value = rows.length;
+                tableColumnsInput.value = rows[0]?.length || 1;
+            }
+        }
+
+        function applyControlChanges() {
+            const element = getSelectedElement();
+            if (!element) return;
+
+            element.fontFamily = controls.fontFamily.value || getDefaultFontFamily();
+            element.fontSize = Number(controls.fontSize.value) || 16;
+            element.fontWeight = controls.fontWeight.value;
+            element.align = controls.align.value;
+            element.color = controls.color.value;
+            element.x = Number(controls.x.value) || 0;
+            element.y = Number(controls.y.value) || 0;
+            element.width = Math.max(20, Number(controls.width.value) || 20);
+            element.height = Math.max(8, Number(controls.height.value) || 8);
+            renderElements();
+            selectElement(element.id);
+        }
+
+        function applyTableSizeChanges() {
+            const element = getSelectedElement();
+            if (!element || element.type !== 'table') return;
+
+            const rowCount = clampNumber(tableRowsInput.value, 1, 30, 4);
+            const columnCount = clampNumber(tableColumnsInput.value, 1, 10, 4);
+            resizeTableRows(element, rowCount, columnCount);
+            element.height = Math.max(element.height || 0, rowCount * 34);
+            renderElements();
+            selectElement(element.id);
+            setStatus(`Table updated to ${rowCount} rows x ${columnCount} columns.`);
+        }
+
+        function resizeTableRows(element, rowCount, columnCount) {
+            const rows = normalizeTableRows(element);
+            const nextRows = [];
+
+            for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+                const sourceRow = rows[rowIndex] || [];
+                const nextRow = [];
+                for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+                    nextRow.push(sourceRow[columnIndex] ?? getDefaultTableCell(rowIndex, columnIndex));
+                }
+                nextRows.push(nextRow);
+            }
+
+            element.rows = nextRows;
+            element.headerRows = Math.min(Number(element.headerRows || 0), rowCount);
+        }
+
+        function getDefaultTableCell(rowIndex, columnIndex) {
+            if (rowIndex === 0) {
+                return `Column ${columnIndex + 1}`;
+            }
+            if (columnIndex === 0) {
+                return `${rowIndex}.`;
+            }
+            return '';
+        }
+
+        function clampNumber(value, min, max, fallback) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.min(max, Math.max(min, Math.round(number)));
+        }
+
+        function getDefaultFontFamily() {
+            return 'Arial, sans-serif';
+        }
+
+        function startDrag(event) {
+            event.preventDefault();
+            const node = event.currentTarget.closest('.paper-element');
+            const element = elements.find((entry) => entry.id === node.dataset.id);
+            selectElement(element.id);
+            dragState = {
+                mode: 'drag',
+                id: element.id,
+                startX: event.clientX,
+                startY: event.clientY,
+                originalX: element.x,
+                originalY: element.y
+            };
+            node.setPointerCapture(event.pointerId);
+            node.addEventListener('pointermove', handlePointerMove);
+            node.addEventListener('pointerup', stopPointerAction, { once: true });
+        }
+
+        function startResize(event) {
+            event.preventDefault();
+            const node = event.currentTarget.closest('.paper-element');
+            const element = elements.find((entry) => entry.id === node.dataset.id);
+            selectElement(element.id);
+            dragState = {
+                mode: 'resize',
+                id: element.id,
+                startX: event.clientX,
+                startY: event.clientY,
+                originalWidth: element.width,
+                originalHeight: element.height
+            };
+            node.setPointerCapture(event.pointerId);
+            node.addEventListener('pointermove', handlePointerMove);
+            node.addEventListener('pointerup', stopPointerAction, { once: true });
+        }
+
+        function handlePointerMove(event) {
+            if (!dragState) return;
+            const element = elements.find((entry) => entry.id === dragState.id);
+            if (!element) return;
+
+            const dx = event.clientX - dragState.startX;
+            const dy = event.clientY - dragState.startY;
+            if (dragState.mode === 'drag') {
+                element.x = Math.max(0, dragState.originalX + dx);
+                element.y = Math.max(0, dragState.originalY + dy);
+            } else {
+                element.width = Math.max(24, dragState.originalWidth + dx);
+                element.height = Math.max(8, dragState.originalHeight + dy);
+            }
+
+            const node = paperPage.querySelector(`[data-id="${element.id}"]`);
+            if (node) {
+                node.style.left = `${element.x}px`;
+                node.style.top = `${element.y}px`;
+                node.style.width = `${element.width}px`;
+                node.style.height = `${element.height}px`;
+            }
+            syncControls();
+        }
+
+        function stopPointerAction(event) {
+            event.currentTarget.removeEventListener('pointermove', handlePointerMove);
+            dragState = null;
+        }
+
+        async function handlePaste(event) {
+            const items = Array.from(event.clipboardData?.items || []);
+            const imageItem = items.find((item) => item.type.startsWith('image/'));
+            if (imageItem) {
+                event.preventDefault();
+                const file = imageItem.getAsFile();
+                const src = await fileToDataUrl(file);
+                addElement('image', { x: 80, y: 180, width: 260, height: 160, src });
+                return;
+            }
+
+            const html = event.clipboardData?.getData('text/html') || '';
+            const imageMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (imageMatch) {
+                event.preventDefault();
+                addElement('image', { x: 80, y: 180, width: 260, height: 160, src: imageMatch[1] });
+                return;
+            }
+
+            const text = event.clipboardData?.getData('text/plain');
+            if (text && event.target === paperPage) {
+                event.preventDefault();
+                addElement('text', { content: text, x: 80, y: 180, width: 560, height: 110 });
+            }
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const src = await fileToDataUrl(file);
+            addElement('image', { x: 80, y: 180, width: 260, height: 160, src });
+            event.target.value = '';
+        }
+
+        function addImageFromUrl() {
+            const src = prompt('Paste image URL');
+            if (!src) return;
+            addElement('image', { x: 80, y: 180, width: 260, height: 160, src: src.trim() });
+        }
+
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function duplicateSelected() {
+            const element = getSelectedElement();
+            if (!element) return;
+            const copy = JSON.parse(JSON.stringify(element));
+            delete copy.id;
+            addElement(element.type, {
+                ...copy,
+                x: element.x + 20,
+                y: element.y + 20
+            });
+        }
+
+        function deleteSelected() {
+            if (!selectedId) return;
+            elements = elements.filter((element) => element.id !== selectedId);
+            selectedId = '';
+            renderElements();
+        }
+
+        function handleKeyboardShortcuts(event) {
+            const activeElement = document.activeElement;
+            const isTyping = activeElement?.isContentEditable
+                || ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement?.tagName);
+
+            if ((event.key === 'Delete' || event.key === 'Backspace') && selectedId && !isTyping) {
+                event.preventDefault();
+                deleteSelected();
+                setStatus('Selected element deleted.');
+            }
+        }
+
+        function moveSelectedLayer(direction) {
+            if (!selectedId) return;
+            const index = elements.findIndex((element) => element.id === selectedId);
+            const nextIndex = index + direction;
+            if (index < 0 || nextIndex < 0 || nextIndex >= elements.length) return;
+
+            const [element] = elements.splice(index, 1);
+            elements.splice(nextIndex, 0, element);
+            renderElements();
+            selectElement(element.id);
+        }
+
+        function buildSmartLayout(kind) {
+            if (!confirm('Replace the current canvas with this smart layout?')) {
+                return;
+            }
+
+            elements = [];
+            selectedId = '';
+
+            if (kind === 'lower') {
+                addElement('schoolHeader', { y: 32 });
+                addElement('instructions', { y: 166, height: 70 });
+                addElement('section', { y: 252, content: 'A. Fill in the blanks. [1 x 5 = 5]' });
+                addElement('fillBlank', { y: 300, content: '1. The colour of the sky is __________.\n2. We drink __________ every day.\n3. A cow gives us __________.\n4. There are __________ days in a week.\n5. My school name is __________.' });
+                addElement('section', { y: 440, content: 'B. Match the following. [1 x 5 = 5]' });
+                addElement('matching', { y: 488 });
+                addElement('section', { y: 680, content: 'C. Look and write. [5]' });
+                addElement('pictureQuestion', { y: 728 });
+                addElement('answerLines', { y: 876, height: 150 });
+            } else if (kind === 'objective') {
+                addElement('schoolHeader', { y: 32 });
+                addElement('instructions', { y: 166 });
+                addElement('section', { y: 256, content: 'Section A: Multiple Choice Questions [1 x 10 = 10]' });
+                for (let index = 0; index < 4; index += 1) {
+                    addElement('mcq', { y: 308 + index * 128, content: `${index + 1}. Choose the correct answer. [1]\n   a) Option 1        b) Option 2\n   c) Option 3        d) Option 4` });
+                }
+                addElement('section', { y: 832, content: 'Section B: True or False [1 x 5 = 5]' });
+                addElement('trueFalse', { y: 880 });
+            } else if (kind === 'writing') {
+                addElement('schoolHeader', { y: 32 });
+                addElement('instructions', { y: 166 });
+                addElement('section', { y: 260, content: 'A. Short Answer Questions [2 x 5 = 10]' });
+                addElement('question', { y: 312, content: '1. Answer the following question. [2]' });
+                addElement('answerLines', { y: 378 });
+                addElement('question', { y: 540, content: '2. Answer the following question. [2]' });
+                addElement('answerLines', { y: 606 });
+                addElement('section', { y: 780, content: 'B. Paragraph / Long Answer [5]' });
+                addElement('answerLines', { y: 832, height: 210 });
+            } else {
+                addElement('schoolHeader', { y: 32 });
+                addElement('instructions', { y: 166 });
+                addElement('section', { y: 260, content: 'Section A: Very Short Answer [1 x 5 = 5]' });
+                addElement('question', { y: 310, content: '1. Answer in one word. [1]\n2. Answer in one word. [1]\n3. Answer in one word. [1]\n4. Answer in one word. [1]\n5. Answer in one word. [1]' });
+                addElement('section', { y: 456, content: 'Section B: Short Answer [2 x 5 = 10]' });
+                addElement('question', { y: 506, content: '6. Write a short answer. [2]\n\n7. Write a short answer. [2]\n\n8. Write a short answer. [2]' });
+                addElement('section', { y: 738, content: 'Section C: Long Answer [5 x 1 = 5]' });
+                addElement('question', { y: 790, content: '9. Write a detailed answer. [5]' });
+                addElement('answerLines', { y: 850, height: 190 });
+            }
+
+            selectElement('');
+            setStatus('Smart layout created. Edit any text and save when ready.');
+        }
+
+        async function savePaper() {
+            const scope = getScope();
+            if (!scope) return;
+
+            const response = await fetch(`${CONFIG.API_URL}/question-papers`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${Auth.getToken()}`
+                },
+                body: JSON.stringify({
+                    ...scope,
+                    title: paperTitleInput.value.trim(),
+                    paperData: {
+                        page: { width: 794, height: 1123 },
+                        elements
+                    }
+                })
+            });
+
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                alert(payload.message || 'Unable to save question paper.');
+                setStatus(payload.message || 'Unable to save question paper.');
+                return;
+            }
+
+            setStatus(`Saved ${scope.examName} / ${scope.subject}`);
+            alert('Question paper saved successfully.');
+        }
+
+        async function loadPaper({ silent = false } = {}) {
+            const scope = getScope({ silent });
+            if (!scope) return;
+
+            const query = new URLSearchParams(scope);
+            const response = await fetch(`${CONFIG.API_URL}/question-papers/single?${query.toString()}`, {
+                headers: { Authorization: `Bearer ${Auth.getToken()}` }
+            });
+
+            if (response.status === 404) {
+                setStatus('No saved paper found for this selection.');
+                if (!silent) {
+                    alert('No saved question paper found for this session, class, subject, and exam name.');
+                }
+                return;
+            }
+
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                setStatus(payload.message || 'Unable to load question paper.');
+                if (!silent) {
+                    alert(payload.message || 'Unable to load question paper.');
+                }
+                return;
+            }
+
+            paperTitleInput.value = payload.paper.title || paperTitleInput.value;
+            elements = Array.isArray(payload.paper.paperData?.elements) ? payload.paper.paperData.elements : [];
+            selectedId = '';
+            renderElements();
+            setStatus(`Loaded saved paper: ${scope.examName} / ${scope.subject}`);
+        }
+
+        async function autoLoadPaper() {
+            const scope = getScope({ silent: true });
+            if (!scope) return;
+            await loadPaper({ silent: true });
+        }
+
+        function getScope({ silent = false } = {}) {
+            const scope = {
+                session: sessionSelect.value.trim(),
+                className: classSelect.value.trim(),
+                subject: subjectSelect.value.trim(),
+                examName: examNameInput.value.trim()
+            };
+
+            if (!scope.session || !scope.className || !scope.subject || !scope.examName) {
+                if (!silent) {
+                    alert('Select session, class, subject, and exam name first.');
+                }
+                return null;
+            }
+
+            return scope;
+        }
+
+        function setStatus(message) {
+            builderStatus.textContent = message;
+        }
+
+        function getSelectedElement() {
+            return elements.find((element) => element.id === selectedId);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

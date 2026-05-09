@@ -39,16 +39,19 @@
             transform: translateY(-5px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
+
+        .finance-card {
+            border: 1px solid #d9e8ff;
+            background: linear-gradient(135deg, #f7fbff, #eef5ff);
+        }
+
+        .finance-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
     </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!Auth.isAuthenticated()) {
-                window.location.href = 'pages/login.html';
-                return;
-            }
-            Navbar.loadNavbar();
-        });
-    </script>
 </head>
 <body>
     <!-- Navbar will be loaded here -->
@@ -56,6 +59,7 @@
 
     <!-- Main Content -->
     <div class="container mt-4">
+        <!-- Row 1: Student Management & Academic Records -->
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="card">
@@ -66,6 +70,9 @@
                         <p class="card-text">Manage student records, admissions, and academic information.</p>
                         <a href="pages/student-database.html" class="btn btn-primary">
                             <i class="fas fa-arrow-right"></i> Go to Student Database
+                        </a>
+                        <a href="pages/session-settings.html" class="btn btn-outline-primary ms-2">
+                            <i class="fas fa-calendar-alt"></i> Session Settings
                         </a>
                     </div>
                 </div>
@@ -84,16 +91,18 @@
                 </div>
             </div>
         </div>
+
+        <!-- Row 2: Lesson Plan & Marksheets -->
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="fas fa-id-card text-info"></i> Admit Cards
+                            <i class="fas fa-cog text-secondary"></i> Lesson Plan
                         </h5>
-                        <p class="card-text">Generate and manage student admit cards for examinations.</p>
-                        <a href="pages/admit-card-generator.html" class="btn btn-info text-white">
-                            <i class="fas fa-arrow-right"></i> Generate Admit Cards
+                        <p class="card-text">Plan lessons, organize teaching flow, and keep classroom delivery ready for each session.</p>
+                        <a href="pages/lesson-plan.html" class="btn btn-primary">
+                            <i class="fas fa-sliders-h"></i> Lesson Plan
                         </a>
                     </div>
                 </div>
@@ -105,9 +114,72 @@
                             <i class="fas fa-file-alt text-warning"></i> Marksheets
                         </h5>
                         <p class="card-text">Generate and manage student marksheets and result reports.</p>
-                        <a href="pages/marksheets.html" class="btn btn-warning">
-                            <i class="fas fa-arrow-right"></i> Generate Marksheets
+                        <a href="pages/result-dashboard.html" class="btn btn-warning">
+                            <i class="fas fa-arrow-right"></i> Open Result Dashboard
                         </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Admit Cards & Fees -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-id-card text-info"></i> Admit Cards
+                        </h5>
+                        <p class="card-text">Generate and manage student admit cards for examinations and term-wise assessments.</p>
+                        <a href="pages/bulk-admit-card-download.html" class="btn btn-info text-white">
+                            <i class="fas fa-arrow-right"></i> Generate Admit Cards
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card finance-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-receipt text-primary"></i> Fees & Due Management
+                        </h5>
+                        <p class="card-text">Collect fees, track dues, review receipt history, and follow up on pending balances.</p>
+                        <div class="finance-links">
+                            <a href="pages/today-finance.html" class="btn btn-outline-dark">
+                                <i class="fas fa-calendar-day"></i> Today
+                            </a>
+                            <a href="pages/fee-collection.html" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Fee Collection
+                            </a>
+                            <a href="pages/fee-due-management.html" class="btn btn-outline-primary">
+                                <i class="fas fa-file-invoice-dollar"></i> Due Management
+                            </a>
+                            <a href="pages/fee-transactions.html" class="btn btn-outline-secondary">
+                                <i class="fas fa-list"></i> Fee Transactions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 4: Expense Management & Feedback -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card finance-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-wallet text-success"></i> Expense Management
+                        </h5>
+                        <p class="card-text">Record school expenses, manage head of account entries, and review full expense history.</p>
+                        <div class="finance-links">
+                            <a href="pages/expense-record.html" class="btn btn-success">
+                                <i class="fas fa-money-check-alt"></i> Record Expense
+                            </a>
+                            <a href="pages/expense-transactions.html" class="btn btn-outline-success">
+                                <i class="fas fa-book"></i> Expense History
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,21 +193,6 @@
                         <a href="pages/view-feedback.html" class="btn btn-primary">
                             <i class="fas fa-eye"></i> View Feedback
                         </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fas fa-cog text-secondary"></i> Lesson Plan
-                        </h5>
-                        <p class="card-text">Lesson Plan ready to entry</p>
-                        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#">
-                            <a href="pages/lesson-plan.html" class="btn btn-primary">
-                            <i class="fas fa-sliders-h"></i> Lesson Plan
-                                 </a>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -416,5 +473,7 @@
             loadAcademicYears();
         });
     </script>
+    <script src='./js/page-shell.js'></script>
 </body>
 </html>
+

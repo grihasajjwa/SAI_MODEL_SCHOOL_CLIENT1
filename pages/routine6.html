@@ -2,12 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>School Routine - Monday</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
     <style>
      body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #eef1f5;
-  padding: 20px;
+  padding: 0;
   margin: 0;
   color: #333;
 }
@@ -17,7 +22,7 @@
   padding: 30px;
   border-radius: 12px;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 24px auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
@@ -64,6 +69,12 @@ h2 {
       select:disabled,
       input:disabled {
         background-color: #ddd;
+      }
+      /* Keep teacher dropdown width stable even when showing "(count)" */
+      select[aria-label="Select Teacher"] {
+        min-width: 130px;
+        max-width: 130px;
+        box-sizing: border-box;
       }
       .settings {
   margin-bottom: 30px;
@@ -170,8 +181,43 @@ button#fetchRoutineBtn:hover {
     </style>
   </head>
   <body>
-    <div class="container">
+    <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+    
+    <div class="container mt-4">
       <div class="settings" id="settings"></div>
+      <div class="settings" id="teacherFormContainer">
+        <label>
+          Add Teacher:
+          <input type="text" id="newTeacherName" placeholder="Teacher name" />
+        </label>
+        <label>
+          Code:
+          <input type="text" id="newTeacherCode" placeholder="Optional code" />
+        </label>
+        <button id="addTeacherBtn">Save Teacher</button>
+        <button id="reloadTeachersBtn">Reload Teachers</button>
+      </div>
+      <div class="settings" id="sessionFormContainer">
+        <label for="academicSessionSelect">Academic Session:</label>
+        <select id="academicSessionSelect"></select>
+        <label>
+          Add Session:
+          <input
+            type="text"
+            id="newSessionName"
+            placeholder="e.g. 2025-2026"
+          />
+        </label>
+        <button id="addSessionBtn">Save Session</button>
+        <button id="reloadSessionsBtn">Reload Sessions</button>
+      </div>
+      <div class="settings" id="classFormContainer">
+        <span>
+          Classes for the selected session are synced from Academic Records, including sections.
+        </span>
+        <button id="reloadClassesBtn">Reload Classes & Sections</button>
+      </div>
       <div>
         <label
           ><input type="checkbox" id="teacherCheck" checked /> Teacher</label
@@ -180,6 +226,8 @@ button#fetchRoutineBtn:hover {
         <label><input type="checkbox" id="bookCheck" /> Book</label>
         <button id="exportExcelBtn">Export Excel</button>
         <button id="exportExcelBtnt">Export Excel teacher rotine</button>
+        <button id="manageTeachersBtn">Manage Teachers</button>
+        <button id="manageSubjectsBtn">Manage Subjects</button>
       </div>
       <h1 id="routine-heading">School Routine - Monday</h1>
 
@@ -194,10 +242,75 @@ button#fetchRoutineBtn:hover {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+    <style>
+      /* Simple modal styles */
+      #modalOverlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      #modalContent {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 700px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      }
+      #modalContent h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+      #modalContent table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      #modalContent th,
+      #modalContent td {
+        border: 1px solid #ccc;
+        padding: 6px;
+        font-size: 0.85rem;
+        text-align: left;
+      }
+      #modalContent input[type="text"],
+      #modalContent input[type="number"] {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      #modalCloseBtn {
+        margin-top: 10px;
+      }
+    </style>
+
+    <div id="modalOverlay">
+      <div id="modalContent">
+        <h2 id="modalTitle"></h2>
+        <div id="modalBody"></div>
+        <button id="modalCloseBtn">Close</button>
+      </div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
     <script>
+      const API_BASE_URL = CONFIG.API_URL;
       const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday","Saturday", "Sunday"];
       const dropdown = document.getElementById("days");
       const heading = document.getElementById("routine-heading");
+      const academicSessionSelect = document.getElementById(
+        "academicSessionSelect"
+      );
+      const modalOverlay = document.getElementById("modalOverlay");
+      const modalTitle = document.getElementById("modalTitle");
+      const modalBody = document.getElementById("modalBody");
+      const modalCloseBtn = document.getElementById("modalCloseBtn");
 
       // Populate dropdown
       days.forEach((day) => {
@@ -210,49 +323,482 @@ button#fetchRoutineBtn:hover {
       // Set default value
       dropdown.value = "Monday";
 
-      // Update heading on change
+      // Update heading on change and call fetchRoutineBtn.onclick (if defined)
       dropdown.addEventListener("change", () => {
         heading.textContent = `School Routine - ${dropdown.value}`;
+        if (typeof fetchRoutineBtn !== "undefined") {
+          fetchRoutineBtn.onclick();
+        }
       });
 
-      const teachers = [
-        "Amrita",
-        "Ankita",
-        "Shubhra",
-        "New Teacher",
-        "Supriya",
-        "Sneha",
-        "Sumitra",
-        "Mainak",
-        "Madhumita",
-        "Moumita Suvam",
-        "Ranjit",
-        "Sujata",
-      ];
-      const subjects = [
-        "Math",
-        "English",
-        "Science",
-        "Bengali/ Hindi",
-        "SST",
-        "GK",
-        "Computer",
-        "EVS",
-        "Moral Value",
-        "3rd Lang. Hindi",
-        "Communication",
-        "Yoga",
-        "Rhymes",
-        "Drawing",
-        "Music/Dance",
-        "Reading Writing Skill",
-        "Library",
-        "Games",
-        "SUPW",
-        "House-WISE",
-        "Cursive",
-        "English-Gr.",
-      ];
+      let academicSession = "Default";
+      let academicSessions = [];
+      let classes = [];
+      let classEntries = [];
+      let classPeriodsConfig = {};
+      let routineSubjects = [];
+      let teachers = [];
+
+      function buildRoutineClassKey(className, section) {
+        const normalizedClassName = String(className || "").trim();
+        const normalizedSection = String(section || "").trim();
+        return normalizedSection
+          ? `${normalizedClassName} - Section ${normalizedSection}`
+          : normalizedClassName;
+      }
+
+      function getElementKey(value) {
+        return String(value || "").replace(/[^a-zA-Z0-9_-]/g, "");
+      }
+
+      function getAuthHeaders(extraHeaders = {}) {
+        const token = Auth.getToken();
+        return token
+          ? {
+              ...extraHeaders,
+              Authorization: `Bearer ${token}`,
+            }
+          : extraHeaders;
+      }
+
+      async function loadSessions() {
+        try {
+          const res = await fetch(`${API_BASE_URL}/sessions`);
+          if (!res.ok) {
+            throw new Error(`Failed to fetch sessions. Status: ${res.status}`);
+          }
+          const data = await res.json();
+          const sessionRecords = Array.isArray(data.sessions) ? data.sessions : [];
+          academicSessions = sessionRecords
+            .map((s) => (typeof s === "string" ? s : s?.name))
+            .filter(Boolean);
+
+          // Populate dropdown
+          academicSessionSelect.innerHTML = "";
+          academicSessions.forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            academicSessionSelect.appendChild(opt);
+          });
+
+          const currentSession =
+            sessionRecords.find((s) => s && typeof s === "object" && s.isCurrent)?.name ||
+            academicSessionSelect.value ||
+            academicSessions[0] ||
+            "Default";
+          academicSession = currentSession;
+          academicSessionSelect.value = academicSession;
+
+          console.log("Loaded sessions:", academicSessions);
+        } catch (err) {
+          console.error("Error loading sessions:", err);
+          // Fallback: show Default
+          academicSessions = ["Default"];
+          academicSessionSelect.innerHTML = `<option value="Default">Default</option>`;
+          academicSession = "Default";
+        }
+      }
+
+      async function saveSession() {
+        const nameInput = document.getElementById("newSessionName");
+        const name = nameInput.value.trim();
+        if (!name) {
+          alert("Please enter a session name.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/sessions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            alert(data.message || "Failed to save session.");
+            return;
+          }
+          alert("Session saved successfully.");
+          nameInput.value = "";
+          await loadSessions();
+        } catch (err) {
+          console.error("Error saving session:", err);
+          alert("Error saving session. Please try again.");
+        }
+      }
+
+      academicSessionSelect.addEventListener("change", async () => {
+        academicSession = academicSessionSelect.value || "Default";
+        // Reload session-scoped data and refetch routines for new session/day
+        await loadAcademicClasses();
+        await loadTeachers();
+        await loadSubjects();
+        createSettings();
+        if (typeof fetchRoutineBtn !== "undefined") {
+          fetchRoutineBtn.onclick();
+        }
+      });
+
+      async function loadAcademicClasses() {
+        try {
+          const res = await fetch(
+            `${API_BASE_URL}/classes/year/${encodeURIComponent(
+              academicSession
+            )}`,
+            {
+              headers: getAuthHeaders(),
+            }
+          );
+          if (!res.ok) {
+            throw new Error(
+              `Failed to fetch academic classes. Status: ${res.status}`
+            );
+          }
+          const data = await res.json();
+          const academicClasses = Array.isArray(data) ? data : [];
+          const nextPeriodConfig = {};
+          const seen = new Set();
+
+          classEntries = academicClasses
+            .map((entry) => {
+              const className = String(entry.className || "").trim();
+              const section = String(entry.section || "").trim();
+              const key = buildRoutineClassKey(className, section);
+
+              if (!className || seen.has(key)) {
+                return null;
+              }
+
+              seen.add(key);
+              nextPeriodConfig[key] = classPeriodsConfig[key] || 6;
+
+              return {
+                key,
+                className,
+                section,
+              };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true }));
+
+          classes = classEntries.map((entry) => entry.key);
+          classPeriodsConfig = nextPeriodConfig;
+        } catch (err) {
+          console.error("Error loading academic classes:", err);
+          classEntries = [];
+          classes = [];
+          classPeriodsConfig = {};
+        }
+      }
+
+      let teacherList = [];
+
+      async function loadSubjects() {
+        try {
+          const res = await fetch(
+            `${API_BASE_URL}/routine-subjects?session=${encodeURIComponent(
+              academicSession
+            )}`
+          );
+          if (!res.ok) {
+            throw new Error(`Failed to fetch subjects. Status: ${res.status}`);
+          }
+          const data = await res.json();
+          routineSubjects = (data.subjects || []).map((subject) => ({
+            _id: subject._id,
+            name: subject.name,
+            sortOrder: subject.sortOrder || 0,
+          }));
+        } catch (err) {
+          console.error("Error loading subjects:", err);
+          routineSubjects = [];
+        }
+      }
+
+      async function loadTeachers() {
+        try {
+          const res = await fetch(
+            `${API_BASE_URL}/teachers?session=${encodeURIComponent(
+              academicSession
+            )}`
+          );
+          if (!res.ok) {
+            throw new Error(`Failed to fetch teachers. Status: ${res.status}`);
+          }
+          const data = await res.json();
+          teacherList = data.teachers || [];
+          teachers = teacherList.map((t) => t.name);
+          console.log("Loaded teachers:", teachers);
+        } catch (err) {
+          console.error("Error loading teachers:", err);
+          teacherList = [];
+          teachers = [];
+        }
+      }
+
+      async function saveTeacher() {
+        const nameInput = document.getElementById("newTeacherName");
+        const codeInput = document.getElementById("newTeacherCode");
+        const name = nameInput.value.trim();
+        const code = codeInput.value.trim();
+
+        if (!name) {
+          alert("Please enter a teacher name.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/teachers`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name, code, session: academicSession }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.success) {
+            alert(data.message || "Failed to save teacher.");
+            return;
+          }
+
+          alert(`Teacher saved successfully for ${academicSession}.`);
+          nameInput.value = "";
+          codeInput.value = "";
+
+          // Reload teachers list so new teacher appears in dropdowns
+          await loadTeachers();
+          createSettings();
+        } catch (err) {
+          console.error("Error saving teacher:", err);
+          alert("Error saving teacher. Please try again.");
+        }
+      }
+
+      function openModal(title, bodyHtml) {
+        modalTitle.textContent = title;
+        modalBody.innerHTML = bodyHtml;
+        modalOverlay.style.display = "flex";
+      }
+
+      function closeModal() {
+        modalOverlay.style.display = "none";
+      }
+
+      function openTeacherManager() {
+        if (!teacherList.length) {
+          modalBody.innerHTML = "<p>No teachers found.</p>";
+          openModal("Manage Teachers (Session: " + academicSession + ")", modalBody.innerHTML);
+          return;
+        }
+
+        let html = `<table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Code</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+        teacherList.forEach((t) => {
+          html += `<tr>
+            <td><input type="text" id="teacher-name-${t._id}" value="${t.name || ""}"></td>
+            <td><input type="text" id="teacher-code-${t._id}" value="${t.code || ""}"></td>
+            <td>
+              <button onclick="updateTeacherFromModal('${t._id}')">Save</button>
+              <button onclick="deleteTeacherFromModal('${t._id}')">Delete</button>
+            </td>
+          </tr>`;
+        });
+
+        html += `</tbody></table>`;
+        openModal("Manage Teachers (Session: " + academicSession + ")", html);
+      }
+
+      async function updateTeacherFromModal(id) {
+        const nameInput = document.getElementById(`teacher-name-${id}`);
+        const codeInput = document.getElementById(`teacher-code-${id}`);
+        const name = nameInput.value.trim();
+        const code = codeInput.value.trim();
+
+        if (!name) {
+          alert("Teacher name is required.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, code, session: academicSession }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            alert(data.message || "Failed to update teacher.");
+            return;
+          }
+          alert("Teacher updated.");
+          await loadTeachers();
+          createSettings();
+          openTeacherManager();
+        } catch (err) {
+          console.error("Error updating teacher:", err);
+          alert("Error updating teacher. Please try again.");
+        }
+      }
+
+      async function deleteTeacherFromModal(id) {
+        if (!confirm("Delete this teacher?")) return;
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            alert(data.message || "Failed to delete teacher.");
+            return;
+          }
+          await loadTeachers();
+          createSettings();
+          openTeacherManager();
+        } catch (err) {
+          console.error("Error deleting teacher:", err);
+          alert("Error deleting teacher. Please try again.");
+        }
+      }
+
+      function openSubjectManager() {
+        const rows = routineSubjects.length
+          ? routineSubjects.map((subject, index) => `
+            <tr>
+              <td><input type="text" id="subject-name-${subject._id}" value="${subject.name || ""}"></td>
+              <td><input type="number" id="subject-order-${subject._id}" value="${subject.sortOrder ?? index}" style="width:90px"></td>
+              <td>
+                <button onclick="updateSubjectFromModal('${subject._id}')">Save</button>
+                <button onclick="deleteSubjectFromModal('${subject._id}')">Delete</button>
+              </td>
+            </tr>`).join("")
+          : `<tr><td colspan="3">No subjects configured.</td></tr>`;
+
+        const html = `
+          <div style="display:flex; gap:10px; margin-bottom:12px; align-items:end;">
+            <div>
+              <label for="newRoutineSubjectName">New Subject</label>
+              <input type="text" id="newRoutineSubjectName" placeholder="Subject name">
+            </div>
+            <div>
+              <label for="newRoutineSubjectOrder">Sort Order</label>
+              <input type="number" id="newRoutineSubjectOrder" value="${routineSubjects.length}" style="width:90px">
+            </div>
+            <button onclick="createSubjectFromModal()">Add Subject</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Order</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+
+        openModal("Manage Subjects (Session: " + academicSession + ")", html);
+      }
+
+      async function createSubjectFromModal() {
+        const name = document.getElementById("newRoutineSubjectName").value.trim();
+        const sortOrder = parseInt(document.getElementById("newRoutineSubjectOrder").value, 10) || 0;
+        if (!name) {
+          alert("Subject name is required.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/routine-subjects`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, sortOrder, session: academicSession }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            alert(data.message || "Failed to save subject.");
+            return;
+          }
+          await loadSubjects();
+          createSettings();
+          openSubjectManager();
+        } catch (err) {
+          console.error("Error saving subject:", err);
+          alert("Error saving subject. Please try again.");
+        }
+      }
+
+      async function updateSubjectFromModal(id) {
+        const name = document.getElementById(`subject-name-${id}`).value.trim();
+        const sortOrder = parseInt(document.getElementById(`subject-order-${id}`).value, 10) || 0;
+        if (!name) {
+          alert("Subject name is required.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/routine-subjects/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, sortOrder, session: academicSession }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            alert(data.message || "Failed to update subject.");
+            return;
+          }
+          await loadSubjects();
+          createSettings();
+          openSubjectManager();
+        } catch (err) {
+          console.error("Error updating subject:", err);
+          alert("Error updating subject. Please try again.");
+        }
+      }
+
+      async function deleteSubjectFromModal(id) {
+        if (!confirm("Delete this subject?")) return;
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/routine-subjects/${id}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            alert(data.message || "Failed to delete subject.");
+            return;
+          }
+          await loadSubjects();
+          createSettings();
+          openSubjectManager();
+        } catch (err) {
+          console.error("Error deleting subject:", err);
+          alert("Error deleting subject. Please try again.");
+        }
+      }
+      // Helper to strip "(count)" labels from all teacher selects
+      function stripAllTeacherLabels() {
+        document
+          .querySelectorAll('select[aria-label="Select Teacher"]')
+          .forEach((sel) => {
+            Array.from(sel.options).forEach((opt) => {
+              if (!opt.value) return;
+              // Keep just the teacher name (value)
+              opt.textContent = opt.value;
+            });
+          });
+      }
       const allPeriods = [
         { period: "1st", time: "10.25 - 11.05" },
         { period: "2nd", time: "11.05 - 11.45" },
@@ -263,29 +809,33 @@ button#fetchRoutineBtn:hover {
         { period: "6th", time: "02.05 - 02.40" },
         { period: "7th", time: "02.40 - 03.15" },
       ];
-      const classes = [
-        "Nursery-A",
-        "LKG-A",
-        "LKG-B",
-        "UKG-A",
-        "UKG-B",
-        "Class 1",
-        "Class 2",
-        "Class 3",
-        "Class 4",
-        "Class 5",
-      ];
       const settingsDiv = document.getElementById("settings");
       const tablesContainer = document.getElementById("routineTables");
 
+      // When clicking anywhere outside a select, hide all "(count)" labels
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("select")) {
+          stripAllTeacherLabels();
+        }
+      });
+
       function createSettings() {
+        settingsDiv.innerHTML = "";
+        if (!classes.length) {
+          const emptyState = document.createElement("p");
+          emptyState.className = "mb-0";
+          emptyState.textContent =
+            "No classes are available for this academic session in Academic Records yet.";
+          settingsDiv.appendChild(emptyState);
+        }
+
         classes.forEach((cls) => {
           const label = document.createElement("label");
           label.innerHTML = `${cls} Periods: `;
           const input = document.createElement("input");
           input.type = "number";
-          input.id = `${cls.replace(/\s/g, "")}Periods`;
-          input.value = 6;
+          input.id = `${getElementKey(cls)}Periods`;
+          input.value = classPeriodsConfig[cls] || 6;
           input.min = 1;
           input.max = 10;
           label.appendChild(input);
@@ -295,16 +845,82 @@ button#fetchRoutineBtn:hover {
         btn.textContent = "Generate Routine";
         btn.id = "generateRoutineBtn";
         btn.onclick = generateRoutine;
+        btn.disabled = classes.length === 0;
         settingsDiv.appendChild(btn);
+        settingsDiv.appendChild(fetchRoutineBtn);
+      }
+
+      function collectRoutinePeriods(tbody) {
+        const periods = [];
+
+        Array.from(tbody.rows).forEach((row) => {
+          if (row.classList.contains("break-row")) return;
+
+          periods.push({
+            period: row.cells[0].textContent,
+            time: row.cells[1].textContent,
+            teacher: row.cells[2].querySelector("select")?.value || "",
+            subject: row.cells[3].querySelector("select")?.value || "",
+            book: row.cells[4].querySelector("input")?.value || "",
+          });
+        });
+
+        return periods;
+      }
+
+      async function saveRoutineForClass(classKey, tbody, selectedDay, saveButton) {
+        const originalLabel = saveButton ? saveButton.textContent : "";
+
+        try {
+          if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = "Saving...";
+          }
+
+          const response = await fetch(`${API_BASE_URL}/routines/save-routine`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              class: classKey,
+              day: selectedDay,
+              session: academicSession,
+              periods: collectRoutinePeriods(tbody),
+            }),
+          });
+
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(result.message || `Failed to save routine for ${classKey}.`);
+          }
+
+          alert(`Routine for ${classKey} on ${selectedDay} saved successfully.`);
+          return result;
+        } catch (error) {
+          console.error("Error saving routine:", error);
+          alert(error.message || "Error saving routine. Please try again.");
+          throw error;
+        } finally {
+          if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = originalLabel;
+          }
+        }
       }
 
       function generateRoutine() {
+        if (!classes.length) {
+          tablesContainer.innerHTML =
+            '<p class="error-message">Please create classes in Academic Records before generating a routine.</p>';
+          return;
+        }
         tablesContainer.innerHTML = "";
         const periodLimits = {};
         const teacherCount = {};
 
         classes.forEach((cls) => {
-          const id = `${cls.replace(/\s/g, "")}Periods`;
+          const id = `${getElementKey(cls)}Periods`;
           periodLimits[cls] = parseInt(document.getElementById(id).value);
         });
 
@@ -314,7 +930,7 @@ button#fetchRoutineBtn:hover {
           const classTitle = document.createElement("h2");
           classTitle.textContent = `Class: ${cls}`;
           const wrapper = document.createElement("div");
-          wrapper.id = `wrapper-${cls.replace(/\s/g, "")}`;
+          wrapper.id = `wrapper-${getElementKey(cls)}`;
           const table = document.createElement("table");
           const thead = document.createElement("thead");
           thead.innerHTML = `
@@ -383,6 +999,8 @@ button#fetchRoutineBtn:hover {
             };
 
             updateTeacherOptions();
+            // Show plain teacher name when not interacting
+            stripSelectedLabel();
 
             teacherSelect.addEventListener("change", (e) => {
               const selected = e.target.value;
@@ -416,8 +1034,8 @@ button#fetchRoutineBtn:hover {
 
             subjectSelect.innerHTML =
               `<option value="">--Select--</option>` +
-              subjects
-                .map((s) => `<option value="${s}">${s}</option>`)
+              routineSubjects
+                .map((s) => `<option value="${s.name}">${s.name}</option>`)
                 .join("");
 
             row.innerHTML = `
@@ -440,56 +1058,7 @@ button#fetchRoutineBtn:hover {
 
           const saveBtn = document.createElement("button");
           saveBtn.textContent = "Save Routine";
-
-          saveBtn.onclick = () => {
-            const data = [];
-            const selectedDay = dropdown.value;
-
-            Array.from(tbody.rows).forEach((row) => {
-              if (row.classList.contains("break-row")) return;
-              const teacher = row.cells[2].querySelector("select").value;
-              const subject = row.cells[3].querySelector("select").value;
-              const book = row.cells[4].querySelector("input").value;
-              data.push({
-                period: row.cells[0].textContent,
-                time: row.cells[1].textContent,
-                teacher,
-                subject,
-                book,
-              });
-            });
-
-            const routinePayload = {
-              class: cls,
-              day: selectedDay, // Send the selectedDay directly
-              periods: data, // Send the array of periods directly
-            };
-
-            console.log("Sending Routine:", routinePayload); // Log to console
-
-            fetch(
-              "https://skyview-server-3.vercel.app/api/routines/save-routine",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(routinePayload),
-              }
-            )
-              .then((response) => {
-                if (!response.ok) throw new Error("Failed to save routine.");
-                return response.json();
-              })
-              .then((result) => {
-                alert(`Routine for ${selectedDay} saved successfully!`);
-                console.log("Backend response:", result);
-              })
-              .catch((error) => {
-                console.error("Error saving routine:", error);
-                alert("Error saving routine. Please try again.");
-              });
-          };
+          saveBtn.onclick = () => saveRoutineForClass(cls, tbody, dropdown.value, saveBtn);
 
           const pdfBtn = document.createElement("button");
           pdfBtn.textContent = "Download PDF";
@@ -529,7 +1098,7 @@ button#fetchRoutineBtn:hover {
           const teacherDataMap = {};
 
           classes.forEach((className) => {
-            const wrapperId = `wrapper-${className.replace(/\s/g, "")}`;
+            const wrapperId = `wrapper-${getElementKey(className)}`;
             const wrapper = document.getElementById(wrapperId);
             if (!wrapper) return;
 
@@ -611,8 +1180,11 @@ button#fetchRoutineBtn:hover {
 
           routineSheetData.push(freeRow);
 
-          const ws1 = XLSX.utils.aoa_to_sheet(routineSheetData);
-          XLSX.utils.book_append_sheet(wb, ws1, "Class-wise Routine");
+          // Only create sheet if there is at least one period column
+          if (periods.length > 0) {
+            const ws1 = XLSX.utils.aoa_to_sheet(routineSheetData);
+            XLSX.utils.book_append_sheet(wb, ws1, "Class-wise Routine");
+          }
 
           // Sheet 2: Teacher-wise Summary
           const teacherSummaryData = [
@@ -625,26 +1197,33 @@ button#fetchRoutineBtn:hover {
             teacherSummaryData.push([teacher, subjects, periods]);
           });
 
-          const ws2 = XLSX.utils.aoa_to_sheet(teacherSummaryData);
-          XLSX.utils.book_append_sheet(wb, ws2, "Teacher-wise Summary");
+          // Only add teacher summary sheet if there is any data
+          if (teacherSummaryData.length > 1) {
+            const ws2 = XLSX.utils.aoa_to_sheet(teacherSummaryData);
+            XLSX.utils.book_append_sheet(wb, ws2, "Teacher-wise Summary");
+          }
+
+          // If no sheets were added, show a friendly message instead of throwing
+          if (!wb.SheetNames || wb.SheetNames.length === 0) {
+            alert("No data available to export. Please generate or fetch a routine first.");
+            return;
+          }
 
           // Export
           XLSX.writeFile(wb, "Routine_With_Teacher_Summary.xlsx");
         });
 
-      // window.onload = createSettings;
-
-      // Add a button to fetch and display routine by day
       const fetchRoutineBtn = document.createElement("button");
       fetchRoutineBtn.textContent = "Fetch Routine for Selected Day";
       fetchRoutineBtn.id = "fetchRoutineBtn";
-      settingsDiv.appendChild(fetchRoutineBtn);
 
       fetchRoutineBtn.onclick = () => {
         const selectedDay = dropdown.value;
-      
+
         fetch(
-          `https://skyview-server-3.vercel.app/api/routines/get-routine?day=${selectedDay}`
+          `${API_BASE_URL}/routines/get-routine?day=${encodeURIComponent(
+            selectedDay
+          )}&session=${encodeURIComponent(academicSession)}`
         )
           .then((response) => {
             if (!response.ok) {
@@ -656,7 +1235,232 @@ button#fetchRoutineBtn:hover {
           })
           .then((data) => {
             console.log("Fetched Routine Data:", data);
-            
+
+            // Clear existing tables
+            tablesContainer.innerHTML = "";
+
+            // Normalize response into an array of routines
+            let routinesArray = [];
+
+            if (Array.isArray(data)) {
+              routinesArray = data;
+            } else if (Array.isArray(data.routines)) {
+              routinesArray = data.routines;
+            } else if (data.routine) {
+              routinesArray = Array.isArray(data.routine)
+                ? data.routine
+                : [data.routine];
+            }
+
+            if (!routinesArray || routinesArray.length === 0) {
+              tablesContainer.innerHTML = `<p class="error-message">No routine found for ${selectedDay}.</p>`;
+              return;
+            }
+
+            // Track counts and per-period bookings for fetched view
+            const teacherCount = {};
+            const teacherBookedPerPeriod = {};
+
+            routinesArray.forEach((routineItem) => {
+              const cls =
+                routineItem.class ||
+                routineItem.className ||
+                routineItem.class_id ||
+                "Unknown Class";
+
+              // For this selected day, try to extract an array of periods
+              let periods = [];
+              if (Array.isArray(routineItem.periods)) {
+                periods = routineItem.periods;
+              } else if (
+                routineItem.routines &&
+                Array.isArray(routineItem.routines[selectedDay])
+              ) {
+                periods = routineItem.routines[selectedDay];
+              }
+
+              if (!periods || periods.length === 0) return;
+
+              const classTitle = document.createElement("h2");
+              classTitle.textContent = `Class: ${cls} (${selectedDay})`;
+
+              const wrapper = document.createElement("div");
+              const table = document.createElement("table");
+              const thead = document.createElement("thead");
+              thead.innerHTML = `
+                <tr>
+                  <th>Period</th>
+                  <th>Time</th>
+                  <th>Teacher</th>
+                  <th>Subject</th>
+                  <th>Books Name</th>
+                </tr>`;
+              table.appendChild(thead);
+
+              const tbody = document.createElement("tbody");
+
+              periods.forEach((p) => {
+                if (p.period === "Break") {
+                  const breakRow = document.createElement("tr");
+                  breakRow.className = "break-row";
+                  breakRow.innerHTML = `<td colspan="5" class="break-row">Break Time (${p.time || ""})</td>`;
+                  tbody.appendChild(breakRow);
+                  return;
+                }
+
+                const row = document.createElement("tr");
+
+                // Teacher select with count + conflict disabling (same logic as generateRoutine)
+                let previousTeacher = null;
+
+                const teacherSelect = document.createElement("select");
+                teacherSelect.setAttribute("aria-label", "Select Teacher");
+                const updateTeacherOptions = () => {
+                  const selected = teacherSelect.value || p.teacher || "";
+                  teacherSelect.innerHTML =
+                    `<option value="">--Select--</option>` +
+                    teachers
+                      .map((t) => {
+                        const booked =
+                          teacherBookedPerPeriod[p.period]?.has(t) &&
+                          t !== previousTeacher;
+                        const count = teacherCount[t] || 0;
+                        const label = `${t} (${count})`;
+                        return `<option value="${t}" ${
+                          booked ? "disabled" : ""
+                        }>${label}</option>`;
+                      })
+                      .join("");
+
+                  if (selected) teacherSelect.value = selected;
+                };
+
+                const stripSelectedLabel = () => {
+                  const selectedValue = teacherSelect.value;
+                  if (!selectedValue) return;
+                  Array.from(teacherSelect.options).forEach((opt) => {
+                    if (opt.value === selectedValue)
+                      opt.textContent = selectedValue;
+                  });
+                };
+
+                // Initialize per-period teacher bookings and global counts based on existing data
+                if (p.teacher) {
+                  teacherBookedPerPeriod[p.period] =
+                    teacherBookedPerPeriod[p.period] || new Set();
+                  teacherBookedPerPeriod[p.period].add(p.teacher);
+                  teacherCount[p.teacher] = (teacherCount[p.teacher] || 0) + 1;
+                  previousTeacher = p.teacher;
+                }
+
+                updateTeacherOptions();
+                // Show plain teacher name when not interacting
+                stripSelectedLabel();
+
+                teacherSelect.addEventListener("change", (e) => {
+                  const selected = e.target.value;
+                  teacherBookedPerPeriod[p.period] =
+                    teacherBookedPerPeriod[p.period] || new Set();
+
+                  if (previousTeacher) {
+                    teacherBookedPerPeriod[p.period].delete(previousTeacher);
+                    teacherCount[previousTeacher] =
+                      (teacherCount[previousTeacher] || 1) - 1;
+                  }
+
+                  if (selected) {
+                    teacherBookedPerPeriod[p.period].add(selected);
+                    teacherCount[selected] = (teacherCount[selected] || 0) + 1;
+                    previousTeacher = selected;
+                  } else {
+                    previousTeacher = null;
+                  }
+
+                  document.querySelectorAll("select").forEach((sel) => {
+                    if (sel !== teacherSelect && sel.options.length > 1) {
+                      const event = new Event("teacher-update");
+                      sel.dispatchEvent(event);
+                    }
+                  });
+                });
+
+                teacherSelect.addEventListener("focus", updateTeacherOptions);
+                teacherSelect.addEventListener("blur", stripSelectedLabel);
+                teacherSelect.addEventListener(
+                  "teacher-update",
+                  updateTeacherOptions
+                );
+
+                // Subject select
+                const subjectSelect = document.createElement("select");
+                subjectSelect.setAttribute("aria-label", "Select Subject");
+                subjectSelect.innerHTML =
+                  `<option value="">--Select--</option>` +
+                  routineSubjects
+                    .map(
+                      (s) =>
+                        `<option value="${s.name}" ${
+                          p.subject === s.name ? "selected" : ""
+                        }>${s.name}</option>`
+                    )
+                    .join("");
+
+                // Book input
+                const bookInput = document.createElement("input");
+                bookInput.type = "text";
+                bookInput.placeholder = "Enter book name";
+                bookInput.value = p.book || "";
+
+                row.innerHTML = `
+                  <td>${p.period || ""}</td>
+                  <td>${p.time || ""}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                `;
+
+                row.children[2].appendChild(teacherSelect);
+                row.children[3].appendChild(subjectSelect);
+                row.children[4].appendChild(bookInput);
+
+                tbody.appendChild(row);
+              });
+
+              table.appendChild(tbody);
+
+              // Action buttons (Save + PDF) same as generateRoutine tables
+              const actionDiv = document.createElement("div");
+              actionDiv.className = "action-buttons";
+
+              const saveBtn = document.createElement("button");
+              saveBtn.textContent = "Save Routine";
+              saveBtn.onclick = () => saveRoutineForClass(cls, tbody, selectedDay, saveBtn);
+
+              const pdfBtn = document.createElement("button");
+              pdfBtn.textContent = "Download PDF";
+              pdfBtn.onclick = () => {
+                const opt = {
+                  margin: 0.3,
+                  filename: `${cls}-Routine-${selectedDay}.pdf`,
+                  image: { type: "jpeg", quality: 1 },
+                  html2canvas: { scale: 4 },
+                  jsPDF: {
+                    unit: "in",
+                    format: "letter",
+                    orientation: "portrait",
+                  },
+                };
+                html2pdf().set(opt).from(wrapper).save();
+              };
+
+              actionDiv.appendChild(saveBtn);
+              actionDiv.appendChild(pdfBtn);
+
+              wrapper.appendChild(classTitle);
+              wrapper.appendChild(table);
+              wrapper.appendChild(actionDiv);
+              tablesContainer.appendChild(wrapper);
+            });
           })
           .catch((error) => {
             console.error("Error fetching routine:", error);
@@ -669,9 +1473,68 @@ button#fetchRoutineBtn:hover {
       };
 
    
-      window.onload = () => {
+      async function initializeRoutinePage() {
+        await loadSessions();
+        await loadAcademicClasses();
+        await loadTeachers();
+        await loadSubjects();
         createSettings();
-      };
+
+        // Teacher form
+        document
+          .getElementById("addTeacherBtn")
+          .addEventListener("click", saveTeacher);
+        document
+          .getElementById("reloadTeachersBtn")
+          .addEventListener("click", async () => {
+            await loadTeachers();
+            // existing selects will pick up new teachers when focused,
+            // due to updateTeacherOptions logic
+            alert("Teachers reloaded.");
+          });
+
+        // Session form
+        document
+          .getElementById("addSessionBtn")
+          .addEventListener("click", saveSession);
+        document
+          .getElementById("reloadSessionsBtn")
+          .addEventListener("click", async () => {
+            await loadSessions();
+            alert("Sessions reloaded.");
+          });
+
+        document
+          .getElementById("reloadClassesBtn")
+          .addEventListener("click", async () => {
+            await loadAcademicClasses();
+            createSettings();
+            alert("Classes reloaded.");
+          });
+
+        document
+          .getElementById("manageTeachersBtn")
+          .addEventListener("click", openTeacherManager);
+        document
+          .getElementById("manageSubjectsBtn")
+          .addEventListener("click", openSubjectManager);
+
+        modalCloseBtn.addEventListener("click", closeModal);
+        modalOverlay.addEventListener("click", (e) => {
+          if (e.target === modalOverlay) {
+            closeModal();
+          }
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        if (!Auth.isAuthenticated()) {
+          Auth.redirectToLogin();
+          return;
+        }
+
+        await initializeRoutinePage();
+      });
 
       // teacher wise day routine
 
@@ -687,7 +1550,7 @@ button#fetchRoutineBtn:hover {
           const includeBook = true; // Always include book
 
           classes.forEach((className) => {
-            const wrapperId = `wrapper-${className.replace(/\s/g, "")}`;
+            const wrapperId = `wrapper-${getElementKey(className)}`;
             const wrapper = document.getElementById(wrapperId);
             if (!wrapper) return;
 
@@ -720,6 +1583,9 @@ button#fetchRoutineBtn:hover {
             });
           });
 
+          // Flag to track whether any sheet was added
+          let hasSheets = false;
+
           for (const teacher in teacherWiseData) {
             if (teacherWiseData.hasOwnProperty(teacher)) {
               const teacherSchedule = teacherWiseData[teacher];
@@ -732,17 +1598,31 @@ button#fetchRoutineBtn:hover {
                 ];
                 const ws = XLSX.utils.aoa_to_sheet(dataRows);
                 XLSX.utils.book_append_sheet(wb, ws, teacher);
+                hasSheets = true;
               } else {
                 const ws = XLSX.utils.aoa_to_sheet([
                   ["No classes assigned for this day."],
                 ]);
                 XLSX.utils.book_append_sheet(wb, ws, teacher);
+                hasSheets = true;
               }
             }
+          }
+
+          // If no teacher data / sheets, show friendly message instead of error
+          if (!hasSheets || !wb.SheetNames || wb.SheetNames.length === 0) {
+            alert(
+              "No teacher-wise data available to export. Please generate a routine first."
+            );
+            return;
           }
 
           XLSX.writeFile(wb, `Teacher_Wise_Routine_${selectedDay}.xlsx`);
         });
     </script>
-  </body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../components/navbar.js"></script>
+      <script src='../js/page-shell.js'></script>
+</body>
 </html>
+

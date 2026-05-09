@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Marksheet PDF</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #f4f7fb 0%, #edf3ff 100%);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .controls-card,
+        .preview-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            overflow: hidden;
+            background: linear-gradient(135deg, #123c7a, #2563eb 58%, #60a5fa);
+            color: #fff;
+        }
+
+        .hero-card .badge {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+        }
+
+        .hero-stat {
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.14);
+            padding: 14px 16px;
+            min-height: 100%;
+        }
+
+        .controls-card .form-label {
+            font-weight: 600;
+        }
+
+        .preview-stage {
+            background: linear-gradient(180deg, #dbe7ff, #f5f8ff);
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 420px;
+        }
+
+        .preview-empty {
+            min-height: 320px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            color: #64748b;
+            border: 2px dashed rgba(37, 99, 235, 0.2);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        .preview-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 20px;
+            background: #fff;
+            color: #0f172a;
+            padding: 12mm;
+            box-shadow: 0 22px 55px rgba(15, 23, 42, 0.18);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            page-break-after: always;
+            transform-origin: top center;
+        }
+
+        .preview-sheet:last-child {
+            margin-bottom: 0;
+            page-break-after: auto;
+        }
+
+        .sheet-frame {
+            border: 2px solid #0f172a;
+            min-height: calc(297mm - 24mm);
+            padding: 8mm;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sheet-watermark {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 54px;
+            font-weight: 700;
+            color: rgba(37, 99, 235, 0.08);
+            transform: rotate(-28deg);
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        .sheet-header {
+            position: relative;
+            z-index: 1;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .sheet-header img {
+            height: 58px;
+            width: 58px;
+            object-fit: contain;
+        }
+
+        .sheet-school-name {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .sheet-meta,
+        .sheet-summary,
+        .grading-box {
+            position: relative;
+            z-index: 1;
+        }
+
+        .sheet-meta {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .marks-table {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            table-layout: fixed;
+        }
+
+        .marks-table th,
+        .marks-table td {
+            border: 1px solid #334155;
+            padding: 4px 3px;
+            text-align: center;
+            font-size: 11px;
+            vertical-align: middle;
+        }
+
+        .marks-table th:first-child,
+        .marks-table td:first-child {
+            text-align: left;
+            width: 19%;
+        }
+
+        .marks-table thead th {
+            background: #eff6ff;
+            font-weight: 700;
+        }
+
+        .scale-compact .marks-table th,
+        .scale-compact .marks-table td {
+            font-size: 10px;
+            padding: 3px 2px;
+        }
+
+        .scale-tight .marks-table th,
+        .scale-tight .marks-table td {
+            font-size: 9px;
+            padding: 2px;
+        }
+
+        .sheet-summary,
+        .grading-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+
+        .sheet-signatures {
+            position: relative;
+            z-index: 1;
+            margin-top: 16px;
+            padding-top: 18px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #0f172a;
+            margin: 18px auto 6px;
+            width: 80%;
+        }
+
+        #pdfCapture {
+            display: none;
+        }
+
+        @media print {
+            #navbar-container,
+            .page-shell {
+                display: none !important;
+            }
+
+            #pdfCapture {
+                display: block !important;
+            }
+
+            body {
+                background: #fff;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row align-items-center g-4">
+                        <div class="col-lg-8">
+                            <span class="badge rounded-pill px-3 py-2 mb-3">Result Operations</span>
+                            <h1 class="h2 mb-3">Bulk marksheet PDF with auto fit or manual scale</h1>
+                            <p class="mb-0 text-white-50">
+                                Pick a session, class, and section, preview the full bundle, then export one PDF for the whole class.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Students</div>
+                                        <div class="fs-4 fw-semibold" id="statStudents">0</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Subjects</div>
+                                        <div class="fs-4 fw-semibold" id="statSubjects">0</div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Current preview</div>
+                                        <div class="fw-semibold" id="previewStatus">Choose filters to load marksheets</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card controls-card mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label" for="sessionSelect">Academic Session</label>
+                            <select class="form-select" id="sessionSelect"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="classSelect">Class</label>
+                            <select class="form-select" id="classSelect">
+                                <option value="">Select class</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label" for="sectionSelect">Section</label>
+                            <select class="form-select" id="sectionSelect">
+                                <option value="">Select section</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label" for="scaleMode">Scaling</label>
+                            <select class="form-select" id="scaleMode">
+                                <option value="auto">Auto fit</option>
+                                <option value="manual">Manual scale</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label" for="manualScale">Manual %</label>
+                            <input type="number" class="form-control" id="manualScale" min="70" max="110" value="100" disabled>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="fileName">PDF File Name</label>
+                            <input type="text" class="form-control" id="fileName" value="marksheets-bulk">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="pdfQuality">Render Quality</label>
+                            <select class="form-select" id="pdfQuality">
+                                <option value="1.6">Balanced</option>
+                                <option value="2" selected>Sharp</option>
+                                <option value="2.4">High</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-flex gap-2 justify-content-md-end">
+                            <button class="btn btn-outline-primary" id="previewBtn" type="button">
+                                <i class="fas fa-eye me-2"></i>Preview Bundle
+                            </button>
+                            <button class="btn btn-primary" id="downloadBtn" type="button" disabled>
+                                <i class="fas fa-file-pdf me-2"></i>Download PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card preview-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Preview</h2>
+                            <p class="text-muted mb-0">Generated pages appear here before export.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border" id="pageCountBadge">0 pages</span>
+                    </div>
+                    <div class="preview-stage">
+                        <div class="preview-empty" id="previewEmpty">
+                            <div>
+                                <i class="fas fa-file-lines fa-2x mb-3"></i>
+                                <p class="mb-1 fw-semibold">No marksheet bundle loaded yet.</p>
+                                <p class="mb-0">Select a class and section, then click Preview Bundle.</p>
+                            </div>
+                        </div>
+                        <div id="previewPages"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="pdfCapture"></div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const sessionSelect = document.getElementById('sessionSelect');
+        const classSelect = document.getElementById('classSelect');
+        const sectionSelect = document.getElementById('sectionSelect');
+        const scaleMode = document.getElementById('scaleMode');
+        const manualScaleInput = document.getElementById('manualScale');
+        const fileNameInput = document.getElementById('fileName');
+        const pdfQualitySelect = document.getElementById('pdfQuality');
+        const previewBtn = document.getElementById('previewBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const previewPages = document.getElementById('previewPages');
+        const previewEmpty = document.getElementById('previewEmpty');
+        const pageCountBadge = document.getElementById('pageCountBadge');
+        const previewStatus = document.getElementById('previewStatus');
+
+        const examTypes = ['pt1', 'hy', 'pt2', 'final'];
+        let sessions = [];
+        let classesByName = [];
+        let currentStudents = [];
+        let currentSchoolProfile = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) {
+                return;
+            }
+
+            manualScaleInput.addEventListener('input', syncPreviewScale);
+            scaleMode.addEventListener('change', () => {
+                manualScaleInput.disabled = scaleMode.value !== 'manual';
+                syncPreviewScale();
+            });
+            sessionSelect.addEventListener('change', loadClassesForSession);
+            classSelect.addEventListener('change', populateSections);
+            previewBtn.addEventListener('click', handlePreview);
+            downloadBtn.addEventListener('click', handleDownload);
+
+            await initializePage();
+        });
+
+        async function initializePage() {
+            previewBtn.disabled = true;
+            downloadBtn.disabled = true;
+
+            try {
+                const [sessionsResponse, currentResponse, schoolResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/sessions`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/sessions/current`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/school-profile`, { headers: authHeaders() })
+                ]);
+
+                const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+                const currentPayload = currentResponse.ok ? await currentResponse.json() : {};
+                const schoolPayload = schoolResponse.ok ? await schoolResponse.json() : null;
+                currentSchoolProfile = schoolPayload?.profile || window.SchoolProfile?.getCachedProfile?.() || null;
+
+                sessions = Array.isArray(sessionsPayload.sessions) && sessionsPayload.sessions.length
+                    ? sessionsPayload.sessions
+                    : [{ name: 'Default', active: true, isCurrent: true }];
+
+                const currentSession = currentPayload?.session?.name
+                    || sessions.find((entry) => entry.isCurrent)?.name
+                    || sessions[0]?.name
+                    || 'Default';
+
+                sessionSelect.innerHTML = sessions
+                    .map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`)
+                    .join('');
+                sessionSelect.value = currentSession;
+                await loadClassesForSession();
+            } catch (error) {
+                console.error('Failed to initialize bulk marksheet page:', error);
+                previewStatus.textContent = 'Unable to load sessions right now';
+                alert('Unable to load the bulk marksheet workspace right now.');
+            } finally {
+                previewBtn.disabled = false;
+            }
+        }
+
+        async function loadClassesForSession() {
+            const session = sessionSelect.value;
+            classSelect.innerHTML = '<option value="">Loading classes...</option>';
+            sectionSelect.innerHTML = '<option value="">Select section</option>';
+            downloadBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/classes/year/${encodeURIComponent(session)}`, {
+                    headers: authHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch classes');
+                }
+
+                const classes = await response.json();
+                const grouped = new Map();
+
+                (Array.isArray(classes) ? classes : []).forEach((entry) => {
+                    const className = entry.className || 'Unknown';
+                    if (!grouped.has(className)) {
+                        grouped.set(className, []);
+                    }
+                    grouped.get(className).push(entry);
+                });
+
+                classesByName = Array.from(grouped.entries())
+                    .map(([className, sections]) => ({
+                        className,
+                        sections: sections
+                            .map((entry) => ({
+                                id: entry._id,
+                                section: entry.section || 'A',
+                                studentCount: Number(entry.studentCount) || 0
+                            }))
+                            .sort((a, b) => String(a.section).localeCompare(String(b.section)))
+                    }))
+                    .sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
+
+                classSelect.innerHTML = '<option value="">Select class</option>' + classesByName
+                    .map((entry) => `<option value="${escapeHtml(entry.className)}">${escapeHtml(entry.className)}</option>`)
+                    .join('');
+
+                populateSections();
+                updateSummaryStats([]);
+                previewStatus.textContent = `Session ready: ${session}`;
+            } catch (error) {
+                console.error('Failed to load classes:', error);
+                classSelect.innerHTML = '<option value="">No classes found</option>';
+                previewStatus.textContent = 'No class data available';
+            }
+        }
+
+        function populateSections() {
+            const selectedClass = classSelect.value;
+            const classEntry = classesByName.find((entry) => entry.className === selectedClass);
+            const sectionOptions = classEntry
+                ? classEntry.sections.map((entry) => `<option value="${escapeHtml(entry.section)}">${escapeHtml(entry.section)}</option>`).join('')
+                : '';
+
+            sectionSelect.innerHTML = '<option value="">Select section</option>' + sectionOptions;
+        }
+
+        async function handlePreview() {
+            const selectedClass = classSelect.value;
+            const selectedSection = sectionSelect.value;
+            const selectedSession = sessionSelect.value;
+
+            if (!selectedClass || !selectedSection) {
+                alert('Choose class and section first.');
+                return;
+            }
+
+            previewBtn.disabled = true;
+            downloadBtn.disabled = true;
+            previewStatus.textContent = 'Loading marksheet records...';
+
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_URL}/marks/class/${encodeURIComponent(selectedClass)}/${encodeURIComponent(selectedSection)}?academicYear=${encodeURIComponent(selectedSession)}`,
+                    { headers: authHeaders() }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch marks for this class');
+                }
+
+                const records = await response.json();
+                currentStudents = Array.isArray(records) ? records.filter(Boolean) : [];
+
+                if (!currentStudents.length) {
+                    renderEmpty('No marksheet records found for the selected class and section.');
+                    updateSummaryStats([]);
+                    previewStatus.textContent = 'No marks found';
+                    return;
+                }
+
+                renderPreviewPages(currentStudents, selectedClass, selectedSection, selectedSession);
+                updateSummaryStats(currentStudents);
+                previewStatus.textContent = `${currentStudents.length} marksheets ready for export`;
+                downloadBtn.disabled = false;
+            } catch (error) {
+                console.error('Preview generation failed:', error);
+                renderEmpty('Unable to build the preview. Please verify marks data and try again.');
+                updateSummaryStats([]);
+                previewStatus.textContent = 'Preview failed';
+            } finally {
+                previewBtn.disabled = false;
+            }
+        }
+
+        function renderPreviewPages(students, className, section, session) {
+            const markup = students.map((student) => renderSheet(student, className, section, session)).join('');
+            previewPages.innerHTML = markup;
+            previewEmpty.style.display = 'none';
+            pageCountBadge.textContent = `${students.length} pages`;
+            syncPreviewScale();
+        }
+
+        function renderEmpty(message) {
+            previewPages.innerHTML = '';
+            previewEmpty.style.display = 'grid';
+            previewEmpty.querySelector('p.fw-semibold').textContent = message;
+            previewEmpty.querySelector('p.mb-0').textContent = 'Adjust the filters and try again.';
+            pageCountBadge.textContent = '0 pages';
+            downloadBtn.disabled = true;
+        }
+
+        function updateSummaryStats(students) {
+            const subjectCount = students.reduce((maxCount, student) => {
+                const marks = Array.isArray(student.marks) ? student.marks : [];
+                return Math.max(maxCount, marks.length);
+            }, 0);
+
+            document.getElementById('statStudents').textContent = students.length;
+            document.getElementById('statSubjects').textContent = subjectCount;
+        }
+
+        function syncPreviewScale() {
+            const sheets = previewPages.querySelectorAll('.preview-sheet');
+            sheets.forEach((sheet) => {
+                const scale = resolveScale(sheet.dataset.subjectCount);
+                sheet.style.transform = `scale(${scale})`;
+                sheet.style.marginBottom = `${Math.max(20, Math.round(24 * scale))}px`;
+            });
+        }
+
+        function resolveScale(subjectCountValue) {
+            if (scaleMode.value === 'manual') {
+                const percentage = Number(manualScaleInput.value) || 100;
+                return clamp(percentage / 100, 0.7, 1.1);
+            }
+
+            const subjectCount = Number(subjectCountValue) || 0;
+            if (subjectCount <= 8) return 1;
+            if (subjectCount <= 10) return 0.96;
+            if (subjectCount <= 12) return 0.92;
+            return 0.88;
+        }
+
+        async function handleDownload() {
+            if (!currentStudents.length) {
+                return;
+            }
+
+            const selectedClass = classSelect.value;
+            const selectedSection = sectionSelect.value;
+            const selectedSession = sessionSelect.value;
+            const capture = document.getElementById('pdfCapture');
+
+            capture.innerHTML = currentStudents
+                .map((student) => renderSheet(student, selectedClass, selectedSection, selectedSession, true))
+                .join('');
+
+            const sheets = capture.querySelectorAll('.preview-sheet');
+            sheets.forEach((sheet) => {
+                sheet.style.transform = 'scale(1)';
+                sheet.style.marginBottom = '0';
+            });
+
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Generating PDF';
+
+            try {
+                await html2pdf()
+                    .set({
+                        margin: 0,
+                        filename: buildFileName(selectedClass, selectedSection, selectedSession),
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: {
+                            scale: Number(pdfQualitySelect.value) || 2,
+                            useCORS: true,
+                            letterRendering: true,
+                            backgroundColor: '#ffffff'
+                        },
+                        jsPDF: {
+                            unit: 'mm',
+                            format: 'a4',
+                            orientation: 'portrait'
+                        },
+                        pagebreak: { mode: ['css', 'legacy'] }
+                    })
+                    .from(capture)
+                    .save();
+            } catch (error) {
+                console.error('PDF download failed:', error);
+                alert('Unable to generate the PDF file right now.');
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = '<i class="fas fa-file-pdf me-2"></i>Download PDF';
+                capture.innerHTML = '';
+            }
+        }
+
+        function buildFileName(className, section, session) {
+            const preferred = fileNameInput.value.trim();
+            if (preferred) {
+                return preferred.toLowerCase().endsWith('.pdf') ? preferred : `${preferred}.pdf`;
+            }
+
+            return `marksheets-${slugify(className)}-${slugify(section)}-${slugify(session)}.pdf`;
+        }
+
+        function renderSheet(student, className, section, session, forExport = false) {
+            const marks = Array.isArray(student.marks) ? student.marks : [];
+            const subjectCount = marks.length;
+            const fitClass = subjectCount > 12 ? 'scale-tight' : subjectCount > 9 ? 'scale-compact' : '';
+            const scale = forExport ? 1 : resolveScale(subjectCount);
+            const summary = buildSummary(marks);
+            const studentName = student.studentName || student.studentId?.name || 'Unknown Student';
+            const fatherName = student.fatherName || student.studentId?.fatherName || '-';
+            const admissionNo = student.admissionNo || student.studentId?.studentId || '-';
+            const rollNo = student.rollNo || student.studentId?.rollNo || '-';
+            const schoolName = currentSchoolProfile?.schoolName || 'Skyview Public School';
+            const schoolAddress = currentSchoolProfile?.address || 'School address not configured';
+            const schoolContact = currentSchoolProfile?.contactNo || currentSchoolProfile?.phone || '';
+            const schoolEmail = currentSchoolProfile?.email || '';
+            const logo = currentSchoolProfile?.logoUrl || currentSchoolProfile?.logo || '../assets/images/logo.png';
+
+            return `
+                <section class="preview-sheet ${fitClass}" data-subject-count="${subjectCount}" style="transform: scale(${scale});">
+                    <div class="sheet-frame">
+                        <div class="sheet-watermark">${escapeHtml(schoolName)}</div>
+                        <header class="sheet-header">
+                            <img src="${escapeAttribute(logo)}" alt="School Logo">
+                            <div class="sheet-school-name">${escapeHtml(schoolName)}</div>
+                            <div>${escapeHtml(schoolAddress)}</div>
+                            <div>${escapeHtml([schoolContact, schoolEmail].filter(Boolean).join(' | ') || 'Academic Progress Report')}</div>
+                            <div class="fw-semibold mt-2">Student Progress Report</div>
+                        </header>
+
+                        <section class="sheet-meta">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div><strong>Student:</strong> ${escapeHtml(studentName)}</div>
+                                    <div><strong>Admission No:</strong> ${escapeHtml(admissionNo)}</div>
+                                    <div><strong>Father's Name:</strong> ${escapeHtml(fatherName)}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div><strong>Class:</strong> ${escapeHtml(className)}</div>
+                                    <div><strong>Section:</strong> ${escapeHtml(section)}</div>
+                                    <div><strong>Session:</strong> ${escapeHtml(session)}</div>
+                                    <div><strong>Roll No:</strong> ${escapeHtml(String(rollNo))}</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <table class="marks-table">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Subject</th>
+                                    <th colspan="3">PT 1</th>
+                                    <th colspan="3">Half Yearly</th>
+                                    <th colspan="3">PT 2</th>
+                                    <th colspan="3">Final</th>
+                                </tr>
+                                <tr>
+                                    <th>W</th>
+                                    <th>O</th>
+                                    <th>Total</th>
+                                    <th>W</th>
+                                    <th>O</th>
+                                    <th>Total</th>
+                                    <th>W</th>
+                                    <th>O</th>
+                                    <th>Total</th>
+                                    <th>W</th>
+                                    <th>O</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${marks.map((subject) => renderSubjectRow(subject)).join('')}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Grand Total</strong></td>
+                                    <td colspan="2"></td>
+                                    <td>${summary.examTotals.pt1.total}</td>
+                                    <td colspan="2"></td>
+                                    <td>${summary.examTotals.hy.total}</td>
+                                    <td colspan="2"></td>
+                                    <td>${summary.examTotals.pt2.total}</td>
+                                    <td colspan="2"></td>
+                                    <td>${summary.examTotals.final.total}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Percentage</strong></td>
+                                    <td colspan="2"></td>
+                                    <td>${summary.examTotals.pt1.percentage}%</td>
+                                    <td colspan="2"></td>
+                                    <td>${summary.examTotals.hy.percentage}%</td>
+                                    <td colspan="2"></td>
+                                    <td>${summary.examTotals.pt2.percentage}%</td>
+                                    <td colspan="2"></td>
+                                    <td>${summary.examTotals.final.percentage}%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <section class="row g-3">
+                            <div class="col-7">
+                                <div class="sheet-summary">
+                                    <div class="row g-2">
+                                        <div class="col-6"><strong>Overall %:</strong> ${summary.overallPercentage}%</div>
+                                        <div class="col-6"><strong>Grade:</strong> ${escapeHtml(summary.grade)}</div>
+                                        <div class="col-6"><strong>Result:</strong> ${escapeHtml(summary.result)}</div>
+                                        <div class="col-6"><strong>Rank:</strong> ${escapeHtml(String(student.rank || '-'))}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-5">
+                                <div class="grading-box">
+                                    <div class="fw-semibold mb-1">Grading Scale</div>
+                                    <div>A1: 91-100 | A2: 81-90</div>
+                                    <div>B1: 71-80 | B2: 61-70</div>
+                                    <div>C1: 51-60 | C2: 41-50</div>
+                                    <div>D: 33-40 | E: Below 33</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="sheet-signatures">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="signature-line"></div>
+                                    <div>Class Teacher</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="signature-line"></div>
+                                    <div>Principal</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="signature-line"></div>
+                                    <div>Parent / Guardian</div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderSubjectRow(subject) {
+            return `
+                <tr>
+                    <td>${escapeHtml(subject.subjectName || '-')}</td>
+                    ${renderExamCells(subject.pt1)}
+                    ${renderExamCells(subject.hy)}
+                    ${renderExamCells(subject.pt2)}
+                    ${renderExamCells(subject.final)}
+                </tr>
+            `;
+        }
+
+        function renderExamCells(exam) {
+            const written = valueOrDash(exam?.written);
+            const oral = valueOrDash(exam?.oral);
+            const total = exam ? Number(exam?.written || 0) + Number(exam?.oral || 0) : '-';
+
+            return `
+                <td>${written}</td>
+                <td>${oral}</td>
+                <td>${total}</td>
+            `;
+        }
+
+        function buildSummary(marks) {
+            const examTotals = {};
+            let overallAccumulator = 0;
+            let countedExams = 0;
+
+            examTypes.forEach((examType) => {
+                let total = 0;
+                let maxTotal = 0;
+
+                marks.forEach((subject) => {
+                    const exam = subject?.[examType];
+                    if (!exam) {
+                        return;
+                    }
+
+                    total += Number(exam.written || 0) + Number(exam.oral || 0);
+                    maxTotal += Number(exam.maxMarksWritten || 80) + Number(exam.maxMarksOral || 20);
+                });
+
+                const percentage = maxTotal > 0 ? ((total / maxTotal) * 100) : 0;
+                if (maxTotal > 0) {
+                    overallAccumulator += percentage;
+                    countedExams += 1;
+                }
+
+                examTotals[examType] = {
+                    total,
+                    percentage: percentage.toFixed(2)
+                };
+            });
+
+            const overallPercentage = countedExams ? (overallAccumulator / countedExams) : 0;
+            return {
+                examTotals,
+                overallPercentage: overallPercentage.toFixed(2),
+                grade: calculateGrade(overallPercentage),
+                result: overallPercentage >= 33 ? 'PASS' : 'NEEDS IMPROVEMENT'
+            };
+        }
+
+        function calculateGrade(percentage) {
+            if (percentage >= 91) return 'A1';
+            if (percentage >= 81) return 'A2';
+            if (percentage >= 71) return 'B1';
+            if (percentage >= 61) return 'B2';
+            if (percentage >= 51) return 'C1';
+            if (percentage >= 41) return 'C2';
+            if (percentage >= 33) return 'D';
+            return 'E';
+        }
+
+        function authHeaders() {
+            return {
+                'Authorization': `Bearer ${Auth.getToken()}`
+            };
+        }
+
+        function valueOrDash(value) {
+            return value === 0 || value ? value : '-';
+        }
+
+        function slugify(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '') || 'marksheets-bulk';
+        }
+
+        function clamp(value, min, max) {
+            return Math.min(Math.max(value, min), max);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeAttribute(value) {
+            return escapeHtml(value);
+        }
+    </script>
+</body>
+</html>

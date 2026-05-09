@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Collection Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #f4f7fb 0%, #edf3ff 100%);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .filters-card,
+        .register-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            overflow: hidden;
+            background: linear-gradient(135deg, #134e4a, #0f766e 56%, #2dd4bf);
+            color: #fff;
+        }
+
+        .hero-card .badge {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+        }
+
+        .hero-stat {
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.14);
+            padding: 14px 16px;
+            min-height: 100%;
+        }
+
+        .filters-card .form-label {
+            font-weight: 600;
+        }
+
+        .register-switch .btn.active {
+            background: #0f766e;
+            border-color: #0f766e;
+            color: #fff;
+        }
+
+        .register-table-wrap {
+            max-height: 70vh;
+            overflow: auto;
+            border-radius: 14px;
+        }
+
+        .register-table {
+            min-width: 1400px;
+            margin-bottom: 0;
+        }
+
+        .register-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #eff6ff;
+            white-space: nowrap;
+            color: #000;
+        }
+
+        .register-table th:first-child,
+        .register-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            background: #fff;
+        }
+
+        .register-table thead th:first-child {
+            z-index: 3;
+            background: #eff6ff;
+        }
+
+        .register-table th:last-child,
+        .register-table td:last-child {
+            position: sticky;
+            right: 0;
+            background: #f8fafc;
+            z-index: 1;
+        }
+
+        .register-table thead th:last-child {
+            z-index: 3;
+            background: #dbeafe;
+        }
+
+        .row-total {
+            font-weight: 700;
+            color: #0f766e;
+        }
+
+        .month-zero {
+            color: #94a3b8;
+        }
+
+        .summary-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            min-height: 280px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            color: #64748b;
+            border: 2px dashed rgba(15, 118, 110, 0.2);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.72);
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container-fluid" style="max-width: 1500px;">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row align-items-center g-4">
+                        <div class="col-lg-8">
+                            <span class="badge rounded-pill px-3 py-2 mb-3">Fees Reports</span>
+                            <h1 class="h2 mb-3">Session-wise fee collection register</h1>
+                            <p class="mb-0 text-white-50">
+                                Track monthly fee collection status student by student across the academic session, with dedicated views for tuition fees and transport fees.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Students</div>
+                                        <div class="fs-4 fw-semibold" id="statStudents">0</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Receipts</div>
+                                        <div class="fs-4 fw-semibold" id="statReceipts">0</div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="hero-stat">
+                                        <div class="small text-white-50 mb-1">Current register</div>
+                                        <div class="fw-semibold" id="registerStatus">Choose a session to begin</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card filters-card mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label" for="sessionSelect">Academic Session</label>
+                            <select class="form-select" id="sessionSelect"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="classSelect">Class</label>
+                            <select class="form-select" id="classSelect">
+                                <option value="">All classes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label" for="sectionSelect">Section</label>
+                            <select class="form-select" id="sectionSelect">
+                                <option value="">All sections</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label d-block">Register Type</label>
+                            <div class="btn-group register-switch w-100" role="group">
+                                <button type="button" class="btn btn-outline-success active" data-register-type="tuition">Tuition Fees Collection Register</button>
+                                <button type="button" class="btn btn-outline-success" data-register-type="transport">Transport Fees Collection Register</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="summary-chip"><i class="fas fa-indian-rupee-sign"></i>Total Collection: <span id="summaryTotalCollection">0.00</span></span>
+                                <span class="summary-chip"><i class="fas fa-calendar-days"></i>Months with collections: <span id="summaryMonthsCovered">0</span></span>
+                                <span class="summary-chip"><i class="fas fa-layer-group"></i>Register: <span id="summaryRegisterType">Tuition</span></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex justify-content-md-end gap-2">
+                            <button class="btn btn-outline-primary" id="loadRegisterBtn" type="button">
+                                <i class="fas fa-table me-2"></i>Load Register
+                            </button>
+                            <button class="btn btn-outline-success" id="exportExcelBtn" type="button" disabled>
+                                <i class="fas fa-file-excel me-2"></i>Export Excel
+                            </button>
+                            <button class="btn btn-outline-secondary" id="printBtn" type="button" disabled>
+                                <i class="fas fa-print me-2"></i>Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card register-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h4 mb-1" id="tableTitle">Fee Collection Register</h2>
+                            <p class="text-muted mb-0" id="tableSubtitle">Load a session to generate the monthly fee collection matrix.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border" id="rowCountBadge">0 rows</span>
+                    </div>
+                    <div id="registerEmpty" class="empty-state">
+                        <div>
+                            <i class="fas fa-table-columns fa-2x mb-3"></i>
+                            <p class="mb-1 fw-semibold">No register loaded yet.</p>
+                            <p class="mb-0">Select a session and click Load Register.</p>
+                        </div>
+                    </div>
+                    <div class="register-table-wrap d-none" id="registerTableWrap">
+                        <table class="table table-bordered table-striped align-middle register-table">
+                            <thead id="registerTableHead"></thead>
+                            <tbody id="registerTableBody"></tbody>
+                            <tfoot id="registerTableFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const SESSION_MONTHS = ['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'];
+
+        const sessionSelect = document.getElementById('sessionSelect');
+        const classSelect = document.getElementById('classSelect');
+        const sectionSelect = document.getElementById('sectionSelect');
+        const loadRegisterBtn = document.getElementById('loadRegisterBtn');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const printBtn = document.getElementById('printBtn');
+        const registerStatus = document.getElementById('registerStatus');
+        const registerEmpty = document.getElementById('registerEmpty');
+        const registerTableWrap = document.getElementById('registerTableWrap');
+        const registerTableHead = document.getElementById('registerTableHead');
+        const registerTableBody = document.getElementById('registerTableBody');
+        const registerTableFoot = document.getElementById('registerTableFoot');
+        const rowCountBadge = document.getElementById('rowCountBadge');
+        const tableTitle = document.getElementById('tableTitle');
+        const tableSubtitle = document.getElementById('tableSubtitle');
+        const summaryTotalCollection = document.getElementById('summaryTotalCollection');
+        const summaryMonthsCovered = document.getElementById('summaryMonthsCovered');
+        const summaryRegisterType = document.getElementById('summaryRegisterType');
+
+        let registerType = 'tuition';
+        let classesByName = [];
+        let currentRows = [];
+        let currentGrandTotals = {};
+        let currentTransactions = [];
+        let currentSchoolProfile = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) {
+                return;
+            }
+
+            bindEvents();
+            await initializePage();
+        });
+
+        function bindEvents() {
+            document.querySelectorAll('[data-register-type]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    registerType = button.dataset.registerType;
+                    document.querySelectorAll('[data-register-type]').forEach((candidate) => {
+                        candidate.classList.toggle('active', candidate === button);
+                    });
+                    summaryRegisterType.textContent = registerType === 'tuition' ? 'Tuition' : 'Transport';
+                    updateTableLabels();
+                });
+            });
+
+            sessionSelect.addEventListener('change', loadClassesForSession);
+            classSelect.addEventListener('change', populateSections);
+            loadRegisterBtn.addEventListener('click', loadRegister);
+            exportExcelBtn.addEventListener('click', exportRegisterToExcel);
+            printBtn.addEventListener('click', handlePrint);
+        }
+
+        async function initializePage() {
+            try {
+                const [sessionsResponse, currentResponse, schoolResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/sessions`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/sessions/current`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/school-profile`, { headers: authHeaders() })
+                ]);
+
+                const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+                const currentPayload = currentResponse.ok ? await currentResponse.json() : {};
+                const schoolPayload = schoolResponse.ok ? await schoolResponse.json() : null;
+                currentSchoolProfile = schoolPayload?.profile || window.SchoolProfile?.getCachedProfile?.() || null;
+                const sessions = Array.isArray(sessionsPayload.sessions) && sessionsPayload.sessions.length
+                    ? sessionsPayload.sessions
+                    : [{ name: 'Default', active: true, isCurrent: true }];
+
+                const preferred = currentPayload?.session?.name
+                    || sessions.find((entry) => entry.isCurrent)?.name
+                    || sessions.find((entry) => entry.active)?.name
+                    || sessions[0]?.name
+                    || 'Default';
+
+                sessionSelect.innerHTML = sessions
+                    .map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`)
+                    .join('');
+                sessionSelect.value = preferred;
+
+                await loadClassesForSession();
+                updateTableLabels();
+            } catch (error) {
+                console.error('Failed to initialize fee register page:', error);
+                registerStatus.textContent = 'Unable to load session data right now';
+            }
+        }
+
+        async function loadClassesForSession() {
+            const session = sessionSelect.value;
+            classSelect.innerHTML = '<option value="">Loading classes...</option>';
+            sectionSelect.innerHTML = '<option value="">All sections</option>';
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/classes/year/${encodeURIComponent(session)}`, {
+                    headers: authHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch classes');
+                }
+
+                const classes = await response.json();
+                const grouped = new Map();
+
+                (Array.isArray(classes) ? classes : []).forEach((entry) => {
+                    const className = entry.className || 'Unknown';
+                    if (!grouped.has(className)) {
+                        grouped.set(className, []);
+                    }
+                    grouped.get(className).push(entry);
+                });
+
+                classesByName = Array.from(grouped.entries())
+                    .map(([className, sections]) => ({
+                        className,
+                        sections: sections
+                            .map((entry) => ({
+                                section: entry.section || 'A',
+                                studentCount: Number(entry.studentCount) || 0
+                            }))
+                            .sort((a, b) => String(a.section).localeCompare(String(b.section)))
+                    }))
+                    .sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
+
+                classSelect.innerHTML = '<option value="">All classes</option>' + classesByName
+                    .map((entry) => `<option value="${escapeHtml(entry.className)}">${escapeHtml(entry.className)}</option>`)
+                    .join('');
+
+                populateSections();
+            } catch (error) {
+                console.error('Failed to load classes for register:', error);
+                classesByName = [];
+                classSelect.innerHTML = '<option value="">All classes</option>';
+                sectionSelect.innerHTML = '<option value="">All sections</option>';
+            }
+        }
+
+        function populateSections() {
+            const selectedClass = classSelect.value;
+            const classEntry = classesByName.find((entry) => entry.className === selectedClass);
+            const options = classEntry
+                ? classEntry.sections.map((entry) => `<option value="${escapeHtml(entry.section)}">${escapeHtml(entry.section)}</option>`).join('')
+                : '';
+
+            sectionSelect.innerHTML = '<option value="">All sections</option>' + options;
+        }
+
+        async function loadRegister() {
+            const session = sessionSelect.value;
+            const className = classSelect.value;
+            const section = sectionSelect.value;
+
+            if (!session) {
+                alert('Choose an academic session first.');
+                return;
+            }
+
+            loadRegisterBtn.disabled = true;
+            exportExcelBtn.disabled = true;
+            printBtn.disabled = true;
+            registerStatus.textContent = 'Loading fee collection register...';
+            tableSubtitle.textContent = 'Fetching students and fee transactions...';
+
+            try {
+                const [students, transactions] = await Promise.all([
+                    fetchStudents(session, className, section),
+                    fetchTransactions(session, className)
+                ]);
+
+                currentTransactions = Array.isArray(transactions) ? transactions : [];
+                currentRows = buildRegisterRows(students, currentTransactions, section);
+                currentGrandTotals = buildGrandTotals(currentRows);
+
+                renderRegister(currentRows, currentGrandTotals);
+                updateSummary(currentRows, currentGrandTotals, currentTransactions, session, className, section);
+                registerStatus.textContent = `${currentRows.length} students loaded`;
+                exportExcelBtn.disabled = !currentRows.length;
+                printBtn.disabled = !currentRows.length;
+            } catch (error) {
+                console.error('Failed to load fee register:', error);
+                showEmptyState('Unable to build the fee register right now.');
+                registerStatus.textContent = 'Register load failed';
+            } finally {
+                loadRegisterBtn.disabled = false;
+            }
+        }
+
+        async function fetchStudents(session, className, section) {
+            if (className && section) {
+                const response = await fetch(
+                    `${CONFIG.API_URL}/students/class/${encodeURIComponent(className)}/${encodeURIComponent(section)}?session=${encodeURIComponent(session)}`,
+                    { headers: authHeaders() }
+                );
+                if (!response.ok) {
+                    throw new Error('Failed to fetch students for class and section');
+                }
+                return await response.json();
+            }
+
+            const response = await fetch(`${CONFIG.API_URL}/students/session/${encodeURIComponent(session)}`, {
+                headers: authHeaders()
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch students for session');
+            }
+
+            const grouped = await response.json();
+            const flat = Object.values(grouped || {}).flatMap((group) => group.students || []);
+            return flat.filter((student) => {
+                if (className && student.class !== className) return false;
+                if (section && student.section !== section) return false;
+                return true;
+            });
+        }
+
+        async function fetchTransactions(session, className) {
+            const params = new URLSearchParams({
+                session,
+                particular: registerType === 'tuition' ? 'Tuition Fee' : 'Transport',
+                limit: '500'
+            });
+
+            if (className) {
+                params.set('className', className);
+            }
+
+            const response = await fetch(`${CONFIG.API_URL}/fees/transactions?${params.toString()}`, {
+                headers: authHeaders()
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch fee transactions');
+            }
+
+            const payload = await response.json();
+            return payload.transactions || [];
+        }
+
+        function buildRegisterRows(students, transactions, sectionFilter) {
+            const studentMap = new Map();
+
+            (Array.isArray(students) ? students : []).forEach((student) => {
+                const id = String(student.studentId || '');
+                if (!id) return;
+
+                studentMap.set(id, {
+                    admissionNo: id,
+                    studentName: student.name || 'Unknown Student',
+                    className: student.class || '',
+                    section: student.section || '',
+                    rollNo: student.rollNo || '',
+                    months: createMonthBuckets(),
+                    totalCollection: 0
+                });
+            });
+
+            (Array.isArray(transactions) ? transactions : []).forEach((transaction) => {
+                const admissionNo = String(transaction.admissionNo || '');
+                if (!admissionNo) return;
+                if (sectionFilter && String(transaction.section || '') !== sectionFilter) return;
+
+                if (!studentMap.has(admissionNo)) {
+                    studentMap.set(admissionNo, {
+                        admissionNo,
+                        studentName: transaction.studentName || 'Unknown Student',
+                        className: transaction.className || '',
+                        section: transaction.section || '',
+                        rollNo: transaction.rollNo || '',
+                        months: createMonthBuckets(),
+                        totalCollection: 0
+                    });
+                }
+
+                const row = studentMap.get(admissionNo);
+                const monthName = normalizeMonthName(transaction.month) || normalizeMonthNameFromDate(transaction.receiptDate || transaction.createdAt);
+                if (!monthName || !row.months.hasOwnProperty(monthName)) {
+                    return;
+                }
+
+                const amount = sumMatchingLineItems(transaction.lineItems || []);
+                row.months[monthName] += amount;
+                row.totalCollection += amount;
+            });
+
+            return Array.from(studentMap.values())
+                .sort((a, b) => {
+                    const classCompare = String(a.className).localeCompare(String(b.className), undefined, { numeric: true });
+                    if (classCompare !== 0) return classCompare;
+                    const sectionCompare = String(a.section).localeCompare(String(b.section));
+                    if (sectionCompare !== 0) return sectionCompare;
+                    const rollCompare = Number(a.rollNo || 0) - Number(b.rollNo || 0);
+                    if (rollCompare !== 0) return rollCompare;
+                    return String(a.studentName).localeCompare(String(b.studentName));
+                });
+        }
+
+        function buildGrandTotals(rows) {
+            const totals = createMonthBuckets();
+            let overall = 0;
+
+            rows.forEach((row) => {
+                SESSION_MONTHS.forEach((month) => {
+                    totals[month] += Number(row.months[month] || 0);
+                });
+                overall += Number(row.totalCollection || 0);
+            });
+
+            totals.Total = overall;
+            return totals;
+        }
+
+        function renderRegister(rows, grandTotals) {
+            if (!rows.length) {
+                showEmptyState('No collection data found for the selected filters.');
+                return;
+            }
+
+            registerEmpty.classList.add('d-none');
+            registerTableWrap.classList.remove('d-none');
+
+            registerTableHead.innerHTML = `
+                <tr>
+                    <th>Student Name</th>
+                    ${SESSION_MONTHS.map((month) => `<th>${escapeHtml(month)}</th>`).join('')}
+                    <th>Total Collection</th>
+                </tr>
+            `;
+
+            registerTableBody.innerHTML = rows.map((row) => `
+                <tr>
+                    <td>
+                        <div class="fw-semibold">${escapeHtml(row.studentName)}</div>
+                        <div class="small text-muted">
+                            ${escapeHtml(row.admissionNo)}${row.className ? ` | ${escapeHtml(row.className)}${row.section ? `-${escapeHtml(row.section)}` : ''}` : ''}${row.rollNo ? ` | Roll ${escapeHtml(String(row.rollNo))}` : ''}
+                        </div>
+                    </td>
+                    ${SESSION_MONTHS.map((month) => renderAmountCell(row.months[month])).join('')}
+                    <td class="row-total">${formatCurrency(row.totalCollection)}</td>
+                </tr>
+            `).join('');
+
+            registerTableFoot.innerHTML = `
+                <tr class="table-light fw-semibold">
+                    <td>Grand Total</td>
+                    ${SESSION_MONTHS.map((month) => `<td>${formatCurrency(grandTotals[month] || 0)}</td>`).join('')}
+                    <td class="row-total">${formatCurrency(grandTotals.Total || 0)}</td>
+                </tr>
+            `;
+
+            rowCountBadge.textContent = `${rows.length} rows`;
+        }
+
+        function updateSummary(rows, grandTotals, transactions, session, className, section) {
+            document.getElementById('statStudents').textContent = rows.length;
+            document.getElementById('statReceipts').textContent = Array.isArray(transactions) ? transactions.length : 0;
+            summaryTotalCollection.textContent = formatCurrency(grandTotals.Total || 0);
+            summaryMonthsCovered.textContent = String(SESSION_MONTHS.filter((month) => Number(grandTotals[month] || 0) > 0).length);
+
+            const filterLabel = [
+                session,
+                className || 'All Classes',
+                section || 'All Sections'
+            ].join(' | ');
+            tableSubtitle.textContent = `${registerType === 'tuition' ? 'Tuition' : 'Transport'} register for ${filterLabel}`;
+            tableTitle.textContent = `${registerType === 'tuition' ? 'Tuition Fees Collection Register' : 'Transport Fees Collection Register'}`;
+        }
+
+        function updateTableLabels() {
+            summaryRegisterType.textContent = registerType === 'tuition' ? 'Tuition' : 'Transport';
+            tableTitle.textContent = `${registerType === 'tuition' ? 'Tuition Fees Collection Register' : 'Transport Fees Collection Register'}`;
+        }
+
+        function showEmptyState(message) {
+            registerTableWrap.classList.add('d-none');
+            registerEmpty.classList.remove('d-none');
+            registerEmpty.querySelector('p.fw-semibold').textContent = message;
+            registerEmpty.querySelector('p.mb-0').textContent = 'Try changing session, class, section, or register type.';
+            rowCountBadge.textContent = '0 rows';
+            summaryTotalCollection.textContent = '0.00';
+            summaryMonthsCovered.textContent = '0';
+            document.getElementById('statStudents').textContent = '0';
+            document.getElementById('statReceipts').textContent = '0';
+            exportExcelBtn.disabled = true;
+            printBtn.disabled = true;
+        }
+
+        function exportRegisterToExcel() {
+            if (!currentRows.length) {
+                return;
+            }
+
+            const worksheetRows = currentRows.map((row) => {
+                const entry = {
+                    'Student Name': row.studentName,
+                    'Admission No': row.admissionNo,
+                    'Class': row.className,
+                    'Section': row.section,
+                    'Roll No': row.rollNo
+                };
+
+                SESSION_MONTHS.forEach((month) => {
+                    entry[month] = Number(row.months[month] || 0);
+                });
+
+                entry['Total Collection'] = Number(row.totalCollection || 0);
+                return entry;
+            });
+
+            worksheetRows.push({
+                'Student Name': 'Grand Total',
+                ...Object.fromEntries(SESSION_MONTHS.map((month) => [month, Number(currentGrandTotals[month] || 0)])),
+                'Total Collection': Number(currentGrandTotals.Total || 0)
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(worksheetRows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Register');
+            XLSX.writeFile(workbook, buildExportFileName());
+        }
+
+        function handlePrint() {
+            if (!currentRows.length) {
+                return;
+            }
+
+            const schoolName = currentSchoolProfile?.schoolName || 'Skyview Public School';
+            const session = sessionSelect.value || '-';
+            const className = classSelect.value || 'All Classes';
+            const section = sectionSelect.value || 'All Sections';
+            const registerLabel = registerType === 'tuition'
+                ? 'Tuition Fees Collection Register'
+                : 'Transport Fees Collection Register';
+            const tableMarkup = document.querySelector('.register-table')?.outerHTML || '';
+
+            if (!tableMarkup) {
+                return;
+            }
+
+            const printWindow = window.open('', 'PrintRegister', 'width=1400,height=900');
+            if (!printWindow) {
+                alert('Popup blocked. Please allow popups for printing.');
+                return;
+            }
+
+            const printDocument = [
+                '<!DOCTYPE html><html><head><meta charset="UTF-8">',
+                '<title>' + escapeHtml(registerLabel) + '</title>',
+                '<style>',
+                'body { font-family: Arial, sans-serif; margin: 20px; color: #000; }',
+                '.print-header { text-align: center; margin-bottom: 16px; }',
+                '.print-header h1 { margin: 0 0 6px; font-size: 28px; }',
+                '.print-header h2 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }',
+                '.print-header p { margin: 4px 0; font-size: 13px; }',
+                '.print-meta { margin-bottom: 14px; font-size: 13px; text-align: center; }',
+                'table { width: 100%; border-collapse: collapse; table-layout: fixed; }',
+                'th, td { border: 1px solid #000; padding: 6px 4px; font-size: 11px; text-align: center; vertical-align: middle; color: #000; }',
+                'th { background: #e5eefc !important; color: #000 !important; }',
+                'td:first-child, th:first-child { text-align: left; width: 230px; }',
+                'td:last-child, th:last-child { font-weight: 700; background: #f5f5f5; }',
+                'thead { display: table-header-group; }',
+                'tfoot { display: table-row-group; }',
+                'tr { page-break-inside: avoid; }',
+                '@page { size: A4 landscape; margin: 12mm; }',
+                '<' + '/style><' + '/head><body>',
+                '<div class="print-header">',
+                '<h1>' + escapeHtml(schoolName) + '</h1>',
+                '<h2>' + escapeHtml(registerLabel) + '</h2>',
+                '</div>',
+                '<div class="print-meta">',
+                '<p><strong>Academic Year:</strong> ' + escapeHtml(session) + '</p>',
+                '<p><strong>Filter:</strong> ' + escapeHtml(className) + ' | ' + escapeHtml(section) + '</p>',
+                '</div>',
+                tableMarkup,
+                '<' + '/body><' + '/html>'
+            ].join('');
+
+            printWindow.document.open();
+            printWindow.document.write(printDocument);
+            printWindow.document.close();
+
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+            }, 300);
+        }
+
+        function buildExportFileName() {
+            const session = sessionSelect.value || 'session';
+            const className = classSelect.value || 'all-classes';
+            const section = sectionSelect.value || 'all-sections';
+            const type = registerType === 'tuition' ? 'tuition-register' : 'transport-register';
+            return `${slugify(type)}-${slugify(session)}-${slugify(className)}-${slugify(section)}.xlsx`;
+        }
+
+        function sumMatchingLineItems(lineItems) {
+            return (Array.isArray(lineItems) ? lineItems : []).reduce((sum, item) => {
+                const particular = String(item.particular || '').toLowerCase();
+                const amount = Number(item.amount || 0);
+
+                if (registerType === 'tuition' && particular.includes('tuition')) {
+                    return sum + amount;
+                }
+
+                if (registerType === 'transport' && particular.includes('transport')) {
+                    return sum + amount;
+                }
+
+                return sum;
+            }, 0);
+        }
+
+        function createMonthBuckets() {
+            return Object.fromEntries(SESSION_MONTHS.map((month) => [month, 0]));
+        }
+
+        function normalizeMonthName(value) {
+            const input = String(value || '').trim().toLowerCase();
+            return SESSION_MONTHS.find((month) => month.toLowerCase() === input) || '';
+        }
+
+        function normalizeMonthNameFromDate(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toLocaleString('en-US', { month: 'long' });
+        }
+
+        function renderAmountCell(value) {
+            const amount = Number(value || 0);
+            return amount > 0
+                ? `<td>${formatCurrency(amount)}</td>`
+                : '<td class="month-zero">-</td>';
+        }
+
+        function formatCurrency(value) {
+            return Number(value || 0).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function authHeaders() {
+            return {
+                Authorization: `Bearer ${Auth.getToken()}`
+            };
+        }
+
+        function slugify(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '') || 'register';
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

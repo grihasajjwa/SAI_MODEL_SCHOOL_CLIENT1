@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transport Usage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body {
+            background: #f5f7fb;
+        }
+        .hero-card,
+        .transport-card {
+            border: 0;
+            border-radius: 18px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+        }
+        .hero-card {
+            background: linear-gradient(135deg, #0f4c81, #2563eb);
+            color: #fff;
+        }
+        .transport-card .table td,
+        .transport-card .table th {
+            vertical-align: middle;
+        }
+        .empty-state {
+            border: 2px dashed #cbd5e1;
+            border-radius: 18px;
+            padding: 48px 20px;
+            text-align: center;
+            color: #64748b;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container py-4">
+        <section class="card hero-card mb-4">
+            <div class="card-body p-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-6">
+                        <h1 class="h3 mb-2">Transport Wise Student List</h1>
+                        <p class="mb-0 text-white-50">Review each bus or route and set the pickup order for 1st, 2nd, 3rd and so on.</p>
+                    </div>
+                    <div class="col-lg-3">
+                        <label class="form-label text-white" for="sessionSelect">Session</label>
+                        <select class="form-select" id="sessionSelect"></select>
+                    </div>
+                    <div class="col-lg-3">
+                        <label class="form-label text-white" for="busFilter">Bus Filter</label>
+                        <input type="text" class="form-control" id="busFilter" placeholder="Optional bus number">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="transportGroups"></div>
+    </main>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const transportGroupsContainer = document.getElementById('transportGroups');
+        const sessionSelect = document.getElementById('sessionSelect');
+        const busFilterInput = document.getElementById('busFilter');
+        const params = new URLSearchParams(window.location.search);
+        let allGroups = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) {
+                return;
+            }
+
+            busFilterInput.value = params.get('bus') || '';
+            await loadSessions();
+            await loadTransportGroups();
+
+            sessionSelect.addEventListener('change', async () => {
+                const nextParams = new URLSearchParams(window.location.search);
+                if (sessionSelect.value) nextParams.set('session', sessionSelect.value);
+                history.replaceState({}, '', `${window.location.pathname}?${nextParams.toString()}`);
+                await loadTransportGroups();
+            });
+
+            busFilterInput.addEventListener('input', renderGroups);
+        });
+
+        async function loadSessions() {
+            const response = await fetch(`${CONFIG.API_URL}/sessions`, {
+                headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
+            });
+            const payload = response.ok ? await response.json() : { sessions: [] };
+            const sessions = payload.sessions || [];
+            const current = sessions.find((item) => item.isCurrent)?.name || sessions.find((item) => item.active)?.name || sessions[0]?.name || '';
+
+            sessionSelect.innerHTML = sessions.map((item) => {
+                const name = item.name || item;
+                return `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+            }).join('');
+            sessionSelect.value = params.get('session') || current;
+        }
+
+        async function loadTransportGroups() {
+            transportGroupsContainer.innerHTML = '<div class="empty-state">Loading transport lists...</div>';
+            const response = await fetch(`${CONFIG.API_URL}/student/transport/summary?session=${encodeURIComponent(sessionSelect.value || '')}`, {
+                headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
+            });
+            const payload = await response.json();
+
+            if (!response.ok || !payload.success) {
+                transportGroupsContainer.innerHTML = '<div class="empty-state">Unable to load transport data right now.</div>';
+                return;
+            }
+
+            allGroups = payload.transportGroups || [];
+            renderGroups();
+        }
+
+        function renderGroups() {
+            const busFilter = busFilterInput.value.trim().toLowerCase();
+            const routeFilter = (params.get('route') || '').trim().toLowerCase();
+            const groups = allGroups.filter((group) => {
+                const busMatch = !busFilter || String(group.busNumber || '').toLowerCase().includes(busFilter);
+                const routeMatch = !routeFilter || String(group.route || '').toLowerCase().includes(routeFilter);
+                return busMatch && routeMatch;
+            });
+
+            if (!groups.length) {
+                transportGroupsContainer.innerHTML = '<div class="empty-state"><i class="fas fa-bus fa-2x mb-3"></i><p class="mb-0">No transport groups found for this filter.</p></div>';
+                return;
+            }
+
+            transportGroupsContainer.innerHTML = groups.map((group, groupIndex) => `
+                <section class="card transport-card mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h2 class="h5 mb-1">Bus ${escapeHtml(group.busNumber || '-')} / ${escapeHtml(group.route || '-')}</h2>
+                                <p class="text-muted mb-0">${group.studentCount} students • Total transport fees ${formatCurrency(group.totalTransportFees || 0)}</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Student</th>
+                                        <th>Class</th>
+                                        <th>Pickup Point</th>
+                                        <th>Transport Fee</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${group.students.map((student, studentIndex) => `
+                                        <tr>
+                                            <td style="max-width: 120px;">
+                                                <input
+                                                    type="number"
+                                                    class="form-control form-control-sm pickup-order-input"
+                                                    min="1"
+                                                    value="${student.transport?.pickupOrder || studentIndex + 1}"
+                                                    data-student-id="${escapeHtml(student.studentId)}"
+                                                    data-session="${escapeHtml(student.session || '')}">
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold">${escapeHtml(student.name || '-')}</div>
+                                                <div class="text-muted small">${escapeHtml(student.studentId || '-')}</div>
+                                            </td>
+                                            <td>${escapeHtml(student.class || '-')} / ${escapeHtml(student.section || '-')}</td>
+                                            <td>${escapeHtml(student.transport?.pickupPoint || '-')}</td>
+                                            <td>${formatCurrency(student.transport?.fees || 0)}</td>
+                                            <td>
+                                                <button
+                                                    class="btn btn-sm btn-primary save-order-btn"
+                                                    data-student-id="${escapeHtml(student.studentId)}"
+                                                    data-session="${escapeHtml(student.session || '')}">
+                                                    <i class="fas fa-save me-1"></i>Save
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            `).join('');
+
+            document.querySelectorAll('.save-order-btn').forEach((button) => {
+                button.addEventListener('click', () => savePickupOrder(button));
+            });
+        }
+
+        async function savePickupOrder(button) {
+            const studentId = button.dataset.studentId;
+            const session = button.dataset.session || '';
+            const input = document.querySelector(`.pickup-order-input[data-student-id="${CSS.escape(studentId)}"][data-session="${CSS.escape(session)}"]`);
+            const pickupOrder = Number(input?.value || 0);
+
+            if (!Number.isInteger(pickupOrder) || pickupOrder < 1) {
+                alert('Pickup order must be a positive whole number.');
+                return;
+            }
+
+            const originalHtml = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Saving';
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/student/transport/order/${encodeURIComponent(studentId)}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ session, pickupOrder })
+                });
+                const payload = await response.json();
+
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || 'Failed to save pickup order');
+                }
+
+                await loadTransportGroups();
+            } catch (error) {
+                console.error('Pickup order save error:', error);
+                alert(error.message);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            }
+        }
+
+        function formatCurrency(value) {
+            return `Rs ${Number(value || 0).toLocaleString('en-IN')}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

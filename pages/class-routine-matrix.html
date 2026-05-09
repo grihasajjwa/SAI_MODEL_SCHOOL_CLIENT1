@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Class Routine Matrix</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/navbar.css" />
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #eef5ff, #f9fbff);
+        padding: 0;
+        margin: 0;
+        color: #333;
+      }
+
+      .page-shell {
+        max-width: 1400px;
+      }
+
+      .matrix-shell {
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 10px 26px rgba(56, 89, 142, 0.08);
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-size: 1.7rem;
+        font-weight: 600;
+      }
+
+      .top-actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        background: #f8fbff;
+        border: 1px solid #d8e6ff;
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+
+      .checkbox-controls,
+      .action-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+
+      .checkbox-controls label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+      }
+
+      label {
+        font-weight: 500;
+        color: #34495e;
+      }
+
+      select,
+      button {
+        padding: 8px 12px;
+        font-size: 0.95rem;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        background-color: white;
+      }
+
+      button {
+        background-color: var(--primary-color);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s ease-in-out;
+      }
+
+      button:hover {
+        background-color: #0b5ed7;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 6px;
+        text-align: center;
+        vertical-align: top;
+        font-size: 0.85rem;
+      }
+
+      th {
+        background-color: var(--primary-color);
+        color: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      td.period-cell {
+        background-color: #f7f9fb;
+        font-weight: 600;
+        width: 90px;
+      }
+
+      .cell-content {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .cell-teacher {
+        font-weight: 700;
+        color: #2c3e50;
+      }
+
+      .cell-subject {
+        color: #34495e;
+      }
+
+      .cell-book {
+        color: #7f8c8d;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .edit-field {
+        width: 100%;
+        padding: 4px 6px;
+        border: 1px solid #999;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        background: #fff;
+      }
+
+      .row-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .changed-cell {
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+      }
+
+      .changed-row {
+        background: #fff8d6;
+      }
+
+      .message {
+        margin-top: 15px;
+        font-size: 0.95rem;
+      }
+
+      .message.error {
+        color: #c0392b;
+      }
+
+      .message.info {
+        color: #2980b9;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid page-shell py-4">
+      <div class="matrix-shell">
+        <h1 id="matrix-heading">Class Routine Matrix - Monday</h1>
+
+        <div class="top-actions">
+          <button type="button" onclick="exportToExcel()">Download Excel</button>
+          <button type="button" onclick="exportToPDF()">Download PDF</button>
+        </div>
+
+        <div class="controls">
+          <label for="sessionSelect">Academic Session:</label>
+          <select id="sessionSelect"></select>
+
+          <label for="daySelect">Choose a day:</label>
+          <select id="daySelect">
+            <option>Monday</option>
+            <option>Tuesday</option>
+            <option>Wednesday</option>
+            <option>Thursday</option>
+            <option>Friday</option>
+            <option>Saturday</option>
+          </select>
+
+          <button id="fetchMatrixBtn" type="button">Fetch Class Routine</button>
+        </div>
+
+        <div class="checkbox-controls">
+          <label><input type="checkbox" id="editTeacherCheck" /> Edit Teacher</label>
+          <label><input type="checkbox" id="editSubjectCheck" /> Edit Subject</label>
+          <label><input type="checkbox" id="editBookCheck" /> Edit Books</label>
+          <label><input type="checkbox" id="hideActionCheck" /> Hide Action Column</label>
+        </div>
+
+        <div class="action-strip">
+          <button id="saveAllBtn" type="button">Save All Changes</button>
+          <button id="resetAllBtn" type="button">Reset All Changes</button>
+        </div>
+
+        <div id="matrixContainer"></div>
+        <div id="matrixMessage" class="message info">
+          Select a day and click "Fetch Class Routine" to view the matrix.
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/class-routine-matrix.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+  </body>
+</html>

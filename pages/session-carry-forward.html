@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Carry Forward</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .panel-card,
+        .preview-card {
+            border: 0;
+            border-radius: 22px;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #60a5fa);
+            color: #fff;
+        }
+
+        .info-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.16);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+
+        .preview-tile {
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            background: #fff;
+            padding: 16px;
+        }
+
+        .preview-tile .label {
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        .preview-tile .value {
+            color: #0f172a;
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+
+        .students-table th {
+            background: #eff6ff;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container-fluid" style="max-width: 1400px;">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-lg-8">
+                            <span class="info-pill mb-3"><i class="fas fa-arrows-turn-to-dots"></i>Student Database Utility</span>
+                            <h1 class="h2 mb-3">Session carry forward workspace</h1>
+                            <p class="mb-0 text-white-50">
+                                Promote a full class from one academic session to another while preserving the previous session records and refreshing the target class placement.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="preview-tile border-0" style="background: rgba(255,255,255,0.14); color: #fff;">
+                                <div class="label text-white-50">Status</div>
+                                <div class="value text-white fs-5" id="statusText">Choose source and target</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card panel-card mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <h2 class="h5 mb-3">Source session and class</h2>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="currentSessionSelect">Current Session</label>
+                                    <select class="form-select" id="currentSessionSelect"></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold" for="fromClassSelect">Class</label>
+                                    <select class="form-select" id="fromClassSelect">
+                                        <option value="">Select class</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold" for="fromSectionSelect">Section</label>
+                                    <select class="form-select" id="fromSectionSelect">
+                                        <option value="">All sections</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <h2 class="h5 mb-3">Target session and class</h2>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="newSessionSelect">New Session</label>
+                                    <select class="form-select" id="newSessionSelect"></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold" for="toClassSelect">Class</label>
+                                    <select class="form-select" id="toClassSelect">
+                                        <option value="">Select class</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold" for="toSectionSelect">Section</label>
+                                    <select class="form-select" id="toSectionSelect">
+                                        <option value="">Keep source / optional</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3 mt-2">
+                            <div class="text-muted">Preview the source roster before running bulk promotion.</div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary" id="previewBtn" type="button">
+                                    <i class="fas fa-users-viewfinder me-2"></i>Preview Students
+                                </button>
+                                <button class="btn btn-primary" id="promoteBtn" type="button" disabled>
+                                    <i class="fas fa-arrow-up-right-dots me-2"></i>Promote Class
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card preview-card mb-4">
+                <div class="card-body p-4">
+                    <div class="preview-grid mb-4">
+                        <div class="preview-tile">
+                            <div class="label">Source Students</div>
+                            <div class="value" id="statSourceStudents">0</div>
+                        </div>
+                        <div class="preview-tile">
+                            <div class="label">Source Class</div>
+                            <div class="value fs-6" id="statSourceClass">-</div>
+                        </div>
+                        <div class="preview-tile">
+                            <div class="label">Target Class</div>
+                            <div class="value fs-6" id="statTargetClass">-</div>
+                        </div>
+                        <div class="preview-tile">
+                            <div class="label">Last Result</div>
+                            <div class="value fs-6" id="statResult">No action yet</div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle students-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Admission No</th>
+                                    <th>Student Name</th>
+                                    <th>Father Name</th>
+                                    <th>Class</th>
+                                    <th>Section</th>
+                                    <th>Session</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">Preview a class to inspect the source roster.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const currentSessionSelect = document.getElementById('currentSessionSelect');
+        const newSessionSelect = document.getElementById('newSessionSelect');
+        const fromClassSelect = document.getElementById('fromClassSelect');
+        const fromSectionSelect = document.getElementById('fromSectionSelect');
+        const toClassSelect = document.getElementById('toClassSelect');
+        const toSectionSelect = document.getElementById('toSectionSelect');
+        const previewBtn = document.getElementById('previewBtn');
+        const promoteBtn = document.getElementById('promoteBtn');
+        const statusText = document.getElementById('statusText');
+
+        let classCatalog = new Map();
+        let currentPreviewStudents = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) return;
+
+            currentSessionSelect.addEventListener('change', () => loadClassesForSession(currentSessionSelect, fromClassSelect, fromSectionSelect));
+            newSessionSelect.addEventListener('change', () => loadClassesForSession(newSessionSelect, toClassSelect, toSectionSelect));
+            fromClassSelect.addEventListener('change', () => populateSectionOptions(fromClassSelect.value, fromSectionSelect));
+            toClassSelect.addEventListener('change', () => populateSectionOptions(toClassSelect.value, toSectionSelect));
+            previewBtn.addEventListener('click', previewStudents);
+            promoteBtn.addEventListener('click', runPromotion);
+
+            await loadSessions();
+        });
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + Auth.getToken(),
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function loadSessions() {
+            try {
+                const [sessionsResponse, currentResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/sessions`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/sessions/current`, { headers: authHeaders() })
+                ]);
+
+                const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+                const currentPayload = currentResponse.ok ? await currentResponse.json() : {};
+                const sessions = Array.isArray(sessionsPayload.sessions) ? sessionsPayload.sessions : [];
+                const currentSession = currentPayload?.session?.name || sessions.find((entry) => entry.isCurrent)?.name || sessions[0]?.name || '';
+                const nextSession = sessions.find((entry) => entry.name !== currentSession)?.name || currentSession;
+
+                const options = sessions.map((entry) => `<option value="${escapeHtml(entry.name)}">${escapeHtml(entry.name)}</option>`).join('');
+                currentSessionSelect.innerHTML = options;
+                newSessionSelect.innerHTML = options;
+                currentSessionSelect.value = currentSession;
+                newSessionSelect.value = nextSession;
+
+                await Promise.all([
+                    loadClassesForSession(currentSessionSelect, fromClassSelect, fromSectionSelect),
+                    loadClassesForSession(newSessionSelect, toClassSelect, toSectionSelect)
+                ]);
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+                statusText.textContent = 'Unable to load sessions';
+            }
+        }
+
+        async function loadClassesForSession(sessionElement, classElement, sectionElement) {
+            const session = sessionElement.value;
+            classElement.innerHTML = '<option value="">Loading classes</option>';
+            sectionElement.innerHTML = '<option value="">All sections</option>';
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/classes/year/${encodeURIComponent(session)}`, {
+                    headers: authHeaders()
+                });
+                if (!response.ok) {
+                    throw new Error(`Classes HTTP ${response.status}`);
+                }
+
+                const classes = await response.json();
+                const grouped = new Map();
+                (Array.isArray(classes) ? classes : []).forEach((entry) => {
+                    const className = entry.className || 'Unknown';
+                    if (!grouped.has(className)) {
+                        grouped.set(className, new Set());
+                    }
+                    grouped.get(className).add(entry.section || 'A');
+                });
+
+                classCatalog.set(session, grouped);
+                classElement.innerHTML = '<option value="">Select class</option>' + Array.from(grouped.keys())
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+                    .map((className) => `<option value="${escapeHtml(className)}">${escapeHtml(className)}</option>`)
+                    .join('');
+                populateSectionOptions(classElement.value, sectionElement, session);
+            } catch (error) {
+                console.error('Failed to load classes for session:', error);
+                classElement.innerHTML = '<option value="">No classes found</option>';
+            }
+        }
+
+        function populateSectionOptions(className, sectionElement, sessionValue = null) {
+            const session = sessionValue || (sectionElement === fromSectionSelect ? currentSessionSelect.value : newSessionSelect.value);
+            const grouped = classCatalog.get(session);
+            const sections = className && grouped?.has(className) ? Array.from(grouped.get(className)).sort((a, b) => a.localeCompare(b)) : [];
+            const placeholder = sectionElement === toSectionSelect ? 'Keep source / optional' : 'All sections';
+            sectionElement.innerHTML = `<option value="">${placeholder}</option>` + sections
+                .map((section) => `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`)
+                .join('');
+        }
+
+        async function previewStudents() {
+            const currentSession = currentSessionSelect.value;
+            const fromClass = fromClassSelect.value;
+            const fromSection = fromSectionSelect.value;
+
+            if (!currentSession || !fromClass) {
+                alert('Choose current session and source class first.');
+                return;
+            }
+
+            previewBtn.disabled = true;
+            promoteBtn.disabled = true;
+            statusText.textContent = 'Loading source roster...';
+
+            try {
+                const query = fromSection
+                    ? `${CONFIG.API_URL}/students/class/${encodeURIComponent(fromClass)}/${encodeURIComponent(fromSection)}?session=${encodeURIComponent(currentSession)}`
+                    : `${CONFIG.API_URL}/students/session/${encodeURIComponent(currentSession)}`;
+                const response = await fetch(query, { headers: authHeaders() });
+                if (!response.ok) {
+                    throw new Error(`Students HTTP ${response.status}`);
+                }
+
+                let students = [];
+                const payload = await response.json();
+                if (fromSection) {
+                    students = Array.isArray(payload) ? payload : [];
+                } else {
+                    students = Object.values(payload || {})
+                        .flatMap((group) => Array.isArray(group.students) ? group.students : [])
+                        .filter((student) => student.class === fromClass);
+                }
+
+                currentPreviewStudents = students;
+                renderStudents(students);
+                document.getElementById('statSourceStudents').textContent = String(students.length);
+                document.getElementById('statSourceClass').textContent = `${fromClass}${fromSection ? ' - ' + fromSection : ''}`;
+                document.getElementById('statTargetClass').textContent = `${toClassSelect.value || '-'}${toSectionSelect.value ? ' - ' + toSectionSelect.value : ''}`;
+                statusText.textContent = `${students.length} students ready for carry forward`;
+                promoteBtn.disabled = !students.length;
+            } catch (error) {
+                console.error('Failed to preview students:', error);
+                currentPreviewStudents = [];
+                renderStudents([]);
+                statusText.textContent = 'Unable to load source roster';
+                alert('Unable to load the selected class roster right now.');
+            } finally {
+                previewBtn.disabled = false;
+            }
+        }
+
+        async function runPromotion() {
+            const currentSession = currentSessionSelect.value;
+            const newSession = newSessionSelect.value;
+            const fromClass = fromClassSelect.value;
+            const fromSection = fromSectionSelect.value;
+            const toClass = toClassSelect.value;
+            const toSection = toSectionSelect.value;
+
+            if (!currentPreviewStudents.length || !currentSession || !newSession || !fromClass || !toClass) {
+                alert('Preview the source class and choose a target class first.');
+                return;
+            }
+
+            if (!confirm(`Promote ${currentPreviewStudents.length} students from ${fromClass}${fromSection ? ' - ' + fromSection : ''} (${currentSession}) to ${toClass}${toSection ? ' - ' + toSection : ''} (${newSession})?`)) {
+                return;
+            }
+
+            promoteBtn.disabled = true;
+            statusText.textContent = 'Running bulk promotion...';
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/student/promote-bulk`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        currentSession,
+                        newSession,
+                        fromClass,
+                        fromSection,
+                        toClass,
+                        toSection
+                    })
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || `Promotion HTTP ${response.status}`);
+                }
+
+                const summary = payload.summary || {};
+                document.getElementById('statResult').textContent = `Created ${summary.created || 0}, Updated ${summary.updated || 0}`;
+                statusText.textContent = 'Bulk promotion completed';
+                alert(`Bulk promotion completed.\nCreated: ${summary.created || 0}\nUpdated: ${summary.updated || 0}`);
+            } catch (error) {
+                console.error('Bulk promotion failed:', error);
+                statusText.textContent = 'Promotion failed';
+                document.getElementById('statResult').textContent = 'Failed';
+                alert('Unable to complete the bulk promotion right now.');
+            } finally {
+                promoteBtn.disabled = false;
+            }
+        }
+
+        function renderStudents(students) {
+            const tbody = document.getElementById('studentsTableBody');
+            if (!students.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No students found for the selected source filters.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = students.map((student) => `
+                <tr>
+                    <td>${escapeHtml(student.studentId || '-')}</td>
+                    <td>${escapeHtml(student.name || '-')}</td>
+                    <td>${escapeHtml(student.fatherName || '-')}</td>
+                    <td>${escapeHtml(student.class || '-')}</td>
+                    <td>${escapeHtml(student.section || '-')}</td>
+                    <td>${escapeHtml(student.session || currentSessionSelect.value)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

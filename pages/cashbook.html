@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashbook - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #eef5ff, #ffffff);
+        }
+
+        .cashbook-card,
+        .summary-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(34, 73, 129, 0.08);
+        }
+
+        .metric-box {
+            border-radius: 16px;
+            background: linear-gradient(135deg, #f7fbff, #eef5ff);
+            border: 1px solid #dce9ff;
+            padding: 18px;
+            height: 100%;
+        }
+
+        .metric-box span {
+            display: block;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .metric-box strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 1.45rem;
+            color: #133f79;
+        }
+
+        .table thead th {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid py-4" style="max-width: 1500px;">
+        <div class="card cashbook-card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Cashbook</h4>
+                <div class="small">Collection and Expense Summary</div>
+            </div>
+            <div class="card-body">
+                <form id="cashbookFilterForm" class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label" for="cashbookStartDate">From Date</label>
+                        <input type="date" class="form-control" id="cashbookStartDate">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="cashbookEndDate">To Date</label>
+                        <input type="date" class="form-control" id="cashbookEndDate">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="openingCashBalance">Opening Cash Balance</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rs.</span>
+                            <input type="number" class="form-control" id="openingCashBalance" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="openingOnlineBalance">Opening Online Balance</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rs.</span>
+                            <input type="number" class="form-control" id="openingOnlineBalance" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1" id="loadCashbookBtn">
+                            <i class="fas fa-book-open me-2"></i>Load Cashbook
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="resetCashbookBtn">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card summary-card mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Opening Cash</span>
+                            <strong>Rs. <span id="cashbookOpeningCashView">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Opening Online</span>
+                            <strong>Rs. <span id="cashbookOpeningOnlineView">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Collection Cash</span>
+                            <strong>Rs. <span id="cashbookCollectionCashView">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Collection Online</span>
+                            <strong>Rs. <span id="cashbookCollectionOnlineView">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Expense Cash</span>
+                            <strong>Rs. <span id="cashbookExpenseCashView">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Expense Online</span>
+                            <strong>Rs. <span id="cashbookExpenseOnlineView">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Closing Cash</span>
+                            <strong>Rs. <span id="cashbookClosingCashView">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Closing Online</span>
+                            <strong>Rs. <span id="cashbookClosingOnlineView">0.00</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card cashbook-card h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Cash Summary by Particular</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Particular</th>
+                                        <th>Cash</th>
+                                        <th>Online</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cashbookIncomeBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">Loading cash summary...</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th>Total</th>
+                                        <th id="cashbookIncomeCashTotal">Rs. 0.00</th>
+                                        <th id="cashbookIncomeOnlineTotal">Rs. 0.00</th>
+                                        <th id="cashbookIncomeGrandTotal">Rs. 0.00</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card cashbook-card h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Expense Head Wise Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Expense Head</th>
+                                        <th>Cash</th>
+                                        <th>Online</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cashbookExpenseBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">Loading expense summary...</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th>Total</th>
+                                        <th id="cashbookExpenseCashTotal">Rs. 0.00</th>
+                                        <th id="cashbookExpenseOnlineTotal">Rs. 0.00</th>
+                                        <th id="cashbookExpenseGrandTotal">Rs. 0.00</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card summary-card mt-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="metric-box">
+                            <span>Closing Balance - Cash</span>
+                            <strong>Rs. <span id="cashbookClosingCashFooter">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="metric-box">
+                            <span>Closing Balance - Online</span>
+                            <strong>Rs. <span id="cashbookClosingOnlineFooter">0.00</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/cashbook.js"></script>
+    <script src="../js/page-shell.js"></script>
+</body>
+</html>

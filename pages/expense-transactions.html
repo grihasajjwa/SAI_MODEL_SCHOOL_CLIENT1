@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense History - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #eef5ff, #ffffff);
+        }
+
+        .table-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(34, 73, 129, 0.08);
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid py-4" style="max-width: 1450px;">
+        <div class="card table-card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Expense Transactions</h4>
+                <a href="expense-record.html" class="btn btn-light btn-sm">
+                    <i class="fas fa-plus me-2"></i>Record Expense
+                </a>
+            </div>
+            <div class="card-body">
+                <form id="expenseTransactionFilterForm" class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label" for="expenseHeadFilter">Head of Account</label>
+                        <select class="form-select" id="expenseHeadFilter">
+                            <option value="">All Heads</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="expensePaidToFilter">Paid To</label>
+                        <input type="text" class="form-control" id="expensePaidToFilter" placeholder="Vendor or person">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="expenseParticularFilter">Particular</label>
+                        <input type="text" class="form-control" id="expenseParticularFilter" placeholder="Search paid for">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="expensePaymentModeFilter">Payment Mode</label>
+                        <select class="form-select" id="expensePaymentModeFilter">
+                            <option value="">All Modes</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Online">Online</option>
+                            <option value="Mixed">Mixed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label" for="expenseStartDate">From</label>
+                        <input type="date" class="form-control" id="expenseStartDate">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label" for="expenseEndDate">To</label>
+                        <input type="date" class="form-control" id="expenseEndDate">
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="text-muted">
+                        Total Expense: <strong>Rs. <span id="expenseHistoryTotalAmount">0.00</span></strong>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="text-muted">Transactions: <strong id="expenseHistoryCount">0</strong></div>
+                        <button type="button" class="btn btn-outline-success btn-sm" id="exportExpenseHistoryBtn">Export</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="printExpenseHistoryBtn">Print</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="resetExpenseFiltersBtn">Reset</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Voucher No.</th>
+                                <th>Date</th>
+                                <th>Head of Account</th>
+                                <th>Paid To</th>
+                                <th>Particulars</th>
+                                <th>Amount</th>
+                                <th>Mode</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenseTransactionsTableBody">
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">Loading expense transactions...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/expense-transactions.js"></script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

@@ -52,6 +52,7 @@
                                     <option value="">Select Role</option>
                                     <option value="teacher">Teacher</option>
                                     <option value="staff">Staff</option>
+                                    <option value="accountant">Accountant</option>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">
@@ -70,48 +71,71 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/config.js"></script>
     <script src="../js/auth.js"></script>
-    <script>
-        document.getElementById('signupForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (password !== confirmPassword) {
-                alert('Passwords do not match');
-                return;
-            }
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-            const userData = {
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                username: document.getElementById('username').value,
-                password: password,
-                role: document.getElementById('role').value
-            };
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerText = "Signing up...";
 
-            try {
-                const response = await fetch(`${CONFIG.API_URL}/auth/signup`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(userData)
-                });
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
 
-                const data = await response.json();
-                if (data.success) {
-                    alert('Account created successfully! Please login.');
-                    window.location.href = 'login.html';
-                } else {
-                    alert(data.message || 'Error creating account');
-                }
-            } catch (error) {
-                console.error('Signup error:', error);
-                alert('Error creating account. Please try again.');
-            }
+    if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        btn.disabled = false;
+        btn.innerText = "Sign Up";
+        return;
+    }
+
+    const userData = {
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        email: document.getElementById('email').value,
+        username: document.getElementById('username').value,
+        password: password,
+        role: document.getElementById('role').value
+    };
+
+    try {
+        const response = await fetch(`${CONFIG.API_URL}/auth/signup`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
         });
-    </script>
+
+        let data;
+
+        try {
+            data = await response.json();
+        } catch (err) {
+            const text = await response.text();
+            console.error("Server returned non-JSON:", text);
+            alert("Server error: " + text);
+            btn.disabled = false;
+            btn.innerText = "Sign Up";
+            return;
+        }
+
+        if (response.ok && data.success) {
+            alert('Account created successfully!');
+            window.location.href = 'login.html';
+        } else {
+            alert(data.message || 'Signup failed');
+        }
+
+    } catch (error) {
+        console.error('Signup error:', error);
+        alert('Network error. Check backend connection.');
+    }
+
+    btn.disabled = false;
+    btn.innerText = "Sign Up";
+});
+</script>
+    <script src="../js/page-shell.js"></script>
 </body>
 </html>

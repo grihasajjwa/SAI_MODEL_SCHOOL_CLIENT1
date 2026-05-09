@@ -1,8 +1,8 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light user-nav">
     <div class="container">
         <a class="navbar-brand" href="/index.html">
-            <img src="/assets/images/logo.png" alt="Skyview Logo" height="50">
-           SAI MODEL SCHOOL
+            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="School Logo" height="50" data-school-logo>
+            <span class="school-brand-name" data-school-name>Skyview Public School</span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#userNav">
             <span class="navbar-toggler-icon"></span>
@@ -12,30 +12,89 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/index.html">Home</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/pages/student-database.html">Student Database</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/pages/academic-records.html">Academic</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/pages/admit-card-generator.html">Admit Card</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/pages/marksheets.html">Marksheet</a>
-                </li>
-                 <li class="nav-item">
-                    <a class="nav-link" href="/pages/routine6.html">Routine</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="studentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Student Database
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="studentDropdown">
+                        <li><a class="dropdown-item" href="/pages/student-database.html"><i class="fa-solid fa-database me-2"></i>Student Database</a></li>
+                        <li><a class="dropdown-item" href="/pages/birthday-reminder.html"><i class="fa-solid fa-cake-candles me-2"></i>Birthday Reminder</a></li>
+                    </ul>
                 </li>
                 <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="academicDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Academic
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="academicDropdown">
+                       <li><a class="dropdown-item" href="/pages/create-subject.html"><i class="fa-solid fa-book me-2"></i>Subjects and Teachers</a></li>
+                        <li><a class="dropdown-item" href="/pages/academic-records.html"><i class="fa-solid fa-book-open me-2"></i>Academic Records</a></li>
+                        <li><a class="dropdown-item" href="/pages/lesson-plan.html"><i class="fa-solid fa-chalkboard-teacher me-2"></i>Lesson Plan</a></li>
+                        <li><a class="dropdown-item" href="/pages/question-paper-builder.html"><i class="fa-solid fa-pen-to-square me-2"></i>Question Paper Builder</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="resultsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Results
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="resultsDropdown">
+                        <li><a class="dropdown-item" href="/pages/result-dashboard.html"><i class="fa-solid fa-chart-line me-2"></i>Result Dashboard</a></li>
+                        <li><a class="dropdown-item" href="/pages/allStudentsMarks.html"><i class="fa-solid fa-square-poll-vertical me-2"></i>All Student Marks</a></li>
+                        <li><a class="dropdown-item" href="/pages/bulk-marksheet-download.html"><i class="fa-solid fa-file-pdf me-2"></i>Bulk Marksheet PDF</a></li>
+                        <li><a class="dropdown-item" href="/pages/bulk-backpage-print.html"><i class="fa-solid fa-file-lines me-2"></i>Bulk Back Page Print</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="documentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Documents
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="documentsDropdown">
+                        <li><a class="dropdown-item" href="/pages/bulk-admit-card-download.html"><i class="fa-solid fa-file-pdf me-2"></i>Bulk Admit Card PDF</a></li>
+                        <li><a class="dropdown-item" href="/pages/certificates.html"><i class="fa-solid fa-certificate me-2"></i>Certificates</a></li>
+                        <li><a class="dropdown-item" href="https://nstutorial.github.io/icard/"><i class="fa-solid fa-address-card me-2"></i>ID Card</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="routineDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Routine
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="routineDropdown">
+                        <li><a class="dropdown-item" href="/pages/routine6.html"><i class="fa-solid fa-calendar-plus me-2"></i>Create Routine</a></li>
+                        <li><a class="dropdown-item" href="/pages/weekly-routine-viewer.html"><i class="fa-solid fa-calendar-week me-2"></i>View Weekly</a></li>
+                        <li><a class="dropdown-item" href="/pages/teacher-weekly-load.html"><i class="fa-solid fa-chalkboard-user me-2"></i>Teacher Weekly Load</a></li>
+                        <li><a class="dropdown-item" href="/pages/class-routine-matrix.html"><i class="fa-solid fa-table-cells me-2"></i>Routine Matrix</a></li>
+                        <li><a class="dropdown-item" href="/pages/routine-editor.html"><i class="fa-solid fa-pen-to-square me-2"></i>Edit or Print Routine</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="feesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Fees
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="feesDropdown">
+                        <li><a class="dropdown-item" href="/pages/today-finance.html"><i class="fa-solid fa-calendar-day me-2"></i>Today's Transactions</a></li>
+                        <li><a class="dropdown-item" href="/pages/fee-collection.html"><i class="fa-solid fa-receipt me-2"></i>Fee Collection</a></li>
+                        <li><a class="dropdown-item" href="/pages/student-fee-ledger.html"><i class="fa-solid fa-book-open-reader me-2"></i>Student Fee Ledger</a></li>
+                        <li><a class="dropdown-item" href="/pages/fee-collection-register.html"><i class="fa-solid fa-table-list me-2"></i>Fee Collection Register</a></li>
+                        <li><a class="dropdown-item" href="/pages/class-fee-defaulters.html"><i class="fa-solid fa-triangle-exclamation me-2"></i>Class Defaulters</a></li>
+                        <li><a class="dropdown-item" href="/pages/fee-transactions.html"><i class="fa-solid fa-list me-2"></i>Fee Transactions</a></li>
+                        <li><a class="dropdown-item" href="/pages/receipt-reconciliation.html"><i class="fa-solid fa-list-check me-2"></i>Receipt Reconciliation</a></li>
+                        <li><a class="dropdown-item" href="/pages/transaction-audit.html"><i class="fa-solid fa-clock-rotate-left me-2"></i>Transaction Audit</a></li>
+                        <li><a class="dropdown-item" href="/pages/fee-due-management.html"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Due Management</a></li>
+                        <li><a class="dropdown-item" href="/pages/session-carry-forward.html"><i class="fa-solid fa-diagram-project me-2"></i>Session Carry Forward</a></li>
+                        <li><a class="dropdown-item" href="/pages/cashbook.html"><i class="fa-solid fa-book-open me-2"></i>Cashbook</a></li>
+                        <li><a class="dropdown-item" href="/pages/expense-record.html"><i class="fa-solid fa-wallet me-2"></i>Record Expense</a></li>
+                        <li><a class="dropdown-item" href="/pages/expense-transactions.html"><i class="fa-solid fa-book me-2"></i>Expense History</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user"></i> Profile
+                        <i class="fa-solid fa-user"></i> Profile
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                        <li><a class="dropdown-item" href="/pages/user-profile.html"><i class="fas fa-user-circle me-2"></i>View Profile</a></li>
-                        <li><a class="dropdown-item" href="/pages/user-list.html"><i class="fas fa-user-circle me-2"></i>View User</a></li>
+                        <li><a class="dropdown-item" href="/pages/user-profile.html"><i class="fa-solid fa-user-circle me-2"></i>View Profile</a></li>
+                        <li><a class="dropdown-item" href="/pages/user-list.html"><i class="fa-solid fa-user-circle me-2"></i>View User</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" id="logoutButton"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item" href="#" id="logoutButton"><i class="fa-solid fa-sign-out-alt me-2"></i>Logout</a></li>
                     </ul>
                 </li>
             </ul>

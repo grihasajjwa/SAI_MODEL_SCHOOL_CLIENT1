@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Fee Defaulters</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .panel-card,
+        .table-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #9a3412, #c2410c 55%, #fb923c);
+            color: #fff;
+        }
+
+        .metric-card {
+            border-radius: 16px;
+            border: 1px solid #fed7aa;
+            background: #fff;
+            padding: 16px;
+            min-height: 100%;
+        }
+
+        .metric-label {
+            color: #9a3412;
+            font-size: 0.88rem;
+        }
+
+        .metric-value {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #7c2d12;
+        }
+
+        .defaulter-table th {
+            background: #fff7ed;
+            color: #000;
+            white-space: nowrap;
+        }
+
+        .severity-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .severity-high {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .severity-medium {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .severity-low {
+            background: #dcfce7;
+            color: #166534;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container-fluid" style="max-width: 1450px;">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-lg-8">
+                            <div class="badge rounded-pill px-3 py-2 mb-3" style="background: rgba(255,255,255,0.16); color: #fff;">Fees Dashboard</div>
+                            <h1 class="h2 mb-3">Class fee defaulters dashboard</h1>
+                            <p class="mb-0 text-white-50">
+                                Track outstanding students class-wise, focus on the heaviest pending amounts first, and export a clean working register for follow-up.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="metric-card border-0" style="background: rgba(255,255,255,0.14); color: #fff;">
+                                <div class="metric-label text-white-50">Status</div>
+                                <div class="metric-value text-white" id="dashboardStatus">Choose a session and class</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card panel-card mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="sessionSelect">Academic Session</label>
+                            <select class="form-select" id="sessionSelect"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="classSelect">Class</label>
+                            <select class="form-select" id="classSelect">
+                                <option value="">All classes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="sectionSelect">Section</label>
+                            <select class="form-select" id="sectionSelect">
+                                <option value="">All sections</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="searchInput">Search</label>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Student or admission no">
+                        </div>
+                        <div class="col-md-2 d-flex gap-2">
+                            <button class="btn btn-warning w-100" id="loadBtn" type="button">
+                                <i class="fas fa-filter me-2"></i>Load
+                            </button>
+                        </div>
+                        <div class="col-12 d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-success" id="exportBtn" type="button" disabled>
+                                <i class="fas fa-file-excel me-2"></i>Export
+                            </button>
+                            <button class="btn btn-outline-secondary" id="printBtn" type="button" disabled>
+                                <i class="fas fa-print me-2"></i>Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-label">Defaulters</div>
+                        <div class="metric-value" id="statStudents">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-label">Outstanding</div>
+                        <div class="metric-value" id="statOutstanding">0.00</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-label">Excess Payment</div>
+                        <div class="metric-value" id="statExcess">0.00</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-label">Class Filter</div>
+                        <div class="metric-value fs-6" id="statFilter">All classes</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card table-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Outstanding register</h2>
+                            <p class="text-muted mb-0">Roster is filtered by academic session; dues come from the fee due register for matching students.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border" id="rowCountBadge">0 rows</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle defaulter-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Admission No</th>
+                                    <th>Student Name</th>
+                                    <th>Class</th>
+                                    <th>Section</th>
+                                    <th>Father Name</th>
+                                    <th>Outstanding</th>
+                                    <th>Excess Payment</th>
+                                    <th>Last Receipt</th>
+                                    <th>Severity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="defaultersTableBody">
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted py-4">No data loaded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const sessionSelect = document.getElementById('sessionSelect');
+        const classSelect = document.getElementById('classSelect');
+        const sectionSelect = document.getElementById('sectionSelect');
+        const searchInput = document.getElementById('searchInput');
+        const loadBtn = document.getElementById('loadBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const printBtn = document.getElementById('printBtn');
+        const dashboardStatus = document.getElementById('dashboardStatus');
+
+        let classesByName = [];
+        let currentRows = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) return;
+
+            sessionSelect.addEventListener('change', loadClassesForSession);
+            classSelect.addEventListener('change', populateSections);
+            loadBtn.addEventListener('click', loadDashboard);
+            exportBtn.addEventListener('click', exportRows);
+            printBtn.addEventListener('click', () => window.print());
+
+            await loadSessions();
+        });
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + Auth.getToken(),
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function loadSessions() {
+            try {
+                const [sessionsResponse, currentResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/sessions`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/sessions/current`, { headers: authHeaders() })
+                ]);
+
+                const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+                const currentPayload = currentResponse.ok ? await currentResponse.json() : {};
+                const sessions = Array.isArray(sessionsPayload.sessions) ? sessionsPayload.sessions : [];
+                const currentSession = currentPayload?.session?.name || sessions.find((session) => session.isCurrent)?.name || sessions[0]?.name || '';
+
+                sessionSelect.innerHTML = sessions.map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`).join('');
+                sessionSelect.value = currentSession;
+                await loadClassesForSession();
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+                dashboardStatus.textContent = 'Unable to load sessions';
+            }
+        }
+
+        async function loadClassesForSession() {
+            const session = sessionSelect.value;
+            classSelect.innerHTML = '<option value="">Loading...</option>';
+            sectionSelect.innerHTML = '<option value="">All sections</option>';
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/classes/year/${encodeURIComponent(session)}`, {
+                    headers: authHeaders()
+                });
+                if (!response.ok) {
+                    throw new Error(`Classes HTTP ${response.status}`);
+                }
+
+                const classes = await response.json();
+                const grouped = new Map();
+
+                (Array.isArray(classes) ? classes : []).forEach((entry) => {
+                    const className = entry.className || 'Unknown';
+                    if (!grouped.has(className)) {
+                        grouped.set(className, []);
+                    }
+                    grouped.get(className).push(entry.section || 'A');
+                });
+
+                classesByName = Array.from(grouped.entries()).map(([className, sections]) => ({
+                    className,
+                    sections: Array.from(new Set(sections)).sort((a, b) => String(a).localeCompare(String(b)))
+                })).sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
+
+                classSelect.innerHTML = '<option value="">All classes</option>' + classesByName
+                    .map((entry) => `<option value="${escapeHtml(entry.className)}">${escapeHtml(entry.className)}</option>`)
+                    .join('');
+                populateSections();
+            } catch (error) {
+                console.error('Failed to load classes:', error);
+                classSelect.innerHTML = '<option value="">No classes found</option>';
+            }
+        }
+
+        function populateSections() {
+            const entry = classesByName.find((item) => item.className === classSelect.value);
+            const options = entry
+                ? entry.sections.map((section) => `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`).join('')
+                : '';
+            sectionSelect.innerHTML = '<option value="">All sections</option>' + options;
+        }
+
+        async function loadDashboard() {
+            const session = sessionSelect.value;
+            const className = classSelect.value;
+            const section = sectionSelect.value;
+            const search = searchInput.value.trim().toLowerCase();
+
+            loadBtn.disabled = true;
+            exportBtn.disabled = true;
+            printBtn.disabled = true;
+            dashboardStatus.textContent = 'Loading defaulters...';
+
+            try {
+                const dueQuery = new URLSearchParams();
+                if (className) dueQuery.set('className', className);
+                if (section) dueQuery.set('section', section);
+                dueQuery.set('limit', '500');
+
+                const [studentsResponse, duesResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/students/session/${encodeURIComponent(session)}`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/fees/due-report?${dueQuery.toString()}`, { headers: authHeaders() })
+                ]);
+
+                if (!studentsResponse.ok) {
+                    throw new Error(`Students HTTP ${studentsResponse.status}`);
+                }
+
+                const groupedStudents = await studentsResponse.json();
+                const duePayload = duesResponse.ok ? await duesResponse.json() : {};
+                const roster = flattenStudents(groupedStudents).filter((student) => {
+                    const matchClass = !className || student.class === className;
+                    const matchSection = !section || student.section === section;
+                    return matchClass && matchSection;
+                });
+
+                const dueMap = new Map((Array.isArray(duePayload.dues) ? duePayload.dues : []).map((row) => [String(row.admissionNo), row]));
+                currentRows = roster
+                    .map((student) => {
+                        const due = dueMap.get(String(student.studentId)) || null;
+                        if (!due) return null;
+                        return {
+                            admissionNo: student.studentId || '',
+                            studentName: student.name || '',
+                            className: student.class || '',
+                            section: student.section || '',
+                            fatherName: student.fatherName || '',
+                            dueAmount: toNumber(due.dueAmount),
+                            excessPayment: toNumber(due.excessPayment),
+                            lastReceiptNo: due.lastReceiptNo || '-',
+                            severity: resolveSeverity(toNumber(due.dueAmount))
+                        };
+                    })
+                    .filter(Boolean)
+                    .filter((row) => {
+                        if (!search) return true;
+                        return row.studentName.toLowerCase().includes(search) || row.admissionNo.toLowerCase().includes(search);
+                    })
+                    .sort((a, b) => b.dueAmount - a.dueAmount || a.studentName.localeCompare(b.studentName));
+
+                renderRows(currentRows);
+                renderStats(currentRows, className, section);
+                dashboardStatus.textContent = `${currentRows.length} defaulters found`;
+                exportBtn.disabled = !currentRows.length;
+                printBtn.disabled = !currentRows.length;
+            } catch (error) {
+                console.error('Failed to load defaulters:', error);
+                currentRows = [];
+                renderRows([]);
+                renderStats([], className, section);
+                dashboardStatus.textContent = 'Unable to load defaulters';
+                alert('Unable to load the defaulters dashboard right now.');
+            } finally {
+                loadBtn.disabled = false;
+            }
+        }
+
+        function flattenStudents(groupedStudents) {
+            const groups = Object.values(groupedStudents || {});
+            return groups.flatMap((group) => Array.isArray(group.students) ? group.students : []);
+        }
+
+        function renderRows(rows) {
+            const tbody = document.getElementById('defaultersTableBody');
+            document.getElementById('rowCountBadge').textContent = `${rows.length} rows`;
+
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No outstanding students found for the selected filters.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rows.map((row) => `
+                <tr>
+                    <td>${escapeHtml(row.admissionNo)}</td>
+                    <td>${escapeHtml(row.studentName)}</td>
+                    <td>${escapeHtml(row.className)}</td>
+                    <td>${escapeHtml(row.section)}</td>
+                    <td>${escapeHtml(row.fatherName)}</td>
+                    <td class="text-danger fw-semibold">${formatCurrency(row.dueAmount)}</td>
+                    <td class="text-success fw-semibold">${formatCurrency(row.excessPayment)}</td>
+                    <td>${escapeHtml(row.lastReceiptNo)}</td>
+                    <td><span class="severity-pill ${row.severity.className}">${escapeHtml(row.severity.label)}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderStats(rows, className, section) {
+            const outstanding = rows.reduce((sum, row) => sum + row.dueAmount, 0);
+            const excess = rows.reduce((sum, row) => sum + row.excessPayment, 0);
+            const filterText = className ? `${className}${section ? ' - ' + section : ''}` : 'All classes';
+
+            document.getElementById('statStudents').textContent = String(rows.length);
+            document.getElementById('statOutstanding').textContent = formatCurrency(outstanding);
+            document.getElementById('statExcess').textContent = formatCurrency(excess);
+            document.getElementById('statFilter').textContent = filterText;
+        }
+
+        function resolveSeverity(dueAmount) {
+            if (dueAmount >= 5000) return { label: 'High', className: 'severity-high' };
+            if (dueAmount >= 1500) return { label: 'Medium', className: 'severity-medium' };
+            return { label: 'Low', className: 'severity-low' };
+        }
+
+        function exportRows() {
+            if (!currentRows.length) return;
+            const workbook = XLSX.utils.book_new();
+            const sheet = XLSX.utils.json_to_sheet(currentRows.map((row) => ({
+                AdmissionNo: row.admissionNo,
+                StudentName: row.studentName,
+                Class: row.className,
+                Section: row.section,
+                FatherName: row.fatherName,
+                Outstanding: row.dueAmount,
+                ExcessPayment: row.excessPayment,
+                LastReceiptNo: row.lastReceiptNo,
+                Severity: row.severity.label
+            })));
+            XLSX.utils.book_append_sheet(workbook, sheet, 'Defaulters');
+            XLSX.writeFile(workbook, `class-fee-defaulters-${sanitizeFileName(sessionSelect.value)}-${sanitizeFileName(classSelect.value || 'all')}.xlsx`);
+        }
+
+        function formatCurrency(value) {
+            return toNumber(value).toFixed(2);
+        }
+
+        function toNumber(value) {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function sanitizeFileName(value) {
+            return String(value || 'data').replace(/[^a-z0-9-_]+/gi, '-');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

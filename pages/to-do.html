@@ -223,7 +223,10 @@ textarea:focus {
   </style>
 </head>
 <body>
-<div class="container">
+    <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+    
+    <div class="container">
   <h2>Advanced To-Do List</h2>
 <div class="task-input-group">
  <textarea id="taskInput" placeholder="Enter task" rows="3" style="width: 100%; max-width: 400px; padding: 12px 15px; margin: 8px auto 20px; display: block; border-radius: 8px; border: 1.5px solid #ccc; font-size: 16px; transition: border-color 0.3s ease;"></textarea>
@@ -259,8 +262,10 @@ textarea:focus {
     <tbody id="completedTableBody"></tbody>
   </table>
 </div>
+  <script src="../js/config.js"></script>
   <script>
-  function loadTasks() {
+    const API_BASE_URL = CONFIG.API_URL;
+    function loadTasks() {
   // Initialize or reuse DataTables
   let pendingTable = $.fn.DataTable.isDataTable('#pendingTable')
     ? $('#pendingTable').DataTable()
@@ -275,7 +280,7 @@ textarea:focus {
   completedTable.clear();
 
   $.ajax({
-    url: 'https://skyview-server-3.vercel.app/api/todo/tasks',
+    url: `${API_BASE_URL}/todo/tasks`,
     method: 'GET',
     success: function (tasks) {
       tasks.forEach(task => {
@@ -318,7 +323,7 @@ textarea:focus {
         }
 
         $.ajax({
-          url: 'https://skyview-server-3.vercel.app/api/todo/add-task',
+          url: `${API_BASE_URL}/todo/add-task`,
           method: 'POST',
           contentType: 'application/json',
           data: JSON.stringify({ task: task, date: date, status: 'Pending' }),
@@ -339,7 +344,7 @@ textarea:focus {
         const id = row.data('id');
 
         $.ajax({
-          url: `https://skyview-server-3.vercel.app/api/todo/task/${id}`,
+          url: `${API_BASE_URL}/todo/task/${id}`,
           method: 'PUT',
           contentType: 'application/json',
           data: JSON.stringify({ status: 'Completed' }),
@@ -362,7 +367,7 @@ textarea:focus {
             return;
           }
         $.ajax({
-          url: `https://skyview-server-3.vercel.app/api/todo/task/${id}`,
+          url: `${API_BASE_URL}/todo/task/${id}`,
           method: 'DELETE',
           success: function () {
             loadTasks();
@@ -381,6 +386,10 @@ textarea:focus {
       });
     });
   </script>
+  <script src="../components/navbar.js"></script>
 
+    <script src='../js/auth.js'></script>
+    <script src='../js/page-shell.js'></script>
 </body>
 </html>
+

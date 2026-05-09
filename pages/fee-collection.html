@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Collection - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #eef5ff, #f9fbff);
+        }
+
+        .page-shell {
+            max-width: 1400px;
+        }
+
+        .summary-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 10px 26px rgba(56, 89, 142, 0.08);
+        }
+
+        .summary-label {
+            display: block;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1d4f91;
+        }
+
+        .line-item-row {
+            background: #f8fbff;
+            border: 1px solid #d8e6ff;
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .payment-entry-row {
+            background: #ffffff;
+            border: 1px solid #d8e6ff;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .payment-entry-label {
+            font-weight: 700;
+            color: #153c72;
+        }
+
+        .inline-action-btn {
+            white-space: nowrap;
+        }
+
+        .student-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+
+        .student-meta .meta-block {
+            background: #f7faff;
+            border: 1px solid #e1ebff;
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .student-meta .meta-block span {
+            display: block;
+            font-size: 0.82rem;
+            color: #6c757d;
+        }
+
+        .student-meta .meta-block strong {
+            display: block;
+            margin-top: 4px;
+            color: #153c72;
+        }
+
+        .recent-list {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+
+        .recent-item {
+            border: 1px solid #e4ecfa;
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            background: #fff;
+        }
+
+        .recent-item:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Student Details Section with distinct color */
+        .student-details-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .student-details-section h5 {
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .student-details-section .student-meta {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .student-details-section .meta-block {
+            background: #f8f9ff;
+            border: 1px solid #e1e8ff;
+            border-radius: 10px;
+            padding: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .student-details-section .meta-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .student-details-section .meta-block span {
+            color: #6c757d;
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        .student-details-section .meta-block strong {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid page-shell py-4">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card summary-card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Fee Collection</h4>
+                        <div class="d-flex gap-2">
+                            <a href="fee-due-management.html" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-file-invoice-dollar me-2"></i>Due Management
+                            </a>
+                            <a href="fee-transactions.html" class="btn btn-light btn-sm">
+                                <i class="fas fa-table me-2"></i>View Transactions
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form id="studentSearchForm" class="row g-3 align-items-end mb-4">
+                            <div class="col-md-7">
+                                <label for="admissionNoSearch" class="form-label">Search Student by Admission No.</label>
+                                <input type="text" class="form-control" id="admissionNoSearch" placeholder="Enter admission number" required>
+                            </div>
+                            <div class="col-md-5 d-flex gap-2">
+                                <button type="submit" class="btn btn-primary flex-grow-1" id="searchStudentBtn">
+                                    <i class="fas fa-search me-2"></i>Search Student
+                                </button>
+                                <button type="button" id="resetFeeFormBtn" class="btn btn-outline-secondary">
+                                    Reset
+                                </button>
+                            </div>
+                        </form>
+
+                        <div id="studentInfoCard" class="d-none">
+                            <div class="student-details-section">
+                                <h5>
+                                    <i class="fas fa-user-graduate"></i>
+                                    Student Details
+                                </h5>
+                                <div class="student-meta">
+                                    <div class="meta-block"><span>Name</span><strong id="studentNameView">-</strong></div>
+                                    <div class="meta-block"><span>Father's Name</span><strong id="fatherNameView">-</strong></div>
+                                    <div class="meta-block"><span>Class</span><strong id="classView">-</strong></div>
+                                    <div class="meta-block"><span>Section</span><strong id="sectionView">-</strong></div>
+                                    <div class="meta-block"><span>Roll No</span><strong id="rollNoView">-</strong></div>
+                                    <div class="meta-block"><span>Session</span><strong id="sessionView">-</strong></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form id="feeForm">
+                            <input type="hidden" id="selectedAdmissionNo">
+                            <div id="feeFormMessage" class="alert alert-danger d-none mt-4 mb-0" role="alert"></div>
+                            <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+                                <!-- <h5 class="mb-0" id="feeFormTitle">Particulars</h5> -->
+                                
+                            </div>
+
+                           <!-- Voucher, Month and Notes Row Above Table -->
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <label for="voucherNo" class="form-label">
+            <i class="fas fa-receipt text-success me-2"></i>Voucher No.
+        </label>
+        <input type="text" class="form-control" id="voucherNo" placeholder="Enter voucher number">
+    </div>
+
+    <div class="col-md-3">
+        <label for="feeMonth" class="form-label">
+            <i class="fas fa-calendar text-primary me-2"></i>Month
+        </label>
+        <select class="form-select" id="feeMonth"></select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="paymentDate" class="form-label">
+            <i class="fas fa-calendar-day text-danger me-2"></i>Payment Date
+        </label>
+        <input type="date" class="form-control" id="paymentDate">
+    </div>
+
+    <div class="col-md-3">
+        <label for="feeNotes" class="form-label">
+            <i class="fas fa-sticky-note text-warning me-2"></i>Notes
+        </label>
+        <input type="text" class="form-control" id="feeNotes" placeholder="Optional note">
+    </div>
+</div>
+
+<div class="row g-3 mb-3 d-none" id="feeEditReasonRow">
+    <div class="col-12">
+        <label for="feeEditReason" class="form-label">
+            <i class="fas fa-pen-to-square text-danger me-2"></i>Reason For Edit
+        </label>
+        <input type="text" class="form-control" id="feeEditReason" placeholder="Why are you changing this receipt?">
+        <div class="form-text">Required when updating or deleting a fee receipt.</div>
+    </div>
+</div>
+
+                            <div class="d-flex justify-content-end gap-2 mb-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="addParticularBtn">
+                                    <i class="fas fa-plus me-2"></i>Add Particular
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addLineItemBtn">
+                                    <i class="fas fa-plus me-2"></i>Add Row
+                                </button>
+                            </div>
+
+                            <div id="lineItemsContainer"></div>
+
+                            <!-- Combined Totals and Payment Section -->
+                            <div class="card border-secondary bg-light-subtle mt-4">
+                                <div class="card-body">
+                                    <!-- Totals Row -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label for="currentChargesTotal" class="form-label mb-1 fw-bold">
+                                                <i class="fas fa-calculator text-primary me-2"></i>Current Charges Total:
+                                            </label>
+                                            <div class="input-group" style="width: 200px;">
+                                                <span class="input-group-text">Rs.</span>
+                                                <input type="number" class="form-control text-end fw-bold bg-white" id="currentChargesTotal" value="0" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="previousDueAmount" class="form-label mb-1 fw-bold">
+                                                <i class="fas fa-history text-warning me-2"></i>Previous Due Amount:
+                                            </label>
+                                            <div class="input-group" style="width: 200px;">
+                                                <span class="input-group-text">Rs.</span>
+                                                <input type="number" class="form-control text-end fw-bold bg-white" id="previousDueAmount" value="0" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="currentDueTotal" class="form-label mb-1 fw-bold">
+                                                <i class="fas fa-calendar-day text-info me-2"></i>Current Due Total As On Today:
+                                            </label>
+                                            <div class="input-group" style="width: 200px;">
+                                                <span class="input-group-text">Rs.</span>
+                                                <input type="number" class="form-control text-end fw-bold bg-white" id="currentDueTotal" value="0" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Payment Details Row -->
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label fw-bold mb-0">
+                                                    <i class="fas fa-credit-card text-success me-2"></i>Payment Breakdown
+                                                </label>
+                                                <div class="d-flex gap-2">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="addOnlineAccountBtn">
+                                                        <i class="fas fa-plus me-2"></i>Add Online Account
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" id="addPaymentRowBtn">
+                                                        <i class="fas fa-plus me-2"></i>Add Payment Row
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div id="paymentEntriesContainer"></div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="paidAmount" class="form-label fw-bold">
+                                                <i class="fas fa-money-bill-wave text-primary me-2"></i>Total Paid Amount
+                                            </label>
+                                            <div class="input-group" style="width: 200px;">
+                                                <span class="input-group-text">Rs.</span>
+                                                <input type="number" class="form-control text-end bg-white border-success border-2" id="paidAmount" min="0" step="0.01" value="0" readonly>
+                                            </div>
+                                            <div class="mt-3">
+                                                <label for="dueAmount" class="form-label fw-bold">
+                                                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>Due Amount
+                                                </label>
+                                                <div class="input-group" style="width: 200px;">
+                                                    <span class="input-group-text">Rs.</span>
+                                                    <input type="number" class="form-control text-end bg-white border-warning border-2" id="dueAmount" value="0" readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 justify-content-end mt-4">
+                                <button type="button" class="btn btn-outline-danger d-none" id="deleteFeeBtn">
+                                    <i class="fas fa-trash me-2"></i>Delete Receipt
+                                </button>
+                                <button type="submit" class="btn btn-success" id="saveFeeBtn">
+                                    <i class="fas fa-save me-2"></i>Save and Open Printable Receipt
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card summary-card">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Recent Transactions</h5>
+                            <a href="expense-record.html" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-wallet me-2"></i>Record Expense
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded">
+                                    <span class="summary-label">Total Paid</span>
+                                    <div class="summary-value" id="totalPaidView">0</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded">
+                                    <span class="summary-label">Outstanding</span>
+                                    <div class="summary-value" id="outstandingView">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="recentTransactionsSearch" class="form-label">Search Transactions</label>
+                            <input type="text" class="form-control" id="recentTransactionsSearch" placeholder="Type voucher, particular, month, payment, amount...">
+                        </div>
+                        <div id="recentTransactions" class="recent-list text-muted">
+                            Search a student to view fee history.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/fee-collection.js"></script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

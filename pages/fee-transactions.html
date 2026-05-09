@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Transactions - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #edf4ff, #ffffff);
+        }
+
+        .table-card {
+            border-radius: 18px;
+            box-shadow: 0 10px 28px rgba(28, 65, 118, 0.08);
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid py-4" style="max-width: 1420px;">
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card table-card">
+                    <div class="card-body">
+                        <div class="text-muted small">Total Collected</div>
+                        <div class="h4 mb-0 text-primary">Rs. <span id="transactionsCollected">0.00</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card table-card">
+                    <div class="card-body">
+                        <div class="text-muted small">Total Outstanding</div>
+                        <div class="h4 mb-0 text-danger">Rs. <span id="transactionsOutstanding">0.00</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card table-card">
+                    <div class="card-body">
+                        <div class="text-muted small">Receipts</div>
+                        <div class="h4 mb-0 text-primary"><span id="transactionsReceipts">0</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card table-card">
+                    <div class="card-body">
+                        <div class="text-muted small">Net Balance</div>
+                        <div class="h4 mb-0 text-success">Rs. <span id="transactionsBalance">0.00</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fee Collection Summary Table -->
+        <div class="card table-card">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Fee Collection Summary</h4>
+                <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select form-select-sm" id="sessionDropdown" style="width: 200px;">
+                        <option value="">Select Session</option>
+                    </select>
+                    <button class="btn btn-light btn-sm" type="button" id="exportToExcelBtn" title="Export to Excel">
+                        <i class="fas fa-file-excel me-2"></i>Export
+                    </button>
+                    <button class="btn btn-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#feeCollectionCollapse">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="collapse" id="feeCollectionCollapse">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Tuition Fees Collection</th>
+                                    <th>Transports</th>
+                                    <th>Admission Fees</th>
+                                    <th>Re-admission</th>
+                                    <th>Books</th>
+                                    <th>Uniform</th>
+                                    <th>Late Fine</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feeCollectionTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">Select a session to view fee collection data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Fee Transactions</h4>
+                <div class="d-flex gap-2">
+                    <a href="fee-due-management.html" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Due Management
+                    </a>
+                    <a href="expense-transactions.html" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-wallet me-2"></i>Expense History
+                    </a>
+                    <a href="fee-collection.html" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus me-2"></i>New Collection
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <form id="transactionFilterForm" class="row g-3 mb-4">
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterAdmissionNo">Admission No.</label>
+                        <input type="text" class="form-control" id="filterAdmissionNo" placeholder="Search admission no">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterMonth">Month</label>
+                        <select class="form-select" id="filterMonth">
+                            <option value="">All Months</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterClassName">Class</label>
+                        <input type="text" class="form-control" id="filterClassName" placeholder="Filter class">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterParticular">Particular</label>
+                        <input type="text" class="form-control" id="filterParticular" placeholder="Search particular">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterPaymentMode">Payment Mode</label>
+                        <select class="form-select" id="filterPaymentMode">
+                            <option value="">All Modes</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Online">Online</option>
+                            <option value="Mixed">Mixed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterStartDate">From Date</label>
+                        <input type="date" class="form-control" id="filterStartDate">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterEndDate">To Date</label>
+                        <input type="date" class="form-control" id="filterEndDate">
+                    </div>
+                    <div class="col-md-12 d-flex justify-content-end align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="fas fa-search me-2"></i>Apply Filters
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">Reset</button>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Admission No.</th>
+                                <th>Student</th>
+                                <th>Class</th>
+                                <th>Month</th>
+                                <th>Particulars</th>
+                                <th>Paid Amount</th>
+                                <th>Due Amount</th>
+                                <th>Mode</th>
+                                <th>Notes</th>
+                                <th>Receipt</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionsTableBody">
+                            <tr>
+                                <td colspan="12" class="text-center text-muted py-4">Loading transactions...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/fee-transactions.js"></script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

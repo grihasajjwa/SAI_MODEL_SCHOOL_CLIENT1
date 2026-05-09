@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Class-wise Routine Editor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #eef5ff, #f9fbff);
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+
+        .page-shell {
+            max-width: 1400px;
+        }
+
+        .editor-shell {
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 18px;
+            box-shadow: 0 10px 26px rgba(56, 89, 142, 0.08);
+        }
+
+        h1 {
+            margin: 0 0 16px 0;
+            font-size: 1.6rem;
+            color: #2c3e50;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 14px;
+            background: #f8fbff;
+            border: 1px solid #d8e6ff;
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        select, input[type="text"] {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #cfd6df;
+            background: #fff;
+            font-size: 0.95rem;
+        }
+
+        button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #refreshBtn {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        #exportBtn {
+            background: var(--warning-color);
+            color: #212529;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: #fff;
+        }
+
+        .btn-info {
+            background: var(--info-color);
+            color: #fff;
+        }
+
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: 5px 8px;
+        }
+
+        .checkbox-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin: 12px 0 18px 0;
+        }
+
+        .checkbox-controls label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #cfd6df;
+            padding: 8px;
+            text-align: center;
+            vertical-align: top;
+            font-size: 0.85rem;
+        }
+
+        th {
+            background: var(--primary-color);
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        td.period {
+            background: #f7f9fb;
+            font-weight: 800;
+            width: 110px;
+            text-align: left;
+        }
+
+        .cell-teacher {
+            font-weight: 800;
+            color: #2c3e50;
+        }
+
+        .cell-subject {
+            color: #34495e;
+        }
+
+        .cell-book {
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .cell-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        select.edit-field, input.edit-field {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid #999;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .day-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .day-changed {
+            background: #fff8d6 !important;
+            border-left: 5px solid #ffc107 !important;
+        }
+
+        .cell-changed {
+            background: #fff3cd !important;
+            border: 2px solid #ffc107 !important;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.92);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(2px);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4caf50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-left: 20px;
+            font-size: 18px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .no-print {
+            /* print helper class */
+        }
+
+        .hidden-action {
+            display: none !important;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+                max-width: 100%;
+                margin: 0;
+            }
+
+            .controls,
+            .checkbox-controls,
+            .message,
+            .day-actions,
+            select.edit-field,
+            input.edit-field,
+            button,
+            .no-print {
+                display: none !important;
+            }
+
+            th {
+                background: #4caf50 !important;
+                color: white !important;
+                position: static;
+            }
+
+            td.period {
+                background: #f0f0f0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Routine Editor...</div>
+    </div>
+
+    <div class="container-fluid page-shell py-4">
+        <div class="editor-shell">
+            <h1>Class-wise Routine Editor</h1>
+
+            <div class="controls">
+                <label for="sessionSelect">Academic Session</label>
+                <select id="sessionSelect"></select>
+
+                <label for="classSelect">Class</label>
+                <select id="classSelect"></select>
+
+                <span style="flex: 1 1 auto"></span>
+
+                <button id="refreshBtn">Refresh</button>
+                <button id="exportBtn">Export Excel</button>
+            </div>
+
+            <div class="checkbox-controls">
+                <label><input type="checkbox" id="editTeacherCheck"> Edit Teacher</label>
+                <label><input type="checkbox" id="editSubjectCheck"> Edit Subject</label>
+                <label><input type="checkbox" id="editBookCheck"> Edit Book</label>
+                <label><input type="checkbox" id="hideTeacherCheck"> Hide Teacher</label>
+                <label><input type="checkbox" id="hideWeekendCheck"> Hide Saturday & Sunday</label>
+                <label><input type="checkbox" id="hideActionCheck"> Hide Action Column</label>
+            </div>
+
+            <div id="message" class="message"></div>
+            <div id="tableContainer"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../js/config.js"></script>
+
+    <script>
+        const API_BASE_URL = (typeof CONFIG !== "undefined" && CONFIG.API_URL) ? CONFIG.API_URL : "";
+        const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const PERIOD_ORDER = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
+        const SUBJECTS = ["Math", "English", "Science", "Bengali/Hindi", "SST", "GK", "Computer", "EVS", "Moral Value", "3rd Lang. Hindi", "Communication", "Yoga", "Rhymes", "Drawing", "Music/Dance"];
+
+        const TIME_MAP = {
+            "1st": "10.25 - 11.05",
+            "2nd": "11.05 - 11.45",
+            "3rd": "11.45 - 12.25",
+            "4th": "12.50 - 01.30",
+            "5th": "01.30 - 02.05",
+            "6th": "02.05 - 02.40",
+            "7th": "02.40 - 03.15"
+        };
+
+        const sessionSelect = document.getElementById("sessionSelect");
+        const classSelect = document.getElementById("classSelect");
+        const tableContainer = document.getElementById("tableContainer");
+        const message = document.getElementById("message");
+
+        const editTeacherCheck = document.getElementById("editTeacherCheck");
+        const editSubjectCheck = document.getElementById("editSubjectCheck");
+        const editBookCheck = document.getElementById("editBookCheck");
+        const hideTeacherCheck = document.getElementById("hideTeacherCheck");
+        const hideWeekendCheck = document.getElementById("hideWeekendCheck");
+        const hideActionCheck = document.getElementById("hideActionCheck");
+
+        let academicSession = "Default";
+        let weeklyDataByDay = {};
+        let originalDataByDay = {};
+        let changedPeriods = {};
+        let classes = [];
+        let teachers = [];
+
+        function showPageLoading(text = "Loading...") {
+            const overlay = document.getElementById("loadingOverlay");
+            overlay.querySelector(".loading-text").textContent = text;
+            overlay.classList.remove("hidden");
+        }
+
+        function hidePageLoading() {
+            document.getElementById("loadingOverlay").classList.add("hidden");
+        }
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = "message " + type;
+            setTimeout(() => {
+                message.className = "message";
+            }, 4000);
+        }
+
+        function escapeHtml(str) {
+            return String(str || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function cloneData(data) {
+            return JSON.parse(JSON.stringify(data || []));
+        }
+
+        function getAuthHeaders(extraHeaders = {}) {
+            const token = typeof Auth !== "undefined" && typeof Auth.getToken === "function"
+                ? Auth.getToken()
+                : "";
+            return token
+                ? { ...extraHeaders, Authorization: `Bearer ${token}` }
+                : extraHeaders;
+        }
+
+        function buildRoutineClassKey(className, section) {
+            const normalizedClassName = String(className || "").trim();
+            const normalizedSection = String(section || "").trim();
+            return normalizedSection
+                ? `${normalizedClassName} - Section ${normalizedSection}`
+                : normalizedClassName;
+        }
+
+        function makeKey(day, className, period) {
+            return `${day}||${className}||${period}`;
+        }
+
+        function parseKey(key) {
+            const [day, className, period] = key.split("||");
+            return { day, className, period };
+        }
+
+        function getChangedFieldsForDay(day, className) {
+            return Object.keys(changedPeriods).filter(key => {
+                const parsed = parseKey(key);
+                return parsed.day === day && parsed.className === className;
+            });
+        }
+
+        async function loadSessions() {
+            try {
+                const res = await fetch(API_BASE_URL + "/sessions", {
+                    headers: getAuthHeaders()
+                });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+
+                const data = await res.json();
+                const sessions = (data.sessions || []).map(s => s.name);
+
+                sessionSelect.innerHTML = "";
+
+                if (sessions.length > 0) {
+                    sessions.forEach(s => {
+                        const opt = document.createElement("option");
+                        opt.value = s;
+                        opt.textContent = s;
+                        sessionSelect.appendChild(opt);
+                    });
+                    academicSession = sessions[0];
+                    sessionSelect.value = academicSession;
+                } else {
+                    const opt = document.createElement("option");
+                    opt.value = "Default";
+                    opt.textContent = "Default";
+                    sessionSelect.appendChild(opt);
+                    academicSession = "Default";
+                }
+            } catch (err) {
+                console.error("Error loading sessions:", err);
+                showMessage("Error loading sessions", "error");
+            }
+        }
+
+        async function loadClassesForSession() {
+            try {
+                const previousValue = classSelect.value;
+                const url = API_BASE_URL + "/classes/year/" + encodeURIComponent(academicSession);
+                const res = await fetch(url, {
+                    headers: getAuthHeaders()
+                });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+
+                const data = await res.json();
+                const academicClasses = Array.isArray(data) ? data : [];
+                const seen = new Set();
+
+                classes = academicClasses
+                    .map(entry => {
+                        const className = String(entry.className || "").trim();
+                        const section = String(entry.section || "").trim();
+                        const key = buildRoutineClassKey(className, section);
+
+                        if (!className || seen.has(key)) {
+                            return null;
+                        }
+
+                        seen.add(key);
+                        return key;
+                    })
+                    .filter(Boolean)
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+                classSelect.innerHTML = "";
+
+                if (classes.length > 0) {
+                    classes.forEach(c => {
+                        const opt = document.createElement("option");
+                        opt.value = c;
+                        opt.textContent = c;
+                        classSelect.appendChild(opt);
+                    });
+                    classSelect.value = classes.includes(previousValue) ? previousValue : classes[0];
+                } else {
+                    const opt = document.createElement("option");
+                    opt.value = "";
+                    opt.textContent = "No classes found";
+                    classSelect.appendChild(opt);
+                }
+            } catch (err) {
+                console.error("Error loading classes:", err);
+                classes = [];
+                classSelect.innerHTML = "";
+                showMessage("Error loading classes", "error");
+            }
+        }
+
+        async function loadTeachers() {
+            try {
+                const res = await fetch(
+                    API_BASE_URL + "/teachers?session=" + encodeURIComponent(academicSession),
+                    {
+                        headers: getAuthHeaders()
+                    }
+                );
+                if (!res.ok) throw new Error("HTTP " + res.status);
+
+                const data = await res.json();
+                teachers = (data.teachers || []).map(t => t.name).filter(Boolean);
+            } catch (err) {
+                console.error("Error loading teachers:", err);
+                showMessage("Error loading teachers", "error");
+            }
+        }
+
+        async function fetchRoutinesForDay(day) {
+            try {
+                const url = API_BASE_URL + "/routines/get-routine?day=" + encodeURIComponent(day) + "&session=" + encodeURIComponent(academicSession);
+                const res = await fetch(url, {
+                    headers: getAuthHeaders()
+                });
+                if (!res.ok) return [];
+
+                const data = await res.json();
+
+                if (Array.isArray(data)) return data;
+                if (Array.isArray(data.routines)) return data.routines;
+                if (data.routine) return Array.isArray(data.routine) ? data.routine : [data.routine];
+
+                return [];
+            } catch (err) {
+                console.error("Error fetching routines for " + day, err);
+                return [];
+            }
+        }
+
+        async function refreshWeeklyData() {
+            showPageLoading("Loading routine data...");
+
+            weeklyDataByDay = {};
+            originalDataByDay = {};
+            changedPeriods = {};
+
+            for (let i = 0; i < DAYS.length; i++) {
+                const day = DAYS[i];
+                const routines = await fetchRoutinesForDay(day);
+                weeklyDataByDay[day] = cloneData(routines);
+                originalDataByDay[day] = cloneData(routines);
+            }
+
+            renderClassTable();
+            hidePageLoading();
+            showMessage("Data loaded successfully!", "success");
+        }
+
+        function ensurePeriodExists(day, className, period) {
+            if (!weeklyDataByDay[day]) {
+                weeklyDataByDay[day] = [];
+            }
+
+            let classRoutine = weeklyDataByDay[day].find(r => (r.class || r.className) === className);
+
+            if (!classRoutine) {
+                classRoutine = {
+                    class: className,
+                    className: className,
+                    periods: []
+                };
+                weeklyDataByDay[day].push(classRoutine);
+            }
+
+            let periodData = classRoutine.periods.find(p => (p.period || "").trim() === period);
+
+            if (!periodData) {
+                periodData = {
+                    period,
+                    time: TIME_MAP[period] || "",
+                    teacher: "",
+                    subject: "",
+                    book: ""
+                };
+                classRoutine.periods.push(periodData);
+            }
+
+            return periodData;
+        }
+
+        function getOriginalValue(day, className, period, field) {
+            const originalRoutine = (originalDataByDay[day] || []).find(r => (r.class || r.className) === className);
+            if (!originalRoutine) return "";
+
+            const originalPeriod = (originalRoutine.periods || []).find(p => (p.period || "").trim() === period);
+            if (!originalPeriod) return "";
+
+            return originalPeriod[field] || "";
+        }
+
+        function updateField(day, className, period, field, value) {
+            const periodData = ensurePeriodExists(day, className, period);
+            periodData[field] = value;
+        }
+
+        function isTeacherAvailable(teacher, currentClass, currentDay, currentPeriod, currentTeacher) {
+            if (teacher === currentTeacher) {
+                return true;
+            }
+
+            if (weeklyDataByDay[currentDay]) {
+                for (const routine of weeklyDataByDay[currentDay]) {
+                    if ((routine.class || routine.className) !== currentClass) {
+                        const periodData = routine.periods?.find(p => (p.period || "").trim() === currentPeriod);
+                        if (periodData && periodData.teacher === teacher) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        function renderClassTable() {
+            const className = classSelect.value;
+            if (!className) return;
+
+            const hideTeacher = hideTeacherCheck.checked;
+            const hideWeekend = hideWeekendCheck.checked;
+            const hideAction = hideActionCheck.checked;
+
+            const visibleDays = hideWeekend
+                ? DAYS.filter(day => day !== "Saturday" && day !== "Sunday")
+                : DAYS;
+            const hasEditableFields =
+                editTeacherCheck.checked || editSubjectCheck.checked || editBookCheck.checked;
+
+            const map = {};
+            visibleDays.forEach(d => {
+                map[d] = {};
+            });
+
+            visibleDays.forEach(day => {
+                (weeklyDataByDay[day] || []).forEach(r => {
+                    if ((r.class || r.className) !== className) return;
+
+                    (r.periods || []).forEach(p => {
+                        if (!p || p.period === "Break") return;
+
+                        const label = (p.period || "").trim();
+                        map[day][label] = {
+                            teacher: p.teacher || "",
+                            subject: p.subject || "",
+                            book: p.book || ""
+                        };
+                    });
+                });
+            });
+
+            let html = "<table><thead><tr><th>Day</th>";
+            PERIOD_ORDER.forEach(period => {
+                const time = TIME_MAP[period] || "";
+                html += "<th>" + period + " (" + time + ")</th>";
+            });
+            if (!hideAction) {
+                html += "<th class='no-print'>Action</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            visibleDays.forEach(day => {
+                const dayChangedKeys = getChangedFieldsForDay(day, className);
+                const dayChanged = dayChangedKeys.length > 0;
+
+                html += `<tr class="${dayChanged ? "day-changed" : ""}"><td class="period">${day}</td>`;
+
+                PERIOD_ORDER.forEach(period => {
+                    const entry = map[day][period];
+                    const key = makeKey(day, className, period);
+                    const isChanged = changedPeriods[key] && Object.keys(changedPeriods[key]).length > 0;
+
+                    if (!entry && !hasEditableFields) {
+                        html += `<td class="${isChanged ? "cell-changed" : ""}"><div style="color:#bbb">Free</div></td>`;
+                    } else {
+                        const cellData = entry || { teacher: "", subject: "", book: "" };
+                        html += `<td class="${isChanged ? "cell-changed" : ""}"><div class="cell-content">`;
+
+                        if (editTeacherCheck.checked && !hideTeacher) {
+                            html += `<select class="edit-field" data-key="${key}" data-field="teacher">`;
+                            html += `<option value="">--Select--</option>`;
+                            teachers.forEach(t => {
+                                const isAvailable = isTeacherAvailable(t, className, day, period, cellData.teacher);
+                                const selected = t === cellData.teacher ? " selected" : "";
+                                const disabled = isAvailable ? "" : " disabled";
+                                html += `<option value="${escapeHtml(t)}"${selected}${disabled}>${escapeHtml(t)}</option>`;
+                            });
+                            html += "</select>";
+                        } else if (!hideTeacher) {
+                            html += `<div class="cell-teacher">${escapeHtml(cellData.teacher || (entry ? "" : "Free"))}</div>`;
+                        }
+
+                        if (editSubjectCheck.checked) {
+                            html += `<select class="edit-field" data-key="${key}" data-field="subject">`;
+                            html += `<option value="">--Select--</option>`;
+                            SUBJECTS.forEach(subject => {
+                                const selected = subject === cellData.subject ? " selected" : "";
+                                html += `<option value="${escapeHtml(subject)}"${selected}>${escapeHtml(subject)}</option>`;
+                            });
+                            html += "</select>";
+                        } else {
+                            html += `<div class="cell-subject">${escapeHtml(cellData.subject)}</div>`;
+                        }
+
+                        if (editBookCheck.checked) {
+                            html += `<input type="text" class="edit-field" data-key="${key}" data-field="book" value="${escapeHtml(cellData.book || "")}" placeholder="Book name">`;
+                        } else {
+                            html += `<div class="cell-book">${escapeHtml(cellData.book)}</div>`;
+                        }
+
+                        html += "</div></td>";
+                    }
+                });
+
+                if (!hideAction) {
+                    html += `<td class="no-print">
+                                <div class="day-actions">
+                                    <button class="btn-success btn-sm" onclick="saveDay('${day}')">Save ${day}</button>
+                                    <button class="btn-danger btn-sm" onclick="resetDay('${day}')">Reset ${day}</button>
+                                </div>
+                             </td>`;
+                }
+
+                html += "</tr>";
+            });
+
+            html += "</tbody></table>";
+            html += `<div style="margin-top:20px; text-align:center;">
+                        <button onclick="printClassRoutine()" class="btn-info" style="margin-right:10px;">Print Class Routine</button>
+                        <button onclick="exportCurrentView()" class="btn-success">Export to Excel</button>
+                     </div>`;
+
+            tableContainer.innerHTML = html;
+
+            tableContainer.querySelectorAll(".edit-field").forEach(el => {
+                el.addEventListener("change", function() {
+                    const key = this.dataset.key;
+                    const field = this.dataset.field;
+                    const newValue = this.value;
+
+                    const { day, className: keyClassName, period } = parseKey(key);
+                    const originalValue = getOriginalValue(day, keyClassName, period, field);
+
+                    updateField(day, keyClassName, period, field, newValue);
+
+                    if (newValue !== originalValue) {
+                        if (!changedPeriods[key]) {
+                            changedPeriods[key] = {};
+                        }
+                        changedPeriods[key][field] = newValue;
+                    } else if (changedPeriods[key]) {
+                        delete changedPeriods[key][field];
+                        if (Object.keys(changedPeriods[key]).length === 0) {
+                            delete changedPeriods[key];
+                        }
+                    }
+
+                    renderClassTable();
+                });
+            });
+        }
+
+        async function saveDay(day) {
+            const className = classSelect.value;
+            const changedKeys = getChangedFieldsForDay(day, className);
+
+            if (changedKeys.length === 0) {
+                showMessage(`No changes to save for ${day}`, "error");
+                return;
+            }
+
+            try {
+                showPageLoading(`Saving ${day}...`);
+
+                const classRoutine = weeklyDataByDay[day]?.find(
+                    r => (r.class || r.className) === className
+                );
+
+                const periods = (classRoutine?.periods || [])
+                    .map(p => ({
+                        period: (p.period || "").trim(),
+                        time: p.time || TIME_MAP[(p.period || "").trim()] || "",
+                        teacher: p.teacher || "",
+                        subject: p.subject || "",
+                        book: p.book || ""
+                    }))
+                    .sort((a, b) => PERIOD_ORDER.indexOf(a.period) - PERIOD_ORDER.indexOf(b.period));
+
+                const payload = {
+                    class: className,
+                    day,
+                    session: academicSession,
+                    periods
+                };
+
+                console.log("Saving day payload:", payload);
+
+                const response = await fetch(`${API_BASE_URL}/routines/save-routine`, {
+                    method: "POST",
+                    headers: {
+                        ...getAuthHeaders(),
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server returned ${response.status}: ${errorText}`);
+                }
+
+                await response.json();
+
+                originalDataByDay[day] = cloneData(weeklyDataByDay[day]);
+                changedKeys.forEach(key => delete changedPeriods[key]);
+
+                renderClassTable();
+                hidePageLoading();
+                showMessage(`${day} saved successfully!`, "success");
+            } catch (err) {
+                console.error("Error saving day:", err);
+                hidePageLoading();
+                showMessage("Error: " + err.message, "error");
+            }
+        }
+
+        function resetDay(day) {
+            const className = classSelect.value;
+            const changedKeys = getChangedFieldsForDay(day, className);
+
+            if (changedKeys.length === 0) {
+                showMessage(`No changes to reset for ${day}`, "error");
+                return;
+            }
+
+            weeklyDataByDay[day] = cloneData(originalDataByDay[day]);
+            changedKeys.forEach(key => delete changedPeriods[key]);
+
+            renderClassTable();
+            showMessage(`${day} changes reset`, "success");
+        }
+
+        function exportCurrentView() {
+            const table = tableContainer.querySelector("table");
+
+            if (!table) {
+                showMessage("No table to export", "error");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(table);
+
+            XLSX.utils.book_append_sheet(wb, ws, "Routine");
+            XLSX.writeFile(wb, "Class-Routine-" + classSelect.value + "-" + academicSession + ".xlsx");
+        }
+
+        function printClassRoutine() {
+            const table = tableContainer.querySelector("table");
+            if (!table) {
+                showMessage("No table to print", "error");
+                return;
+            }
+
+            const className = classSelect.value;
+            const sessionName = academicSession;
+
+            let printContent = "<div class='print-header'>";
+            printContent += "<h2>Class: " + className + "</h2>";
+            printContent += "<h3>Academic Session: " + sessionName + "</h3>";
+            printContent += "<h4>Class Routine</h4>";
+            printContent += "</div>";
+            printContent += table.outerHTML;
+
+            const printWindow = window.open("", "Print", "height=800,width=1200");
+
+            if (!printWindow) {
+                showMessage("Popup blocked. Please allow popups for printing.", "error");
+                return;
+            }
+
+            const printMarkup = [
+                "<!DOCTYPE html><html><head><meta charset='UTF-8'>",
+                "<title>Class Routine - " + className + "</title>",
+                "<style>",
+                "body { font-family: Arial, sans-serif; margin: 20px; }",
+                ".print-header { text-align: center; margin-bottom: 30px; }",
+                ".print-header h2 { color: #2c3e50; margin-bottom: 8px; }",
+                ".print-header h3 { color: #555; margin-bottom: 6px; }",
+                ".print-header h4 { color: #777; margin-bottom: 0; }",
+                "table { width: 100%; border-collapse: collapse; margin-top: 20px; }",
+                "th, td { border: 1px solid #999; padding: 8px; text-align: center; font-size: 12px; }",
+                "th { background: #2196F3 !important; color: white !important; font-weight: bold; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }",
+                "td.period { background: #f0f0f0 !important; font-weight: bold; text-align: left; width: 90px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }",
+                ".no-print { display: none !important; }",
+                "@media print {",
+                "body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }",
+                "th { background: #2196F3 !important; color: white !important; }",
+                "td.period { background: #f0f0f0 !important; }",
+                "}",
+                "<" + "/style><" + "/head><body>",
+                printContent,
+                "<" + "/body><" + "/html>"
+            ].join("");
+
+            printWindow.document.write(printMarkup);
+            printWindow.document.close();
+
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+            }, 300);
+        }
+
+        sessionSelect.onchange = async function() {
+            academicSession = this.value;
+            await loadClassesForSession();
+            await refreshWeeklyData();
+        };
+
+        classSelect.onchange = renderClassTable;
+        editTeacherCheck.onchange = renderClassTable;
+        editSubjectCheck.onchange = renderClassTable;
+        editBookCheck.onchange = renderClassTable;
+        hideTeacherCheck.onchange = renderClassTable;
+        hideWeekendCheck.onchange = renderClassTable;
+        hideActionCheck.onchange = renderClassTable;
+
+        document.getElementById("refreshBtn").onclick = refreshWeeklyData;
+        document.getElementById("exportBtn").onclick = exportCurrentView;
+
+        async function init() {
+            showPageLoading("Loading sessions and classes...");
+
+            try {
+                await loadSessions();
+                await loadClassesForSession();
+                await loadTeachers();
+
+                if (classes.length > 0) {
+                    classSelect.value = classes[0];
+                }
+
+                showPageLoading("Loading routine data...");
+                await refreshWeeklyData();
+
+                hidePageLoading();
+                showMessage("Routine Editor loaded successfully!", "success");
+            } catch (error) {
+                console.error("Error initializing:", error);
+                hidePageLoading();
+                showMessage("Error loading data: " + error.message, "error");
+            }
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", init);
+        } else {
+            init();
+        }
+    </script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/page-shell.js"></script>
+</body>
+</html>

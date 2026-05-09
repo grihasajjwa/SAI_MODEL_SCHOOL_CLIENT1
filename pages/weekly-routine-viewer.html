@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Weekly Routine Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #eef5ff, #f9fbff);
+        padding: 0;
+        margin: 0;
+        color: #333;
+      }
+      .page-shell {
+        max-width: 1400px;
+      }
+      .routine-shell {
+        background: #ffffff;
+        padding: 24px;
+        border-radius: 18px;
+        box-shadow: 0 10px 26px rgba(56, 89, 142, 0.08);
+      }
+      h1 {
+        margin: 0 0 16px 0;
+        font-size: 1.6rem;
+        color: #2c3e50;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 14px;
+        background: #f8fbff;
+        border: 1px solid #d8e6ff;
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      label {
+        font-weight: 600;
+        color: #34495e;
+      }
+      select,
+      button {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #cfd6df;
+        background: #fff;
+        font-size: 0.95rem;
+      }
+      button {
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      #refreshBtn {
+        background: var(--primary-color);
+        color: #fff;
+      }
+      #exportBtn {
+        background: var(--success-color);
+        color: #fff;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin: 10px 0 14px 0;
+      }
+      .tab {
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid #cfd6df;
+        background: #f8fbff;
+        cursor: pointer;
+        font-weight: 700;
+        color: #2c3e50;
+      }
+      .tab.active {
+        background: #2c3e50;
+        color: #fff;
+        border-color: #2c3e50;
+      }
+      .message {
+        margin-top: 10px;
+        color: #2c3e50;
+      }
+      .message.error {
+        color: #c0392b;
+      }
+      .divider-block {
+        margin: 30px 0;
+        border-top: 1px solid #d8e6ff;
+      }
+      /* Checkbox styling */
+      .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+      .checkbox-wrapper input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+      .checkbox-wrapper label {
+        cursor: pointer;
+        margin: 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        border: 1px solid #cfd6df;
+        padding: 8px;
+        text-align: center;
+        vertical-align: top;
+        font-size: 0.85rem;
+      }
+      th {
+        background: var(--primary-color);
+        color: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      td.period {
+        background: #f7f9fb;
+        font-weight: 800;
+        width: 90px;
+      }
+      .cell-teacher {
+        font-weight: 800;
+        color: #2c3e50;
+      }
+      .cell-subject {
+        color: #34495e;
+      }
+      .cell-book {
+        color: #7f8c8d;
+        font-size: 0.8rem;
+        font-weight: bold;
+      }
+      .cell-class {
+        color: #8e44ad;
+        font-weight: 800;
+      }
+      /* Dynamic color classes */
+      .cell-subject.color-blue {
+        color: #0066cc;
+      }
+      .cell-book.color-black {
+        color: #000000;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+    
+    <div class="container-fluid page-shell py-4">
+    <div class="routine-shell">
+      <h1>Weekly Routine Viewer</h1>
+
+      <div class="controls">
+        <label for="sessionSelect">Academic Session</label>
+        <select id="sessionSelect"></select>
+
+        <span style="flex: 1 1 auto"></span>
+
+        <button id="refreshBtn">Refresh Weekly Data</button>
+        <button id="exportBtn">Export Excel (Current View)</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" id="classTab">Class-wise (Weekly)</button>
+        <button class="tab" id="teacherTab">Teacher-wise (Weekly)</button>
+      </div>
+
+      <div class="controls" id="classControls">
+        <label for="classSelect">Class</label>
+        <select id="classSelect"></select>
+        
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="showTeachersCheckbox" checked>
+          <label for="showTeachersCheckbox">Show Teachers</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="colorFontCheckbox">
+          <label for="colorFontCheckbox">Subject (Blue) & Book (Black)</label>
+        </div>
+      </div>
+
+      <div class="controls" id="teacherControls" style="display: none">
+        <label for="teacherSelect">Teacher</label>
+        <select id="teacherSelect"></select>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="colorFontCheckboxTeacher">
+          <label for="colorFontCheckboxTeacher">Subject (Blue) & Book (Black)</label>
+        </div>
+      </div>
+
+      <div id="tableContainer"></div>
+      <div id="message" class="message"></div>
+    </div>
+
+    <div class="divider-block"></div>
+
+    <div class="routine-shell">
+      <h1>Second View</h1>
+
+      <div class="tabs">
+        <button class="tab active" id="classTab2">Class-wise (Weekly)</button>
+        <button class="tab" id="teacherTab2">Teacher-wise (Weekly)</button>
+      </div>
+
+      <div class="controls" id="classControls2">
+        <label>Class</label>
+        <select id="classSelect2"></select>
+        
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="showTeachersCheckbox2" checked>
+          <label for="showTeachersCheckbox2">Show Teachers</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="colorFontCheckbox2">
+          <label for="colorFontCheckbox2">Subject (Blue) & Book (Black)</label>
+        </div>
+      </div>
+
+      <div class="controls" id="teacherControls2" style="display:none">
+        <label>Teacher</label>
+        <select id="teacherSelect2"></select>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="colorFontCheckboxTeacher2">
+          <label for="colorFontCheckboxTeacher2">Subject (Blue) & Book (Black)</label>
+        </div>
+      </div>
+
+      <div id="tableContainer2"></div>
+    </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../components/navbar.js"></script>
+
+    <script>
+      if (!Auth.isAuthenticated()) {
+        Auth.redirectToLogin();
+      }
+
+      const API_BASE_URL = CONFIG.API_URL;
+      const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+      const PERIOD_ORDER = ["1st","2nd","3rd","4th","5th","6th","7th"];
+      
+      // MAIN VIEW
+      const sessionSelect = document.getElementById("sessionSelect");
+      const classSelect = document.getElementById("classSelect");
+      const teacherSelect = document.getElementById("teacherSelect");
+      const tableContainer = document.getElementById("tableContainer");
+      const showTeachersCheckbox = document.getElementById("showTeachersCheckbox");
+      const colorFontCheckbox = document.getElementById("colorFontCheckbox");
+      const colorFontCheckboxTeacher = document.getElementById("colorFontCheckboxTeacher");
+      
+      const classTab = document.getElementById("classTab");
+      const teacherTab = document.getElementById("teacherTab");
+      const classControls = document.getElementById("classControls");
+      const teacherControls = document.getElementById("teacherControls");
+      
+      // SECOND VIEW
+      const classSelect2 = document.getElementById("classSelect2");
+      const teacherSelect2 = document.getElementById("teacherSelect2");
+      const tableContainer2 = document.getElementById("tableContainer2");
+      const showTeachersCheckbox2 = document.getElementById("showTeachersCheckbox2");
+      const colorFontCheckbox2 = document.getElementById("colorFontCheckbox2");
+      const colorFontCheckboxTeacher2 = document.getElementById("colorFontCheckboxTeacher2");
+      
+      const classTab2 = document.getElementById("classTab2");
+      const teacherTab2 = document.getElementById("teacherTab2");
+      const classControls2 = document.getElementById("classControls2");
+      const teacherControls2 = document.getElementById("teacherControls2");
+      
+      let activeView = "class";
+      let activeView2 = "class";
+      let academicSession = "Default";
+      
+      let weeklyDataByDay = {};
+      let classes = [];
+      let teachers = [];
+      
+      // Teacher visibility flags
+      let showTeachers = true;
+      let showTeachers2 = true;
+
+      // Color font flags
+      let useColorFont = false;
+      let useColorFont2 = false;
+      let useColorFontTeacher = false;
+      let useColorFontTeacher2 = false;
+      
+      // ---------------- LOAD DATA ----------------
+      
+      async function loadSessions() {
+        try {
+          const res = await fetch(`${API_BASE_URL}/sessions`);
+          const data = await res.json();
+          const sessions = (data.sessions || []).map(s => s.name);
+      
+          sessionSelect.innerHTML = "";
+          (sessions.length ? sessions : ["Default"]).forEach(s => {
+            sessionSelect.add(new Option(s, s));
+          });
+      
+          academicSession = sessionSelect.value;
+        } catch {
+          sessionSelect.innerHTML = `<option value="Default">Default</option>`;
+          academicSession = "Default";
+        }
+      }
+      
+      async function loadClassesForSession() {
+        try {
+          const res = await fetch(`${API_BASE_URL}/routine-classes?session=${encodeURIComponent(academicSession)}`);
+          const data = await res.json();
+      
+          classes = (data.classes || []).map(c => c.className);
+      
+          classSelect.innerHTML = "";
+          classSelect2.innerHTML = "";
+      
+          classes.forEach(c => {
+            classSelect.add(new Option(c, c));
+            classSelect2.add(new Option(c, c));
+          });
+      
+          if (classes.length) {
+            classSelect.value = classes[0];
+            classSelect2.value = classes[0];
+          }
+      
+        } catch {
+          classes = [];
+        }
+      }
+      
+      async function loadTeachers() {
+        try {
+          const res = await fetch(`${API_BASE_URL}/teachers`);
+          const data = await res.json();
+      
+          teachers = (data.teachers || []).map(t => t.name).filter(Boolean);
+      
+          teacherSelect.innerHTML = "";
+          teacherSelect2.innerHTML = "";
+      
+          teachers.forEach(t => {
+            teacherSelect.add(new Option(t, t));
+            teacherSelect2.add(new Option(t, t));
+          });
+      
+          if (teachers.length) {
+            teacherSelect.value = teachers[0];
+            teacherSelect2.value = teachers[0];
+          }
+      
+        } catch {
+          teachers = [];
+        }
+      }
+      
+      async function fetchRoutinesForDay(day) {
+        const res = await fetch(`${API_BASE_URL}/routines/get-routine?day=${encodeURIComponent(day)}&session=${encodeURIComponent(academicSession)}`);
+        const data = await res.json();
+      
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data.routines)) return data.routines;
+        if (data.routine) return Array.isArray(data.routine) ? data.routine : [data.routine];
+      
+        return [];
+      }
+      
+      async function refreshWeeklyData() {
+        weeklyDataByDay = {};
+      
+        const results = await Promise.all(
+          DAYS.map(async day => {
+            const routines = await fetchRoutinesForDay(day);
+            return { day, routines };
+          })
+        );
+      
+        results.forEach(r => weeklyDataByDay[r.day] = r.routines);
+      
+        renderCurrentView();
+        renderSecondView();
+      }
+      
+      // ---------------- HELPERS ----------------
+      
+      function normalize(p) {
+        return (p || "").trim();
+      }
+      
+      // ---------------- CLASS TABLE ----------------
+      
+      function buildClassWeeklyTable(className, container, showTeacher = true, useColors = false) {
+        if (!className) {
+          container.innerHTML = "<p>Select class</p>";
+          return;
+        }
+      
+        const map = {};
+        DAYS.forEach(d => map[d] = {});
+      
+        DAYS.forEach(day => {
+          (weeklyDataByDay[day] || []).forEach(r => {
+            if ((r.class || r.className) !== className) return;
+      
+            (r.periods || []).forEach(p => {
+              if (!p || p.period === "Break") return;
+      
+              const label = normalize(p.period);
+      
+              map[day][label] = {
+                teacher: p.teacher || "",
+                subject: p.subject || "",
+                book: p.book || ""
+              };
+            });
+          });
+        });
+      
+        const periods = PERIOD_ORDER; // ✅ ALWAYS FULL
+      
+        const table = document.createElement("table");
+      
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Day</th>
+              ${periods.map(p => `<th>${p}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${DAYS.map(day => `
+              <tr>
+                <td class="period">${day}</td>
+                ${periods.map(p => {
+                  const e = map[day][p];
+                  return `<td>
+                    ${e ? `
+                      ${showTeacher ? `<div class="cell-teacher">${e.teacher}</div>` : ""}
+                      <div class="cell-subject ${useColors ? 'color-blue' : ''}">${e.subject}</div>
+                      <div class="cell-book ${useColors ? 'color-black' : ''}">${e.book}</div>
+                    ` : `<div style="color:#bbb">Free</div>`}
+                  </td>`;
+                }).join("")}
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      
+        container.innerHTML = "";
+        container.appendChild(table);
+      }
+      
+      // ---------------- TEACHER TABLE ----------------
+      
+      function buildTeacherWeeklyTable(teacher, container, useColors = false) {
+        if (!teacher) {
+          container.innerHTML = "<p>Select teacher</p>";
+          return;
+        }
+      
+        const map = {};
+        DAYS.forEach(d => map[d] = {});
+      
+        DAYS.forEach(day => {
+          (weeklyDataByDay[day] || []).forEach(r => {
+            const cls = r.class || r.className;
+      
+            (r.periods || []).forEach(p => {
+              if (!p || p.period === "Break") return;
+              if (p.teacher !== teacher) return;
+      
+              const label = normalize(p.period);
+      
+              map[day][label] = {
+                class: cls,
+                subject: p.subject || "",
+                book: p.book || ""
+              };
+            });
+          });
+        });
+      
+        const periods = PERIOD_ORDER; // ✅ ALWAYS FULL
+      
+        const table = document.createElement("table");
+      
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Day</th>
+              ${periods.map(p => `<th>${p}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${DAYS.map(day => `
+              <tr>
+                <td class="period">${day}</td>
+                ${periods.map(p => {
+                  const e = map[day][p];
+                  return `<td>
+                    ${e ? `
+                      <div class="cell-class">${e.class}</div>
+                      <div class="cell-subject ${useColors ? 'color-blue' : ''}">${e.subject}</div>
+                      <div class="cell-book ${useColors ? 'color-black' : ''}">${e.book}</div>
+                    ` : `<div style="color:#bbb">Free</div>`}
+                  </td>`;
+                }).join("")}
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      
+        container.innerHTML = "";
+        container.appendChild(table);
+      }
+      
+      // ---------------- RENDER ----------------
+      
+      function renderCurrentView() {
+        if (activeView === "class") {
+          buildClassWeeklyTable(classSelect.value, tableContainer, showTeachers, useColorFont);
+        } else {
+          buildTeacherWeeklyTable(teacherSelect.value, tableContainer, useColorFontTeacher);
+        }
+      }
+      
+      function renderSecondView() {
+        if (activeView2 === "class") {
+          buildClassWeeklyTable(classSelect2.value, tableContainer2, showTeachers2, useColorFont2);
+        } else {
+          buildTeacherWeeklyTable(teacherSelect2.value, tableContainer2, useColorFontTeacher2);
+        }
+      }
+      
+      // ---------------- EVENTS ----------------
+      
+      classTab.onclick = () => {
+        activeView = "class";
+        classControls.style.display = "flex";
+        teacherControls.style.display = "none";
+        renderCurrentView();
+      };
+      
+      teacherTab.onclick = () => {
+        activeView = "teacher";
+        classControls.style.display = "none";
+        teacherControls.style.display = "flex";
+        renderCurrentView();
+      };
+      
+      classTab2.onclick = () => {
+        activeView2 = "class";
+        classControls2.style.display = "flex";
+        teacherControls2.style.display = "none";
+        renderSecondView();
+      };
+      
+      teacherTab2.onclick = () => {
+        activeView2 = "teacher";
+        classControls2.style.display = "none";
+        teacherControls2.style.display = "flex";
+        renderSecondView();
+      };
+      
+      classSelect.onchange = renderCurrentView;
+      teacherSelect.onchange = renderCurrentView;
+      
+      classSelect2.onchange = renderSecondView;
+      teacherSelect2.onchange = renderSecondView;
+      
+      // Checkbox event listeners
+      showTeachersCheckbox.onchange = () => {
+        showTeachers = showTeachersCheckbox.checked;
+        renderCurrentView();
+      };
+      
+      showTeachersCheckbox2.onchange = () => {
+        showTeachers2 = showTeachersCheckbox2.checked;
+        renderSecondView();
+      };
+
+      // Color font checkbox listeners
+      colorFontCheckbox.onchange = () => {
+        useColorFont = colorFontCheckbox.checked;
+        renderCurrentView();
+      };
+
+      colorFontCheckboxTeacher.onchange = () => {
+        useColorFontTeacher = colorFontCheckboxTeacher.checked;
+        renderCurrentView();
+      };
+
+      colorFontCheckbox2.onchange = () => {
+        useColorFont2 = colorFontCheckbox2.checked;
+        renderSecondView();
+      };
+
+      colorFontCheckboxTeacher2.onchange = () => {
+        useColorFontTeacher2 = colorFontCheckboxTeacher2.checked;
+        renderSecondView();
+      };
+      
+      sessionSelect.onchange = async () => {
+        academicSession = sessionSelect.value;
+        await loadClassesForSession();
+        await refreshWeeklyData();
+      };
+      
+      document.getElementById("refreshBtn").onclick = refreshWeeklyData;
+      
+      // ---------------- INIT ----------------
+      
+      window.addEventListener("DOMContentLoaded", async () => {
+        await loadSessions();
+        await loadClassesForSession();
+        await loadTeachers();
+        await refreshWeeklyData();
+      });
+
+      function exportCurrentView() {
+        let table;
+      
+        // detect active view (first table)
+        if (document.activeElement === classSelect2 || document.activeElement === teacherSelect2) {
+          table = tableContainer2.querySelector("table");
+        } else {
+          table = tableContainer.querySelector("table");
+        }
+      
+        // fallback: if nothing detected, use first table
+        if (!table) {
+          table = tableContainer.querySelector("table") || tableContainer2.querySelector("table");
+        }
+      
+        if (!table) {
+          alert("No table found to export!");
+          return;
+        }
+      
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(table);
+      
+        XLSX.utils.book_append_sheet(wb, ws, "Weekly");
+      
+        XLSX.writeFile(wb, `Weekly-Routine-${academicSession}.xlsx`);
+      }
+      
+      document.getElementById("exportBtn").onclick = exportCurrentView;
+    </script>
+      <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

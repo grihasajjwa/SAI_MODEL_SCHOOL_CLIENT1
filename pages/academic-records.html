@@ -9,17 +9,69 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/navbar.css">
     <style>
-        .card {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: 0.3s;
-        }
-        .card:hover {
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        }
-        .action-buttons button {
-            margin: 0 5px;
-        }
-    </style>
+     .card {
+    border-radius: 12px;
+    border: none;
+    overflow: hidden;
+    background: #ffffff;
+
+    /* 🔥 SOFT SHADOW */
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+
+    transition: all 0.25s ease;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+/* HEADER STRIP */
+.card-top {
+    height: 6px;
+    background: linear-gradient(90deg, #0d6efd, #4dabf7);
+}
+
+/* TITLE */
+.card-title {
+    font-weight: 600;
+    color: #0d6efd;
+    font-size: 18px;
+}
+
+/* TEXT */
+.card-text {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.6;
+}
+
+/* BUTTONS */
+.card .btn {
+    border-radius: 6px;
+    font-size: 13px;
+}
+    .card-header i {
+    transition: transform 0.2s ease;
+}
+
+        /* 🌤 LIGHT BLUE HEADER */
+.light-header {
+    background-color: #e7f1ff;   /* light blue */
+    color: #0d6efd;              /* dark blue text */
+    border-bottom: 1px solid #cfe2ff;
+}
+
+/* hover effect (optional but nice) */
+.light-header:hover {
+    background-color: #dbe9ff;
+}
+
+/* arrow icon */
+.light-header i {
+    color: #0d6efd;
+}
+</style>
 </head>
 <body>
     <!-- Navbar will be loaded here -->
@@ -38,9 +90,50 @@
         <button class="btn btn-primary mb-4 disabled-btn" >
             <a class="nav-link" href="/pages/create-subject.html">Create/ Edit Subject / Teachers</a>
            </button>
-        <!-- Class Cards Container -->
-        <div class="row" id="classCardsContainer">
-            <!-- Cards will be dynamically added here -->
+        <!-- Academic Years Container -->
+        <div id="academicYearsView">
+            <div class="row" id="academicYearsContainer">
+                <!-- Academic year cards will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Classes Container (Hidden by default) -->
+        <div id="classesView" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 id="selectedYearTitle">Classes for Academic Year</h3>
+                <div>
+                    <button class="btn btn-info me-2" onclick="showStudentsForYear(document.getElementById('selectedYearTitle').textContent.split(': ')[1])">
+                        <i class="fas fa-users"></i> View All Students
+                    </button>
+                    <button class="btn btn-secondary" onclick="showAcademicYears()">
+                        <i class="fas fa-arrow-left"></i> Back to Academic Years
+                    </button>
+                </div>
+            </div>
+            <div class="row" id="classCardsContainer">
+                <!-- Class cards will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Students Container (Hidden by default) -->
+        <div id="studentsView" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 id="studentsYearTitle">All Students for Academic Year</h3>
+                <div>
+                    <!-- <button class="btn btn-primary me-2" onclick="showClassesForYear(document.getElementById('studentsYearTitle').textContent.split(': ')[1])">
+                        <i class="fas fa-chalkboard"></i> View Classes
+                    </button> -->
+                    <button class="btn btn-primary btn-sm" onclick="goToClassesPage('${year}')">
+    <i class="fas fa-chalkboard"></i> View Classes
+</button>
+                    <button class="btn btn-secondary" onclick="showAcademicYears()">
+                        <i class="fas fa-arrow-left"></i> Back to Academic Years
+                    </button>
+                </div>
+            </div>
+            <div id="studentsContainer">
+                <!-- Students grouped by class will be displayed here -->
+            </div>
         </div>
 
         <!-- Add/Edit Class Modal -->
@@ -87,6 +180,9 @@
         // API endpoints
         const API_BASE_URL = CONFIG.API_URL;
         
+        // Global variable to track current academic year
+        let currentAcademicYear = '';
+        
         // Get authentication token from localStorage
         function getAuthToken() {
             const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
@@ -126,8 +222,8 @@
             return fetch(url, { ...options, headers });
         }
 
-        // Function to load all classes
-        async function loadClasses() {
+        // Function to load all academic years
+        async function loadAcademicYears() {
             try {
                 const response = await apiCall(`${API_BASE_URL}/classes`);
                 if (!response || !response.ok) {
@@ -136,22 +232,325 @@
                 }
                 
                 const classes = await response.json();
-                console.log('Loaded classes:', classes); // Debug log
+                console.log('Loaded classes for academic years:', classes);
                 
                 if (Array.isArray(classes)) {
-                    displayClasses(classes);
+                    // Extract unique academic years
+                    const academicYears = [...new Set(classes.map(cls => cls.academicYear).filter(year => year))];
+                    displayAcademicYears(academicYears, classes);
                 } else {
                     console.error('Invalid response format:', classes);
                     throw new Error('Invalid response format from server');
                 }
             } catch (error) {
-                console.error('Error loading classes:', error);
+                console.error('Error loading academic years:', error);
+                if (error.message.includes('Authentication')) {
+                    window.location.href = '../pages/login.html';
+                } else {
+                    alert(`Failed to load academic years: ${error.message}`);
+                }
+            }
+        }
+
+        // Function to display academic years
+        function displayAcademicYears(academicYears, allClasses) {
+            const container = document.getElementById('academicYearsContainer');
+            container.innerHTML = '';
+
+            academicYears.forEach(year => {
+                const yearClasses = allClasses.filter(cls => cls.academicYear === year);
+                const totalStudents = yearClasses.reduce((sum, cls) => sum + (cls.studentCount || 0), 0);
+                const totalSubjects = yearClasses.reduce((sum, cls) => sum + (cls.subjects ? cls.subjects.length : 0), 0);
+                
+                const card = document.createElement('div');
+                card.className = 'col-md-4 mb-4';
+                
+               card.innerHTML = `
+    <div class="card">
+
+        <!-- 🔵 TOP COLOR STRIP -->
+        <div class="card-top"></div>
+
+        <div class="card-body">
+
+            <h5 class="card-title">
+                <i class="fas fa-calendar-alt me-2"></i>${year}
+            </h5>
+
+            <p class="card-text mt-3">
+                <i class="fas fa-graduation-cap text-primary"></i> 
+                Classes: <strong>${yearClasses.length}</strong><br>
+
+                <i class="fas fa-users text-success"></i> 
+                Students: <strong>${totalStudents}</strong><br>
+
+                <i class="fas fa-book text-warning"></i> 
+                Subjects: <strong>${totalSubjects}</strong>
+            </p>
+
+            <div class="d-flex justify-content-between mt-3">
+                <button class="btn btn-outline-primary btn-sm" onclick="goToClassesPage('${year}')">
+                    <i class="fas fa-chalkboard"></i> Classes
+                </button>
+
+                <button class="btn btn-outline-success btn-sm" onclick="showStudentsForYear('${year}')">
+                    <i class="fas fa-users"></i> Students
+                </button>
+            </div>
+
+        </div>
+    </div>
+`;
+container.appendChild(card);
+            });
+        }
+
+        // Function to show classes for a specific academic year
+        function showClassesForYear(academicYear) {
+            const academicYearsView = document.getElementById('academicYearsView');
+            const classesView = document.getElementById('classesView');
+            const selectedYearTitle = document.getElementById('selectedYearTitle');
+            
+            currentAcademicYear = academicYear; // Set current academic year
+            selectedYearTitle.textContent = `Classes for Academic Year: ${academicYear}`;
+            academicYearsView.style.display = 'none';
+            classesView.style.display = 'block';
+            
+            loadClassesForYear(academicYear);
+        }
+
+        // Function to load classes for a specific academic year
+        async function loadClassesForYear(academicYear) {
+            try {
+                const response = await apiCall(`${API_BASE_URL}/classes/year/${academicYear}`);
+                if (!response || !response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP error! status: ${response?.status || 'unknown'}`);
+                }
+                
+                const classes = await response.json();
+                console.log(`Loaded classes for year ${academicYear}:`, classes);
+                displayClasses(classes);
+            } catch (error) {
+                console.error('Error loading classes for year:', error);
                 if (error.message.includes('Authentication')) {
                     window.location.href = '../pages/login.html';
                 } else {
                     alert(`Failed to load classes: ${error.message}`);
                 }
             }
+        }
+
+        // Function to show students for a specific academic year
+        function showStudentsForYear(academicYear) {
+            const academicYearsView = document.getElementById('academicYearsView');
+            const classesView = document.getElementById('classesView');
+            const studentsView = document.getElementById('studentsView');
+            const studentsYearTitle = document.getElementById('studentsYearTitle');
+            
+            currentAcademicYear = academicYear; // Set current academic year
+            studentsYearTitle.textContent = `All Students for Academic Year: ${academicYear}`;
+            academicYearsView.style.display = 'none';
+            classesView.style.display = 'none';
+            studentsView.style.display = 'block';
+            
+            loadStudentsForYear(academicYear);
+        }
+
+        // Function to load students for a specific academic year
+        async function loadStudentsForYear(academicYear) {
+            try {
+                const response = await apiCall(`${API_BASE_URL}/students/session/${academicYear}`);
+                if (!response || !response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP error! status: ${response?.status || 'unknown'}`);
+                }
+                
+                const groupedStudents = await response.json();
+                console.log(`Loaded students for year ${academicYear}:`, groupedStudents);
+                displayStudentsByClass(groupedStudents);
+            } catch (error) {
+                console.error('Error loading students for year:', error);
+                if (error.message.includes('Authentication')) {
+                    window.location.href = '../pages/login.html';
+                } else {
+                    alert(`Failed to load students: ${error.message}`);
+                }
+            }
+        }
+
+        // Function to display students grouped by class
+        function displayStudentsByClass(groupedStudents) {
+            const container = document.getElementById('studentsContainer');
+            container.innerHTML = '';
+
+            // Convert object to array and sort by class name
+            const classGroups = Object.values(groupedStudents).sort((a, b) => {
+                const classA = parseInt(a.className) || 0;
+                const classB = parseInt(b.className) || 0;
+                if (classA !== classB) {
+                    return classA - classB;
+                }
+                return a.section.localeCompare(b.section);
+            });
+
+            classGroups.forEach(classGroup => {
+                const classSection = document.createElement('div');
+                classSection.className = 'mb-4';
+                
+                classSection.innerHTML = `
+                    <div class="card">
+                        <div class="card-header light-header d-flex justify-content-between align-items-center"
+     style="cursor:pointer;"
+     onclick="toggleClass('${classGroup.className}_${classGroup.section}')">
+
+    <h5 class="mb-0">
+        <i class="fas fa-chalkboard me-2"></i>
+        Class ${classGroup.className} - Section ${classGroup.section}
+    </h5>
+
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary-subtle text-primary">
+            ${classGroup.students.length} Students
+        </span>
+
+        <!-- 🔽 ARROW -->
+        <i id="icon-${classGroup.className}_${classGroup.section}" 
+           class="fas fa-chevron-down"></i>
+    </div>
+</div>
+<div id="body-${classGroup.className}_${classGroup.section}" class="card-body" style="display:none;">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead style="background-color:#e7f1ff; color:#0d6efd;">
+                                        <tr>
+                                            <th>Admission No</th>
+                                            <th>Name</th>
+                                            <th>Father's Name</th>
+                                            <th>Gender</th>
+                                            <th>Contact</th>
+                                            <th>Transport</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${classGroup.students.map(student => `
+                                            <tr>
+                                                <td>${student.studentId}</td>
+                                                <td>${student.name}</td>
+                                                <td>${student.fatherName}</td>
+                                                <td>${student.gender}</td>
+                                                <td>${student.contactNo || 'N/A'}</td>
+                                                <td>
+                                                    <span class="badge ${student.transport?.required ? 'bg-success' : 'bg-secondary'}">
+                                                        ${student.transport?.required ? 'Yes' : 'No'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button class="btn btn-outline-primary" onclick="viewStudentDetails('${student._id}')" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-info" onclick="editStudent('${student._id}')" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-success" onclick="viewStudentMarks('${student._id}')" title="View Marks">
+                                                            <i class="fas fa-chart-line"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(classSection);
+            });
+        }
+
+        // Function to show academic years view
+        function showAcademicYears() {
+            const academicYearsView = document.getElementById('academicYearsView');
+            const classesView = document.getElementById('classesView');
+            const studentsView = document.getElementById('studentsView');
+            
+            academicYearsView.style.display = 'block';
+            classesView.style.display = 'none';
+            studentsView.style.display = 'none';
+        }
+
+        // Global variable to store current student ID
+        let currentStudentId = null;
+
+        // Function to view student details
+        async function viewStudentDetails(studentId) {
+            currentStudentId = studentId;
+            
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/students/${studentId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch student details');
+                }
+                
+                const student = await response.json();
+                
+                // Populate modal with student data
+                document.getElementById('modalStudentName').textContent = student.name || 'N/A';
+                document.getElementById('modalStudentId').textContent = `ID: ${student.studentId || 'N/A'}`;
+                document.getElementById('modalAdmissionNo').textContent = student.studentId || 'N/A';
+                document.getElementById('modalClassSection').textContent = student.class && student.section 
+                    ? `${student.class} - ${student.section}` 
+                    : 'N/A';
+                document.getElementById('modalFatherName').textContent = student.fatherName || 'N/A';
+                document.getElementById('modalMotherName').textContent = student.motherName || 'N/A';
+                document.getElementById('modalGender').textContent = student.gender || 'N/A';
+                document.getElementById('modalDOB').textContent = student.dob 
+                    ? new Date(student.dob).toLocaleDateString() 
+                    : 'N/A';
+                document.getElementById('modalContact').textContent = student.contactNo || 'N/A';
+                document.getElementById('modalTransport').textContent = student.transport?.required 
+                    ? `Yes (${student.transport.route || 'N/A'})` 
+                    : 'No';
+                document.getElementById('modalAddress').textContent = student.address || 'N/A';
+                
+                // Handle student photo
+                const studentPhoto = document.getElementById('studentPhoto');
+                if (student.photo) {
+                    studentPhoto.src = student.photo.startsWith('http') 
+                        ? student.photo 
+                        : `${CONFIG.API_URL}${student.photo}`;
+                    studentPhoto.onerror = function() {
+                        this.src = '../assets/images/logo.png';
+                    };
+                } else {
+                    studentPhoto.src = '../assets/images/logo.png';
+                }
+                
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('studentDetailsModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('Error fetching student details:', error);
+                alert('Failed to load student details. Please try again.');
+            }
+        }
+
+        function editStudent(studentId) {
+            alert(`Edit student ID: ${studentId}`);
+        }
+
+        function viewStudentMarks(studentId) {
+            alert(`View marks for student ID: ${studentId}`);
         }
 
         // Function to display classes
@@ -168,7 +567,7 @@
         const isDisabled = !userHasPermission();  // Example condition
 
         card.innerHTML = `
-            <div class="card" style="cursor: pointer;" onclick="viewClassStudents('${classData.className}', '${classData.section}')">
+            <div class="card" style="cursor: pointer;" onclick="viewClassStudents('${classData.className}', '${classData.section}', '${classData.academicYear}')">
                 <div class="card-body">
                     <h5 class="card-title">${classData.className} - ${classData.section || 'A'}</h5>
                     <p class="card-text">
@@ -193,8 +592,11 @@
 }
 
         // Function to view class students
-        function viewClassStudents(className, section) {
-            window.location.href = `class-students.html?class=${encodeURIComponent(className)}&section=${encodeURIComponent(section)}`;
+        function viewClassStudents(className, section, academicYear) {
+            const url = academicYear 
+                ? `class-students.html?class=${encodeURIComponent(className)}&section=${encodeURIComponent(section)}&session=${encodeURIComponent(academicYear)}`
+                : `class-students.html?class=${encodeURIComponent(className)}&section=${encodeURIComponent(section)}`;
+            window.location.href = url;
         }
 
         // Function to handle class creation/editing
@@ -241,7 +643,8 @@
                 if (modal) {
                     modal.hide();
                 }
-                loadClasses();
+                // loadClasses();
+                loadAcademicYears();
                 resetForm();
             } catch (error) {
                 console.error('Error saving class:', error);
@@ -324,10 +727,10 @@
         // Load classes when page loads
         document.addEventListener('DOMContentLoaded', () => {
             if (!Auth.isAuthenticated()) {
-                window.location.href = '../login.html';
+                Auth.redirectToLogin();
                 return;
             }
-              loadClasses();
+              loadAcademicYears();
             userHasPermission();
           
           
@@ -345,8 +748,115 @@
     }
 }
 
+        function toggleClass(id) {
+
+    const body = document.getElementById(`body-${id}`);
+    const icon = document.getElementById(`icon-${id}`);
+
+    if (body.style.display === "none") {
+        body.style.display = "block";
+        icon.classList.remove("fa-chevron-right");
+        icon.classList.add("fa-chevron-down");
+    } else {
+        body.style.display = "none";
+        icon.classList.remove("fa-chevron-down");
+        icon.classList.add("fa-chevron-right");
+    }
+}
+        
+function goToClassesPage(year) {
+    window.location.href = `classes.html?year=${encodeURIComponent(year)}`;
+}
     </script>
     <script src="../js/auth.js"></script>
     <script src="../components/navbar.js"></script>
+<!-- Student Details Modal -->
+<div class="modal fade" id="studentDetailsModal" tabindex="-1" aria-labelledby="studentDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="studentDetailsModalLabel">
+                    <i class="fas fa-user-graduate me-2"></i>Student Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="student-photo-container mb-3">
+                            <img id="studentPhoto" src="../assets/images/logo.png" 
+                                 alt="Student Photo" class="img-fluid rounded-circle border border-primary"
+                                 style="max-width: 200px; max-height: 200px; object-fit: cover;">
+                        </div>
+                        <h5 id="modalStudentName" class="text-primary fw-bold mb-1">Loading...</h5>
+                        <p id="modalStudentId" class="text-muted mb-0">Loading...</p>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="student-details">
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <strong>Admission No:</strong>
+                                    <p id="modalAdmissionNo" class="text-muted mb-2">-</p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Class & Section:</strong>
+                                    <p id="modalClassSection" class="text-muted mb-2">-</p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <strong>Father's Name:</strong>
+                                    <p id="modalFatherName" class="text-muted mb-2">-</p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Mother's Name:</strong>
+                                    <p id="modalMotherName" class="text-muted mb-2">-</p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <strong>Gender:</strong>
+                                    <p id="modalGender" class="text-muted mb-2">-</p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Date of Birth:</strong>
+                                    <p id="modalDOB" class="text-muted mb-2">-</p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <strong>Contact Number:</strong>
+                                    <p id="modalContact" class="text-muted mb-2">-</p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Transport:</strong>
+                                    <p id="modalTransport" class="text-muted mb-2">-</p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <strong>Address:</strong>
+                                    <p id="modalAddress" class="text-muted mb-2">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-info" onclick="editStudent(currentStudentId)">
+                    <i class="fas fa-edit me-2"></i>Edit Student
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="viewStudentMarks(currentStudentId)">
+                    <i class="fas fa-chart-line me-2"></i>View Marks
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script src='../js/page-shell.js'></script>
 </body>
 </html>
+

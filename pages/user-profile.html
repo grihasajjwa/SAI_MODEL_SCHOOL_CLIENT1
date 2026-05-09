@@ -8,109 +8,672 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <style>
-        .profile-section {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        body {
+            background: linear-gradient(135deg, #edf4ff, #f9fbff);
         }
-        .profile-header {
+
+        .profile-shell {
+            max-width: 1320px;
+        }
+
+        .profile-hero {
+            background: linear-gradient(135deg, #1d4f91, #2563eb);
+            color: #fff;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 18px 44px rgba(29, 79, 145, 0.18);
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-kicker {
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            font-size: .78rem;
+            opacity: .82;
+            margin-bottom: .85rem;
+        }
+
+        .profile-hero h1 {
+            font-size: 2.2rem;
+            margin-bottom: .5rem;
+        }
+
+        .profile-hero p {
+            max-width: 720px;
+            margin-bottom: 0;
+            opacity: .9;
+        }
+
+        .profile-card {
+            background: #fff;
+            border: 1px solid #dce7fb;
+            border-radius: 22px;
+            box-shadow: 0 12px 32px rgba(56, 89, 142, 0.08);
+            overflow: hidden;
+        }
+
+        .profile-card-header {
+            padding: 1.25rem 1.4rem;
+            border-bottom: 1px solid #e9f0fb;
+            background: linear-gradient(135deg, #fbfdff, #f5f9ff);
+        }
+
+        .profile-card-header h3,
+        .profile-card-header h4 {
+            margin: 0;
+            color: #153c72;
+            font-weight: 700;
+        }
+
+        .profile-card-body {
+            padding: 1.4rem;
+        }
+
+        .profile-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .profile-overview {
             text-align: center;
-            margin-bottom: 30px;
         }
+
         .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 60px;
-            background-color: #e9ecef;
+            width: 124px;
+            height: 124px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e9f1ff, #dce8ff);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 48px;
-            color: #6c757d;
+            margin: 0 auto 1rem;
+            font-size: 3rem;
+            color: #1d4f91;
+            border: 4px solid rgba(37, 99, 235, 0.12);
         }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        /* General Styles */
 
+        .profile-name {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #16345f;
+        }
+
+        .profile-subtitle {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .profile-metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .85rem;
+            margin-top: 1rem;
+        }
+
+        .profile-metric {
+            background: #f8fbff;
+            border: 1px solid #dbe7ff;
+            border-radius: 16px;
+            padding: .9rem 1rem;
+            text-align: left;
+        }
+
+        .profile-metric span {
+            display: block;
+            color: #6c757d;
+            font-size: .8rem;
+            margin-bottom: .2rem;
+        }
+
+        .profile-metric strong {
+            color: #153c72;
+            font-size: 1rem;
+        }
+
+        .form-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .section-eyebrow {
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            font-size: .76rem;
+            color: #6c757d;
+            margin-bottom: .35rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .field-span-6 {
+            grid-column: span 6;
+        }
+
+        .field-span-4 {
+            grid-column: span 4;
+        }
+
+        .field-span-12 {
+            grid-column: span 12;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #27466f;
+            margin-bottom: .45rem;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid #d4e1f7;
+            padding: .8rem .95rem;
+            box-shadow: none;
+        }
+
+        .form-control:focus {
+            border-color: #5a8dee;
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.12);
+        }
+
+        .readonly-note {
+            color: #6c757d;
+            font-size: .9rem;
+            margin-top: -.3rem;
+        }
+
+        .action-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .75rem;
+        }
+
+        .action-stack .btn {
+            min-width: 180px;
+            border-radius: 12px;
+            padding: .8rem 1rem;
+            font-weight: 600;
+        }
+
+        .admin-tools {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .admin-tools .btn {
+            border-radius: 12px;
+        }
+
+        .school-profile-section {
+            display: none;
+        }
+
+        .academic-year-section {
+            display: none;
+        }
+
+        .setup-banner {
+            display: none;
+            border: 1px solid #cfe2ff;
+            background: #eef5ff;
+            color: #153c72;
+            border-radius: 18px;
+            padding: 1rem 1.15rem;
+        }
+
+        .session-status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .85rem;
+        }
+
+        .session-status-card {
+            background: #f8fbff;
+            border: 1px solid #dbe7ff;
+            border-radius: 16px;
+            padding: 1rem;
+        }
+
+        .session-status-card span {
+            display: block;
+            color: #6c757d;
+            font-size: .8rem;
+            margin-bottom: .2rem;
+        }
+
+        .session-status-card strong {
+            color: #153c72;
+            font-size: 1rem;
+        }
+
+        .school-logo-panel {
+            background: linear-gradient(135deg, #f8fbff, #eef5ff);
+            border: 1px solid #d9e6ff;
+            border-radius: 18px;
+            padding: 1.25rem;
+            height: 100%;
+        }
+
+        .school-logo-preview {
+            max-width: 150px;
+            max-height: 150px;
+            object-fit: contain;
+            border: 1px solid #dbe6f7;
+            border-radius: 16px;
+            padding: 12px;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(56, 89, 142, 0.08);
+        }
+
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.18);
+            padding: .55rem .9rem;
+            font-weight: 600;
+            font-size: .92rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .profile-hero {
+                padding: 1.6rem;
+            }
+
+            .profile-hero h1 {
+                font-size: 1.85rem;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .field-span-4,
+            .field-span-6,
+            .field-span-12 {
+                grid-column: span 1;
+            }
+
+            .profile-metric-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .session-status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-stack .btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body class="bg-light">
      <!-- Navbar will be loaded here -->
     <div id="navbar-container"></div>
-    <div class="container">
-        <div class="profile-section">
-            <div class="profile-header">
-                <div class="profile-avatar">
-                    <i class="fas fa-user"></i>
+    <div class="container-fluid profile-shell py-4">
+        <section class="profile-hero">
+            <div class="profile-kicker">Account Workspace</div>
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-4 align-items-lg-center">
+                <div>
+                    <h1>Profile & School Settings</h1>
+                    <p>Manage your account details, review role information, and update school branding from one professional workspace.</p>
                 </div>
-                <h2 class="mb-3">My Profile</h2>
-                <div id="adminControls" style="display: none;">
-                    <a href="user-list.html" class="btn btn-primary mb-3">
-                        <i class="fas fa-users"></i> Manage Users
-                    </a>
+                <div class="admin-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <span id="heroRoleLabel">User Access</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="profile-sidebar">
+                    <div class="profile-card">
+                        <div class="profile-card-body profile-overview">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="profile-name" id="profileDisplayName">My Profile</div>
+                            <div class="profile-subtitle" id="profileDisplayEmail">Professional account settings</div>
+                            <div class="profile-metric-grid">
+                                <div class="profile-metric">
+                                    <span>Username</span>
+                                    <strong id="profileUsernameText">-</strong>
+                                </div>
+                                <div class="profile-metric">
+                                    <span>Role</span>
+                                    <strong id="profileRoleText">-</strong>
+                                </div>
+                            </div>
+                            <div id="adminControls" class="admin-tools">
+                                <a href="user-list.html" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-users me-2"></i>Manage Users
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card">
+                        <div class="profile-card-header">
+                            <h4>Quick Notes</h4>
+                        </div>
+                        <div class="profile-card-body">
+                            <div id="academicYearSetupBanner" class="setup-banner mb-3">
+                                No academic year is currently configured. Create one here before continuing with student work.
+                            </div>
+                            <div class="section-eyebrow">Profile Guidance</div>
+                            <p class="mb-2 text-muted">Keep your contact details updated so account actions and school settings stay aligned.</p>
+                            <p class="mb-0 text-muted">Admin users can also maintain school identity details, logo assets, and watermark text from this page.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <form id="profileForm">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="firstName">First Name</label>
-                            <input type="text" class="form-control" id="firstName" name="firstName" required>
+            <div class="col-lg-8">
+                <div class="form-panel">
+                    <div class="profile-card">
+                        <div class="profile-card-header">
+                            <h3>Personal Information</h3>
+                        </div>
+                        <div class="profile-card-body">
+                            <div class="section-eyebrow">Account Details</div>
+                            <p class="readonly-note">Update your name and contact email. Username and role remain read-only.</p>
+                            <form id="profileForm">
+                                <div class="form-grid">
+                                    <div class="field-span-6">
+                                        <div class="form-group">
+                                            <label class="form-label" for="firstName">First Name</label>
+                                            <input type="text" class="form-control" id="firstName" name="firstName" required>
+                                        </div>
+                                    </div>
+                                    <div class="field-span-6">
+                                        <div class="form-group">
+                                            <label class="form-label" for="lastName">Last Name</label>
+                                            <input type="text" class="form-control" id="lastName" name="lastName" required>
+                                        </div>
+                                    </div>
+                                    <div class="field-span-12">
+                                        <div class="form-group">
+                                            <label class="form-label" for="email">Email</label>
+                                            <input type="email" class="form-control" id="email" name="email" required>
+                                        </div>
+                                    </div>
+                                    <div class="field-span-6">
+                                        <div class="form-group">
+                                            <label class="form-label" for="username">Username</label>
+                                            <input type="text" class="form-control" id="username" name="username" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="field-span-6">
+                                        <div class="form-group">
+                                            <label class="form-label" for="role">Role</label>
+                                            <input type="text" class="form-control" id="role" name="role" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="action-stack mt-4">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Update Profile
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="logout()">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="lastName">Last Name</label>
-                            <input type="text" class="form-control" id="lastName" name="lastName" required>
+
+                    <div id="schoolProfileSection" class="school-profile-section">
+                        <div class="profile-card">
+                            <div class="profile-card-header">
+                                <h3>School Profile</h3>
+                            </div>
+                            <div class="profile-card-body">
+                                <div class="section-eyebrow">Admin Controls</div>
+                                <p class="readonly-note">Maintain the official school identity used across marksheets, receipts, and shared documents.</p>
+                                <form id="schoolProfileForm" enctype="multipart/form-data">
+                                    <div class="form-grid">
+                                        <div class="field-span-6">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolName">School Name</label>
+                                                <input type="text" class="form-control" id="schoolName" required>
+                                            </div>
+                                        </div>
+                                        <div class="field-span-6">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolShortName">Short Name</label>
+                                                <input type="text" class="form-control" id="schoolShortName">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-12">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolTagline">Tagline</label>
+                                                <input type="text" class="form-control" id="schoolTagline">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-12">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolAddressLine1">Address Line 1</label>
+                                                <input type="text" class="form-control" id="schoolAddressLine1">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-12">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolAddressLine2">Address Line 2</label>
+                                                <input type="text" class="form-control" id="schoolAddressLine2">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-4">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolPhone">Phone</label>
+                                                <input type="text" class="form-control" id="schoolPhone">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-4">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolEmail">Email</label>
+                                                <input type="email" class="form-control" id="schoolEmail">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-4">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolWebsite">Website</label>
+                                                <input type="text" class="form-control" id="schoolWebsite">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-6">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolWatermarkText">Watermark Text</label>
+                                                <input type="text" class="form-control" id="schoolWatermarkText">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-6">
+                                            <div class="school-logo-panel text-center">
+                                                <label class="form-label d-block text-start" for="schoolLogoFile">School Logo</label>
+                                                <input type="file" class="form-control mb-3" id="schoolLogoFile" accept="image/*">
+                                                <img id="schoolLogoPreview" class="school-logo-preview" src="../assets/images/logo1.png" alt="School logo preview">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="action-stack mt-4">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-building me-2"></i>Save School Profile
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="academicYearSection" class="academic-year-section">
+                        <div class="profile-card">
+                            <div class="profile-card-header">
+                                <h3>Academic Year</h3>
+                            </div>
+                            <div class="profile-card-body">
+                                <div class="section-eyebrow">Session Setup</div>
+                                <p class="readonly-note">This uses the same academic year setup already available in the student database page.</p>
+                                <div class="session-status-grid mb-4">
+                                    <div class="session-status-card">
+                                        <span>Current Academic Year</span>
+                                        <strong id="currentAcademicYearText">Not set</strong>
+                                    </div>
+                                    <div class="session-status-card">
+                                        <span>Available Academic Years</span>
+                                        <strong id="academicYearCountText">0</strong>
+                                    </div>
+                                </div>
+                                <div class="action-stack">
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sessionModal">
+                                        <i class="fas fa-calendar-plus me-2"></i>Create Academic Year
+                                    </button>
+                                    <a href="student-database.html" class="btn btn-outline-primary">
+                                        <i class="fas fa-database me-2"></i>Open Student Database
+                                    </a>
+                                </div>
+                                <div id="academicYearHelpText" class="readonly-note mt-3"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
+    <div class="modal fade" id="sessionModal" tabindex="-1" aria-labelledby="sessionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sessionModalLabel">Manage Sessions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                <div class="modal-body">
+                    <form id="sessionForm">
+                        <div class="mb-3">
+                            <label for="newSessionName" class="form-label">Session Name</label>
+                            <input type="text" class="form-control" id="newSessionName" placeholder="e.g., 2025-2026" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newSessionStatus" class="form-label">Status</label>
+                            <select class="form-select" id="newSessionStatus">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newSessionStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="newSessionStartDate">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newSessionEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="newSessionEndDate">
+                        </div>
+                    </form>
 
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" class="form-control" id="username" name="username" readonly>
+                    <div class="mt-3">
+                        <h6>Existing Sessions</h6>
+                        <div id="sessionsList"></div>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="role">Role</label>
-                    <input type="text" class="form-control" id="role" name="role" readonly>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveSessionBtn">Save Session</button>
                 </div>
-
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary">Update Profile</button>
-                    <button type="button" class="btn btn-danger" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/config.js"></script>
     <script src="../js/auth.js"></script>   
+    <script src="../js/school-profile.js"></script>
+    <script src="../js/student-database-session.js"></script>
     <script src="../components/navbar.js"></script>
     <script>
         // Check authentication
         if (!Auth.isAuthenticated()) {
-            window.location.href = '../index.html';
+            Auth.redirectToLogin();
         }
+
+        const profileUrlParams = new URLSearchParams(window.location.search);
+        const needsAcademicYearSetup = profileUrlParams.get('setupAcademicYear') === '1';
+
+        async function fetchAcademicYearSummary() {
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/sessions`, {
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load academic years');
+                }
+
+                const data = await response.json();
+                const sessions = Array.isArray(data?.sessions)
+                    ? data.sessions
+                    : Array.isArray(data)
+                        ? data
+                        : [];
+
+                const realSessions = sessions.filter(session => {
+                    const sessionName = (session?.name || session || '').trim();
+                    return sessionName && sessionName.toLowerCase() !== 'default';
+                });
+
+                const currentSession = realSessions.find(session => session?.isCurrent)
+                    || realSessions.find(session => session?.active)
+                    || null;
+
+                document.getElementById('currentAcademicYearText').textContent = currentSession?.name || 'Not set';
+                document.getElementById('academicYearCountText').textContent = String(realSessions.length);
+
+                const helpText = document.getElementById('academicYearHelpText');
+                const banner = document.getElementById('academicYearSetupBanner');
+                const setupPending = realSessions.length === 0 || !realSessions.some(session => session?.isCurrent);
+
+                if (setupPending) {
+                    banner.style.display = 'block';
+                    helpText.textContent = 'Create an academic year and set it as current so the rest of the app uses the correct session.';
+                } else {
+                    banner.style.display = 'none';
+                    helpText.textContent = 'Academic year setup is ready. You can add another year or switch the current one any time.';
+                }
+
+                return { realSessions, currentSession, setupPending };
+            } catch (error) {
+                console.error('Error loading academic year summary:', error);
+                document.getElementById('currentAcademicYearText').textContent = 'Unavailable';
+                document.getElementById('academicYearCountText').textContent = '-';
+                document.getElementById('academicYearHelpText').textContent = 'Academic year data could not be loaded right now.';
+                return { realSessions: [], currentSession: null, setupPending: true };
+            }
+        }
+
+        document.addEventListener('sessions:updated', () => {
+            const academicYearSection = document.getElementById('academicYearSection');
+            if (academicYearSection && academicYearSection.style.display === 'block') {
+                fetchAcademicYearSummary();
+            }
+        });
 
         // Logout function
         function logout() {
             Auth.logout();
-            window.location.href = '../index.html';
         }
 
         // Load profile data
@@ -143,10 +706,28 @@
                     document.getElementById('email').value = user.email || '';
                     document.getElementById('username').value = user.username || '';
                     document.getElementById('role').value = user.role || '';
+                    document.getElementById('profileDisplayName').textContent = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'My Profile';
+                    document.getElementById('profileDisplayEmail').textContent = user.email || 'Professional account settings';
+                    document.getElementById('profileUsernameText').textContent = user.username || '-';
+                    document.getElementById('profileRoleText').textContent = user.role || '-';
+                    document.getElementById('heroRoleLabel').textContent = user.role === 'admin' ? 'Administrator Access' : 'User Access';
 
                     // Show admin controls if user is admin
                     if (user.role === 'admin') {
                         document.getElementById('adminControls').style.display = 'block';
+                        document.getElementById('schoolProfileSection').style.display = 'block';
+                        document.getElementById('academicYearSection').style.display = 'block';
+                        await loadSchoolProfile();
+                        const academicYearState = await fetchAcademicYearSummary();
+
+                        if (needsAcademicYearSetup && academicYearState.setupPending) {
+                            const sessionModalEl = document.getElementById('sessionModal');
+                            const modal = bootstrap.Modal.getOrCreateInstance(sessionModalEl);
+                            modal.show();
+                        }
+                    } else if (needsAcademicYearSetup) {
+                        document.getElementById('academicYearSetupBanner').style.display = 'block';
+                        document.getElementById('academicYearSetupBanner').textContent = 'No academic year is currently configured. Please ask an admin user to create it from this profile page.';
                     }
                 } else {
                     console.error('No user data received');
@@ -154,6 +735,33 @@
             } catch (error) {
                 console.error('Error loading profile:', error);
                 alert(`Failed to load profile data: ${error.message}`);
+            }
+        }
+
+        async function loadSchoolProfile() {
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/school-profile`);
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to load school profile');
+                }
+
+                const profile = data.profile || {};
+                document.getElementById('schoolName').value = profile.name || '';
+                document.getElementById('schoolShortName').value = profile.shortName || '';
+                document.getElementById('schoolTagline').value = profile.tagline || '';
+                document.getElementById('schoolAddressLine1').value = profile.addressLine1 || '';
+                document.getElementById('schoolAddressLine2').value = profile.addressLine2 || '';
+                document.getElementById('schoolPhone').value = profile.phone || '';
+                document.getElementById('schoolEmail').value = profile.email || '';
+                document.getElementById('schoolWebsite').value = profile.website || '';
+                document.getElementById('schoolWatermarkText').value = profile.watermarkText || '';
+                document.getElementById('schoolLogoPreview').src = profile.logo
+                    ? new URL(profile.logo, new URL(CONFIG.API_URL).origin).toString()
+                    : '../assets/images/logo1.png';
+            } catch (error) {
+                console.error('Error loading school profile:', error);
+                alert(`Failed to load school profile: ${error.message}`);
             }
         }
 
@@ -196,9 +804,59 @@
             }
         });
 
+        document.getElementById('schoolLogoFile').addEventListener('change', function () {
+            const file = this.files?.[0];
+            if (!file) return;
+            document.getElementById('schoolLogoPreview').src = URL.createObjectURL(file);
+        });
+
+        document.getElementById('schoolProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('name', document.getElementById('schoolName').value.trim());
+            formData.append('shortName', document.getElementById('schoolShortName').value.trim());
+            formData.append('tagline', document.getElementById('schoolTagline').value.trim());
+            formData.append('addressLine1', document.getElementById('schoolAddressLine1').value.trim());
+            formData.append('addressLine2', document.getElementById('schoolAddressLine2').value.trim());
+            formData.append('phone', document.getElementById('schoolPhone').value.trim());
+            formData.append('email', document.getElementById('schoolEmail').value.trim());
+            formData.append('website', document.getElementById('schoolWebsite').value.trim());
+            formData.append('watermarkText', document.getElementById('schoolWatermarkText').value.trim());
+
+            const logoFile = document.getElementById('schoolLogoFile').files?.[0];
+            if (logoFile) {
+                formData.append('logoFile', logoFile);
+            }
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/school-profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'Failed to save school profile');
+                }
+
+                alert('School profile updated successfully');
+                await loadSchoolProfile();
+                await window.SchoolProfile.fetch(true);
+            } catch (error) {
+                console.error('Error updating school profile:', error);
+                alert(`Failed to update school profile: ${error.message}`);
+            }
+        });
+
         // Load profile on page load
         loadProfile();
     </script>
     
+    <script src='../js/page-shell.js'></script>
 </body>
 </html>
+

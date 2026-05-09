@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teacher Weekly Load</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/navbar.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    body { background:#eef2f7; }
+
+    .teacher-row {
+      background:#dfefff;
+      cursor:pointer;
+      font-weight:bold;
+      margin-bottom:6px;
+      padding:8px;
+      border-radius:6px;
+    }
+
+    .class-row {
+      background:#fff;
+      cursor:pointer;
+      margin-left:15px;
+      border-left:4px solid #3498db;
+      padding:6px;
+      border-radius:4px;
+    }
+
+    .hidden { display:none; }
+
+    .arrow {
+      margin-right:8px;
+      display:inline-block;
+      transition:0.2s;
+    }
+
+    .rotate { transform:rotate(90deg); }
+
+    .overload {
+      background:#e74c3c !important;
+      color:white;
+    }
+
+    .conflict {
+      background:#ff4d4d;
+      color:white;
+      font-weight:bold;
+    }
+
+    table {
+      font-size:13px;
+      margin-bottom:10px;
+    }
+
+    #loader {
+      position:fixed;
+      inset:0;
+      background:rgba(255,255,255,0.85);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+    }
+
+    .spinner {
+      width:60px;
+      height:60px;
+      border:6px solid #ddd;
+      border-top:6px solid #3498db;
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      100% { transform:rotate(360deg); }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="navbar-container"></div>
+
+<div id="loader"><div class="spinner"></div></div>
+
+<div class="container mt-4">
+
+  <h2>📊 Teacher Dashboard</h2>
+
+  <!-- Controls -->
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <select id="sessionSelect" class="form-control"></select>
+    </div>
+
+    <div class="col-md-2">
+      <input id="overloadLimit" class="form-control" value="30">
+    </div>
+
+    <div class="col-md-2">
+      <button class="btn btn-primary w-100" onclick="loadData()">Load</button>
+    </div>
+
+    <div class="col-md-2">
+      <button class="btn btn-success w-100" onclick="exportExcel()">Export</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><button class="nav-link active" onclick="openTab('dashboardTab', this)">Dashboard</button></li>
+    <li class="nav-item"><button class="nav-link" onclick="openTab('compareTab', this)">Compare</button></li>
+    <li class="nav-item"><button class="nav-link" onclick="openTab('conflictTab', this)">Conflicts</button></li>
+    <li class="nav-item"><button class="nav-link" onclick="openTab('overloadTab', this)">Overloads</button></li>
+  </ul>
+
+  <!-- DASHBOARD -->
+  <div id="dashboardTab">
+    <canvas id="chart"></canvas>
+    <hr>
+    <div id="subjectList"></div>
+    <hr>
+    <div id="output"></div>
+  </div>
+
+  <!-- COMPARE -->
+  <div id="compareTab" class="hidden">
+    <div class="row mb-3">
+      <div class="col-md-4"><select id="teacher1" class="form-control"></select></div>
+      <div class="col-md-4"><select id="teacher2" class="form-control"></select></div>
+      <div class="col-md-2">
+        <button class="btn btn-warning w-100" onclick="compareTeachers()">Compare</button>
+      </div>
+    </div>
+    <div id="compareResult"></div>
+  </div>
+
+  <!-- CONFLICT -->
+  <div id="conflictTab" class="hidden"></div>
+
+  <!-- OVERLOAD -->
+  <div id="overloadTab" class="hidden"></div>
+
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+
+<script>
+
+const API_BASE_URL = CONFIG.API_URL;
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const PERIODS = ["1st","2nd","3rd","4th","5th","6th","7th"];
+
+let globalTeacherMap = {};
+let globalConflicts = {};
+let subjectMap = {};
+let chartInstance = null;
+
+const loader = document.getElementById("loader");
+const sessionSelect = document.getElementById("sessionSelect");
+const overloadLimitInput = document.getElementById("overloadLimit");
+const output = document.getElementById("output");
+const conflictTab = document.getElementById("conflictTab");
+const overloadTab = document.getElementById("overloadTab");
+const subjectList = document.getElementById("subjectList");
+const teacher1 = document.getElementById("teacher1");
+const teacher2 = document.getElementById("teacher2");
+const compareResult = document.getElementById("compareResult");
+const chartCanvas = document.getElementById("chart");
+
+function showLoader(){ loader.style.display="flex"; }
+function hideLoader(){ loader.style.display="none"; }
+
+// ✅ FIXED TAB FUNCTION
+function openTab(tabId, btn){
+
+  // hide all tabs
+  document.querySelectorAll('#dashboardTab, #compareTab, #conflictTab, #overloadTab')
+    .forEach(el => el.classList.add("hidden"));
+
+  // show selected tab
+  document.getElementById(tabId).classList.remove("hidden");
+
+  // update active class
+  document.querySelectorAll('.nav-link').forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+// ================= LOAD =================
+async function loadData(){
+  showLoader();
+
+  try {
+    const session = sessionSelect.value || "Default";
+    const teacherMap = {};
+    const slotMap = {};
+    subjectMap = {};
+
+    for(const day of DAYS){
+      const res = await fetch(`${API_BASE_URL}/routines/get-routine?day=${encodeURIComponent(day)}&session=${encodeURIComponent(session)}`);
+      if(!res.ok) continue;
+
+      const data = await res.json();
+      const routines = Array.isArray(data) ? data : (data.routines || []);
+
+      routines.forEach(r=>{
+        const cls = r.class || r.className;
+
+        (r.periods||[]).forEach(p=>{
+          if(!p.teacher) return;
+
+          const teacher = p.teacher.trim();
+          if(!teacher) return;
+
+          const key = `${day}-${p.period}-${teacher}`;
+          if(!slotMap[key]) slotMap[key]=[];
+          slotMap[key].push(cls);
+
+          if(!teacherMap[teacher]) teacherMap[teacher]={total:0, classes:{}};
+          teacherMap[teacher].total++;
+
+          if(!teacherMap[teacher].classes[cls]) teacherMap[teacher].classes[cls]={};
+          if(!teacherMap[teacher].classes[cls][day]) teacherMap[teacher].classes[cls][day]={};
+
+          teacherMap[teacher].classes[cls][day][p.period]=p.subject || "-";
+
+          if(p.subject){
+            if(!subjectMap[p.subject]) subjectMap[p.subject]=new Set();
+            subjectMap[p.subject].add(teacher);
+          }
+        });
+      });
+    }
+
+    globalTeacherMap = teacherMap;
+
+    globalConflicts = {};
+    Object.entries(slotMap).forEach(([k,v])=>{
+      if(v.length>1) globalConflicts[k]=v;
+    });
+
+    render();
+    renderChart();
+    renderSubjects();
+    renderConflicts();
+    renderOverloads();
+    populateTeacherDropdown();
+  } finally {
+    hideLoader();
+  }
+}
+
+// ================= NEW TABS =================
+
+function renderConflicts(){
+  let html=`<h5>🔴 Conflict List</h5>
+  <table class="table table-bordered text-center">
+  <tr><th>Day</th><th>Period</th><th>Teacher</th><th>Classes</th></tr>`;
+
+  Object.entries(globalConflicts).forEach(([k,v])=>{
+    const [d,p,t]=k.split("-");
+    html+=`<tr><td>${d}</td><td>${p}</td><td>${t}</td><td>${v.join(",")}</td></tr>`;
+  });
+
+  if(Object.keys(globalConflicts).length===0){
+    html+=`<tr><td colspan="4">No Conflicts</td></tr>`;
+  }
+
+  html+="</table>";
+  conflictTab.innerHTML=html;
+}
+
+function renderOverloads(){
+  const limit=parseInt(overloadLimitInput.value)||30;
+
+  let html=`<h5>⚠️ Overloaded Teachers</h5>
+  <table class="table table-bordered text-center">
+  <tr><th>Teacher</th><th>Total</th></tr>`;
+
+  Object.entries(globalTeacherMap).forEach(([t,i])=>{
+    if(i.total>limit){
+      html+=`<tr><td>${t}</td><td>${i.total}</td></tr>`;
+    }
+  });
+
+  html+="</table>";
+  overloadTab.innerHTML=html;
+}
+
+// ================= EXISTING =================
+
+function generateTable(days, teacher){
+  let html=`<table class="table table-bordered text-center">`;
+  html+=`<tr><th>Day</th>`;
+  PERIODS.forEach(p=>html+=`<th>${p}</th>`);
+  html+=`</tr>`;
+  DAYS.forEach(d=>{
+    html+=`<tr><td>${d}</td>`;
+    PERIODS.forEach(p=>{
+      const val = days[d]?.[p] || "-";
+      const key = `${d}-${p}-${teacher}`;
+      html+=`<td class="${globalConflicts[key]?'conflict':''}">${val}</td>`;
+    });
+    html+=`</tr>`;
+  });
+  html+=`</table>`;
+  return html;
+}
+
+function render(){
+  let html="";
+  const limit=parseInt(overloadLimitInput.value)||30;
+
+  Object.entries(globalTeacherMap).forEach(([t,info],i)=>{
+    const id=`t-${i}`;
+    const overload=info.total>limit;
+
+    html+=`
+    <div class="teacher-row ${overload?'overload':''}" onclick="toggle('${id}')">
+      <span class="arrow" id="arrow-${id}">▶</span>
+      ${t} (${info.total})
+    </div>
+
+    <div id="${id}" class="hidden">`;
+
+    Object.entries(info.classes).forEach(([cls,days],j)=>{
+      const cid=`${id}-${j}`;
+      html+=`
+      <div class="class-row" onclick="toggle('${cid}')">
+        <span class="arrow" id="arrow-${cid}">▶</span>${cls}
+      </div>
+      <div id="${cid}" class="hidden">${generateTable(days,t)}</div>`;
+    });
+
+    html+=`</div>`;
+  });
+
+  output.innerHTML=html;
+}
+
+function renderSubjects(){
+  let html=`<h5>📚 Subject Wise Teachers</h5>
+  <table class="table table-bordered table-striped text-center">
+  <thead class="table-dark">
+  <tr><th>Subject</th><th>Teachers</th><th>No. of Teachers</th></tr>
+  </thead><tbody>`;
+
+  Object.entries(subjectMap).forEach(([s,t])=>{
+    html+=`<tr><td>${s}</td><td>${[...t].join(", ")}</td><td>${t.size}</td></tr>`;
+  });
+
+  html+="</tbody></table>";
+  subjectList.innerHTML=html;
+}
+
+function populateTeacherDropdown(){
+  teacher1.innerHTML="";
+  teacher2.innerHTML="";
+  Object.keys(globalTeacherMap).forEach(t=>{
+    teacher1.innerHTML+=`<option>${t}</option>`;
+    teacher2.innerHTML+=`<option>${t}</option>`;
+  });
+}
+
+function compareTeachers(){
+  const t1=teacher1.value;
+  const t2=teacher2.value;
+
+  compareResult.innerHTML=`
+  <div class="row">
+    <div class="col-md-6">${renderFullTeacher(t1)}</div>
+    <div class="col-md-6">${renderFullTeacher(t2)}</div>
+  </div>`;
+}
+
+function renderFullTeacher(t){
+  const info=globalTeacherMap[t];
+  if(!info){
+    return "<p>Select valid teachers to compare.</p>";
+  }
+  let html=`<h6>${t}</h6>`;
+  Object.entries(info.classes).forEach(([cls,days])=>{
+    html+=`<b>${cls}</b>${generateTable(days,t)}`;
+  });
+  return html;
+}
+
+function renderChart(){
+  if(chartInstance){
+    chartInstance.destroy();
+  }
+
+  chartInstance = new Chart(chartCanvas,{
+    type:'bar',
+    data:{
+      labels:Object.keys(globalTeacherMap),
+      datasets:[{
+        label:'Periods',
+        data:Object.values(globalTeacherMap).map(d=>d.total)
+      }]
+    }
+  });
+}
+
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+  const rows=[["Teacher","Total"]];
+  Object.entries(globalTeacherMap).forEach(([t,i])=>{
+    rows.push([t,i.total]);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Data");
+  XLSX.writeFile(wb,"TeacherDashboard.xlsx");
+}
+
+function toggle(id){
+  const el=document.getElementById(id);
+  const arrow=document.getElementById("arrow-"+id);
+  if(!el || !arrow) return;
+  el.classList.toggle("hidden");
+  arrow.classList.toggle("rotate");
+}
+
+async function loadSessions(){
+  const res=await fetch(`${API_BASE_URL}/sessions`);
+  const data=await res.json();
+  const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+  sessionSelect.innerHTML = "";
+
+  (sessions.length ? sessions : [{ name: "Default" }]).forEach(s=>{
+    sessionSelect.innerHTML+=`<option value="${s.name}">${s.name}</option>`;
+  });
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../components/navbar.js"></script>
+<script>
+window.addEventListener("DOMContentLoaded", async () => {
+  await loadSessions();
+  await loadData();
+});
+</script>
+
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

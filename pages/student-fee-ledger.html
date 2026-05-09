@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Fee Ledger</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        :root {
+            --ledger-accent: #0f766e;
+            --ledger-accent-soft: #ccfbf1;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f0fdfb 0%, #f8fafc 100%);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .panel-card,
+        .table-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #134e4a, #0f766e 56%, #2dd4bf);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .hero-chip,
+        .summary-chip {
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-chip {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
+        .summary-chip {
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+            color: #0f172a;
+        }
+
+        .summary-stat {
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            min-height: 100%;
+        }
+
+        .summary-stat .label {
+            color: #64748b;
+            font-size: 0.88rem;
+        }
+
+        .summary-stat .value {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .ledger-table th {
+            background: #ecfeff;
+            color: #000;
+            white-space: nowrap;
+        }
+
+        .ledger-table td,
+        .ledger-table th,
+        .tx-table td,
+        .tx-table th {
+            vertical-align: middle;
+        }
+
+        .student-card {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        .empty-state {
+            min-height: 240px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            border: 2px dashed rgba(15, 118, 110, 0.2);
+            border-radius: 18px;
+            color: #64748b;
+            background: rgba(255, 255, 255, 0.72);
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            #navbar-container,
+            .filters-card,
+            .actions-bar {
+                display: none !important;
+            }
+
+            .hero-card,
+            .panel-card,
+            .table-card {
+                box-shadow: none;
+                border: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container-fluid" style="max-width: 1450px;">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-lg-8">
+                            <span class="hero-chip mb-3"><i class="fas fa-book-open-reader"></i>Fees Workspace</span>
+                            <h1 class="h2 mb-3">Student fee ledger</h1>
+                            <p class="mb-0 text-white-50">
+                                Review a single student's session-wise fee movement with monthly charges, payments, running balance, and receipt history in one place.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="summary-stat border-0" style="background: rgba(255,255,255,0.14); color: #fff;">
+                                <div class="label text-white-50">Status</div>
+                                <div class="value text-white" id="heroStatus">Select session and admission no.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card panel-card filters-card mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="sessionSelect">Academic Session</label>
+                            <select class="form-select" id="sessionSelect"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="admissionInput">Admission No</label>
+                            <input type="text" class="form-control" id="admissionInput" placeholder="Enter admission no">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2 justify-content-md-end actions-bar">
+                                <button class="btn btn-success" id="loadLedgerBtn" type="button">
+                                    <i class="fas fa-magnifying-glass me-2"></i>Load Ledger
+                                </button>
+                                <button class="btn btn-outline-primary" id="exportBtn" type="button" disabled>
+                                    <i class="fas fa-file-excel me-2"></i>Export
+                                </button>
+                                <button class="btn btn-outline-secondary" id="printBtn" type="button" disabled>
+                                    <i class="fas fa-print me-2"></i>Print
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="row g-4 mb-4">
+                <div class="col-lg-4">
+                    <div class="card panel-card student-card h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h2 class="h4 mb-1" id="studentName">Student details</h2>
+                                    <div class="text-muted" id="studentMeta">Load a student to view the session ledger.</div>
+                                </div>
+                                <span class="summary-chip"><i class="fas fa-id-badge"></i><span id="studentAdmissionChip">-</span></span>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="summary-stat">
+                                        <div class="label">Class</div>
+                                        <div class="value fs-6" id="studentClass">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="summary-stat">
+                                        <div class="label">Section</div>
+                                        <div class="value fs-6" id="studentSection">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="summary-stat">
+                                        <div class="label">Father Name</div>
+                                        <div class="value fs-6" id="studentFather">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="summary-stat">
+                                        <div class="label">Transport</div>
+                                        <div class="value fs-6" id="studentTransport">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="summary-stat">
+                                <div class="label">Session Charges</div>
+                                <div class="value" id="statCharges">0.00</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-stat">
+                                <div class="label">Collected</div>
+                                <div class="value text-success" id="statPaid">0.00</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-stat">
+                                <div class="label">Outstanding</div>
+                                <div class="value text-danger" id="statDue">0.00</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-stat">
+                                <div class="label">Receipts</div>
+                                <div class="value" id="statReceipts">0</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="card panel-card">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <h3 class="h5 mb-1">Session summary</h3>
+                                            <p class="text-muted mb-0" id="summaryText">Monthly ledger will appear here after loading the student.</p>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <span class="summary-chip"><i class="fas fa-school"></i><span id="summarySessionChip">-</span></span>
+                                            <span class="summary-chip"><i class="fas fa-coins"></i>Balance: <span id="summaryBalanceChip">0.00</span></span>
+                                        </div>
+                                    </div>
+                                    <div id="ledgerEmpty" class="empty-state">
+                                        <div>
+                                            <i class="fas fa-file-invoice-dollar fa-2x mb-3"></i>
+                                            <p class="mb-1 fw-semibold">No ledger loaded yet.</p>
+                                            <p class="mb-0">Choose a session and admission number to build the register.</p>
+                                        </div>
+                                    </div>
+                                    <div id="ledgerTableWrap" class="table-responsive d-none">
+                                        <table class="table table-bordered table-striped ledger-table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Month</th>
+                                                    <th>Tuition Charges</th>
+                                                    <th>Transport Charges</th>
+                                                    <th>Other Charges</th>
+                                                    <th>Total Charges</th>
+                                                    <th>Total Paid</th>
+                                                    <th>Closing Balance</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ledgerTableBody"></tbody>
+                                            <tfoot id="ledgerTableFoot"></tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card table-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Recent receipts</h2>
+                            <p class="text-muted mb-0">Session-filtered fee transactions for the selected student.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border" id="txCountBadge">0 receipts</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle tx-table mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Receipt No</th>
+                                    <th>Voucher No</th>
+                                    <th>Month</th>
+                                    <th>Particulars</th>
+                                    <th>Paid Amount</th>
+                                    <th>Due Amount</th>
+                                    <th>Mode</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">No transactions loaded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const SESSION_MONTHS = ['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'];
+        const FEE_TYPE_GROUPS = {
+            tuition: ['Tuition Fee', 'Tuition Fees', 'Tuition'],
+            transport: ['Transport Fee', 'Transport Fees', 'Transport']
+        };
+
+        const sessionSelect = document.getElementById('sessionSelect');
+        const admissionInput = document.getElementById('admissionInput');
+        const loadLedgerBtn = document.getElementById('loadLedgerBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const printBtn = document.getElementById('printBtn');
+        const heroStatus = document.getElementById('heroStatus');
+
+        let currentLedgerRows = [];
+        let currentTransactions = [];
+        let currentStudent = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) return;
+
+            loadLedgerBtn.addEventListener('click', loadLedger);
+            exportBtn.addEventListener('click', exportLedger);
+            printBtn.addEventListener('click', () => window.print());
+            admissionInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    loadLedger();
+                }
+            });
+
+            await loadSessions();
+        });
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + Auth.getToken(),
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function loadSessions() {
+            try {
+                const [sessionsResponse, currentResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/sessions`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/sessions/current`, { headers: authHeaders() })
+                ]);
+
+                const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+                const currentPayload = currentResponse.ok ? await currentResponse.json() : {};
+                const sessions = Array.isArray(sessionsPayload.sessions) ? sessionsPayload.sessions : [];
+                const selectedSession = currentPayload?.session?.name || sessions.find((item) => item.isCurrent)?.name || sessions[0]?.name || '';
+
+                sessionSelect.innerHTML = sessions.map((session) => {
+                    return `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`;
+                }).join('');
+                sessionSelect.value = selectedSession;
+                document.getElementById('summarySessionChip').textContent = selectedSession || '-';
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+                heroStatus.textContent = 'Unable to load sessions';
+            }
+        }
+
+        async function loadLedger() {
+            const session = sessionSelect.value;
+            const admissionNo = admissionInput.value.trim();
+
+            if (!session || !admissionNo) {
+                alert('Choose academic session and enter admission number first.');
+                return;
+            }
+
+            loadLedgerBtn.disabled = true;
+            exportBtn.disabled = true;
+            printBtn.disabled = true;
+            heroStatus.textContent = 'Loading fee ledger...';
+
+            try {
+                const [studentResponse, feeSummaryResponse, txResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/student/${encodeURIComponent(admissionNo)}?session=${encodeURIComponent(session)}`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/fees/student/${encodeURIComponent(admissionNo)}?session=${encodeURIComponent(session)}`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/fees/transactions?admissionNo=${encodeURIComponent(admissionNo)}&session=${encodeURIComponent(session)}&limit=500`, { headers: authHeaders() })
+                ]);
+
+                if (!studentResponse.ok) {
+                    throw new Error(`Student HTTP ${studentResponse.status}`);
+                }
+
+                const studentPayload = await studentResponse.json();
+                const feeSummaryPayload = feeSummaryResponse.ok ? await feeSummaryResponse.json() : {};
+                const txPayload = txResponse.ok ? await txResponse.json() : {};
+
+                currentStudent = studentPayload?.student || feeSummaryPayload?.student || null;
+                currentTransactions = Array.isArray(txPayload.transactions) ? txPayload.transactions : [];
+                currentLedgerRows = buildMonthlyLedger(currentTransactions);
+
+                renderStudent(currentStudent);
+                renderSummary(currentLedgerRows, currentTransactions, session);
+                renderLedgerTable(currentLedgerRows);
+                renderTransactions(currentTransactions);
+
+                exportBtn.disabled = !currentLedgerRows.length;
+                printBtn.disabled = !currentLedgerRows.length;
+                heroStatus.textContent = currentStudent ? `Ledger ready for ${currentStudent.name || admissionNo}` : 'Ledger ready';
+            } catch (error) {
+                console.error('Failed to load fee ledger:', error);
+                resetView(`Unable to load ledger for ${admissionNo}`);
+                alert('Unable to load the student fee ledger right now.');
+            } finally {
+                loadLedgerBtn.disabled = false;
+            }
+        }
+
+        function buildMonthlyLedger(transactions) {
+            const monthMap = new Map(SESSION_MONTHS.map((month) => [month, {
+                month,
+                tuition: 0,
+                transport: 0,
+                other: 0,
+                charges: 0,
+                paid: 0,
+                closingBalance: 0
+            }]));
+
+            transactions.forEach((transaction) => {
+                const normalizedMonth = normalizeMonth(transaction.month);
+                const target = monthMap.get(normalizedMonth) || monthMap.get(resolveReceiptMonth(transaction.receiptDate));
+                if (!target) return;
+
+                const lineItems = Array.isArray(transaction.lineItems) ? transaction.lineItems : [];
+                lineItems.forEach((item) => {
+                    const amount = toNumber(item.amount);
+                    const particular = String(item.particular || '').trim();
+
+                    if (FEE_TYPE_GROUPS.tuition.includes(particular)) {
+                        target.tuition += amount;
+                    } else if (FEE_TYPE_GROUPS.transport.includes(particular)) {
+                        target.transport += amount;
+                    } else {
+                        target.other += amount;
+                    }
+                    target.charges += amount;
+                });
+
+                target.paid += toNumber(transaction.paidAmount);
+            });
+
+            let runningBalance = 0;
+            return SESSION_MONTHS.map((month) => {
+                const row = monthMap.get(month);
+                runningBalance += row.charges - row.paid;
+                row.closingBalance = runningBalance;
+                return row;
+            });
+        }
+
+        function renderStudent(student) {
+            document.getElementById('studentName').textContent = student?.name || 'Student details';
+            document.getElementById('studentMeta').textContent = student
+                ? `${student.session || sessionSelect.value} | ${student.class || '-'}${student.section ? ' - Section ' + student.section : ''}`
+                : 'Load a student to view the session ledger.';
+            document.getElementById('studentAdmissionChip').textContent = student?.studentId || admissionInput.value.trim() || '-';
+            document.getElementById('studentClass').textContent = student?.class || '-';
+            document.getElementById('studentSection').textContent = student?.section || '-';
+            document.getElementById('studentFather').textContent = student?.fatherName || '-';
+            document.getElementById('studentTransport').textContent = student?.transport?.mode || student?.transport?.route || (student?.transport ? 'Enabled' : 'No');
+        }
+
+        function renderSummary(rows, transactions, session) {
+            const totalCharges = rows.reduce((sum, row) => sum + row.charges, 0);
+            const totalPaid = rows.reduce((sum, row) => sum + row.paid, 0);
+            const totalDue = Math.max(totalCharges - totalPaid, 0);
+            const closingBalance = rows.length ? rows[rows.length - 1].closingBalance : 0;
+
+            document.getElementById('statCharges').textContent = formatCurrency(totalCharges);
+            document.getElementById('statPaid').textContent = formatCurrency(totalPaid);
+            document.getElementById('statDue').textContent = formatCurrency(totalDue);
+            document.getElementById('statReceipts').textContent = String(transactions.length);
+            document.getElementById('summarySessionChip').textContent = session || '-';
+            document.getElementById('summaryBalanceChip').textContent = formatCurrency(closingBalance);
+            document.getElementById('summaryText').textContent = currentStudent
+                ? `${currentStudent.name || 'Student'} has ${transactions.length} fee transactions recorded for ${session}.`
+                : 'Monthly ledger will appear here after loading the student.';
+        }
+
+        function renderLedgerTable(rows) {
+            const ledgerEmpty = document.getElementById('ledgerEmpty');
+            const ledgerTableWrap = document.getElementById('ledgerTableWrap');
+            const ledgerTableBody = document.getElementById('ledgerTableBody');
+            const ledgerTableFoot = document.getElementById('ledgerTableFoot');
+
+            const visibleRows = rows.filter((row) => row.charges > 0 || row.paid > 0);
+            if (!visibleRows.length) {
+                ledgerEmpty.classList.remove('d-none');
+                ledgerTableWrap.classList.add('d-none');
+                ledgerTableBody.innerHTML = '';
+                ledgerTableFoot.innerHTML = '';
+                return;
+            }
+
+            ledgerEmpty.classList.add('d-none');
+            ledgerTableWrap.classList.remove('d-none');
+            ledgerTableBody.innerHTML = visibleRows.map((row) => `
+                <tr>
+                    <td>${escapeHtml(row.month)}</td>
+                    <td>${formatCurrency(row.tuition)}</td>
+                    <td>${formatCurrency(row.transport)}</td>
+                    <td>${formatCurrency(row.other)}</td>
+                    <td>${formatCurrency(row.charges)}</td>
+                    <td>${formatCurrency(row.paid)}</td>
+                    <td class="${row.closingBalance > 0 ? 'text-danger fw-semibold' : 'text-success fw-semibold'}">${formatCurrency(row.closingBalance)}</td>
+                </tr>
+            `).join('');
+
+            const totals = visibleRows.reduce((acc, row) => {
+                acc.tuition += row.tuition;
+                acc.transport += row.transport;
+                acc.other += row.other;
+                acc.charges += row.charges;
+                acc.paid += row.paid;
+                return acc;
+            }, { tuition: 0, transport: 0, other: 0, charges: 0, paid: 0 });
+
+            ledgerTableFoot.innerHTML = `
+                <tr class="table-light fw-semibold">
+                    <td>Total</td>
+                    <td>${formatCurrency(totals.tuition)}</td>
+                    <td>${formatCurrency(totals.transport)}</td>
+                    <td>${formatCurrency(totals.other)}</td>
+                    <td>${formatCurrency(totals.charges)}</td>
+                    <td>${formatCurrency(totals.paid)}</td>
+                    <td>${formatCurrency(visibleRows[visibleRows.length - 1].closingBalance)}</td>
+                </tr>
+            `;
+        }
+
+        function renderTransactions(transactions) {
+            const tableBody = document.getElementById('transactionsTableBody');
+            document.getElementById('txCountBadge').textContent = `${transactions.length} receipts`;
+
+            if (!transactions.length) {
+                tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No session transactions found for this student.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = transactions.map((transaction) => `
+                <tr>
+                    <td>${formatDate(transaction.receiptDate)}</td>
+                    <td>${escapeHtml(transaction.receiptNo || '-')}</td>
+                    <td>${escapeHtml(transaction.voucherNo || '-')}</td>
+                    <td>${escapeHtml(transaction.month || '-')}</td>
+                    <td>${escapeHtml(formatLineItems(transaction.lineItems))}</td>
+                    <td class="text-success fw-semibold">${formatCurrency(transaction.paidAmount)}</td>
+                    <td>${formatCurrency(transaction.dueAmount)}</td>
+                    <td>${escapeHtml(transaction.paymentMode || '-')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function exportLedger() {
+            if (!currentLedgerRows.length) return;
+
+            const visibleRows = currentLedgerRows.filter((row) => row.charges > 0 || row.paid > 0).map((row) => ({
+                Month: row.month,
+                TuitionCharges: round2(row.tuition),
+                TransportCharges: round2(row.transport),
+                OtherCharges: round2(row.other),
+                TotalCharges: round2(row.charges),
+                TotalPaid: round2(row.paid),
+                ClosingBalance: round2(row.closingBalance)
+            }));
+
+            const transactionRows = currentTransactions.map((transaction) => ({
+                Date: formatDate(transaction.receiptDate),
+                ReceiptNo: transaction.receiptNo || '',
+                VoucherNo: transaction.voucherNo || '',
+                Month: transaction.month || '',
+                Particulars: formatLineItems(transaction.lineItems),
+                PaidAmount: round2(transaction.paidAmount),
+                DueAmount: round2(transaction.dueAmount),
+                PaymentMode: transaction.paymentMode || ''
+            }));
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(visibleRows), 'Ledger');
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(transactionRows), 'Receipts');
+            XLSX.writeFile(workbook, `student-fee-ledger-${sanitizeFileName(admissionInput.value.trim())}-${sanitizeFileName(sessionSelect.value)}.xlsx`);
+        }
+
+        function resetView(statusText) {
+            currentLedgerRows = [];
+            currentTransactions = [];
+            currentStudent = null;
+            heroStatus.textContent = statusText;
+            renderStudent(null);
+            renderSummary([], [], sessionSelect.value);
+            renderLedgerTable([]);
+            renderTransactions([]);
+            exportBtn.disabled = true;
+            printBtn.disabled = true;
+        }
+
+        function formatLineItems(items) {
+            return (Array.isArray(items) ? items : [])
+                .map((item) => `${item.particular || 'Fee'}: ${formatCurrency(item.amount)}`)
+                .join(', ') || '-';
+        }
+
+        function resolveReceiptMonth(dateValue) {
+            const date = new Date(dateValue);
+            if (Number.isNaN(date.getTime())) {
+                return 'April';
+            }
+            return SESSION_MONTHS[(date.getMonth() + 9) % 12];
+        }
+
+        function normalizeMonth(monthValue) {
+            const month = String(monthValue || '').trim();
+            return SESSION_MONTHS.find((entry) => entry.toLowerCase() === month.toLowerCase()) || null;
+        }
+
+        function formatDate(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-GB');
+        }
+
+        function formatCurrency(value) {
+            return toNumber(value).toFixed(2);
+        }
+
+        function toNumber(value) {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function round2(value) {
+            return Number(formatCurrency(value));
+        }
+
+        function sanitizeFileName(value) {
+            return String(value || 'data').replace(/[^a-z0-9-_]+/gi, '-');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

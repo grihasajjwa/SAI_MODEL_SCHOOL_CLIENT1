@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Back Page Print</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        :root {
+            --ink: #0f172a;
+            --line: #cbd5e1;
+            --soft: #f8fafc;
+            --accent: #0f4c81;
+        }
+
+        body {
+            background: linear-gradient(180deg, #eef4ff 0%, #ffffff 100%);
+            color: var(--ink);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .panel-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #0f4c81, #1d4ed8 55%, #60a5fa);
+            color: #fff;
+        }
+
+        .preview-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 18px;
+            background: #fff;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 18px;
+            padding: 12mm;
+            break-after: page;
+        }
+
+        .sheet-frame {
+            border: 2px solid var(--ink);
+            min-height: calc(297mm - 24mm);
+            padding: 9mm;
+        }
+
+        .sheet-header {
+            text-align: center;
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+        }
+
+        .sheet-header img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .sheet-title {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            background: var(--ink);
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .sheet-panel {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: var(--soft);
+            margin-bottom: 14px;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #475569;
+            letter-spacing: 0.08em;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .sheet-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sheet-table th,
+        .sheet-table td {
+            border: 1px solid var(--line);
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .sheet-table th {
+            background: #eaf2ff;
+            color: #000;
+            text-align: center;
+        }
+
+        .grade-pill {
+            display: inline-flex;
+            min-width: 42px;
+            justify-content: center;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            font-weight: 700;
+        }
+
+        .hide-logo .school-logo {
+            display: none !important;
+        }
+
+        .hide-school-name .school-name {
+            display: none !important;
+        }
+
+        .empty-state {
+            min-height: 280px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            color: #64748b;
+            border: 2px dashed rgba(15, 76, 129, 0.2);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
+
+            html,
+            body {
+                width: 210mm;
+                background: #fff;
+                margin: 0 !important;
+            }
+
+            #navbar-container,
+            .hero-card,
+            .controls-card,
+            #previewEmpty {
+                display: none !important;
+            }
+
+            .page-shell,
+            .container-fluid,
+            #previewContainer {
+                width: 210mm !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            #previewContainer.d-none {
+                display: none !important;
+            }
+
+            .preview-sheet {
+                width: 210mm !important;
+                min-height: 297mm !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                padding: 12mm !important;
+                break-after: page;
+                page-break-after: always;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .preview-sheet:last-child {
+                break-after: auto;
+                page-break-after: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container-fluid" style="max-width: 1450px;">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-lg-8">
+                            <span class="badge rounded-pill px-3 py-2 mb-3" style="background: rgba(255,255,255,0.16); color: #fff;">Results Printing</span>
+                            <h1 class="h2 mb-3">Bulk back page print</h1>
+                            <p class="mb-0 text-white-50">
+                                Generate professional student-wise back pages class-wise from marks, attendance, remarks, and class co-scholastic settings already stored in the database.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="bg-white bg-opacity-10 rounded-4 p-3">
+                                <div class="small text-white-50 mb-1">Status</div>
+                                <div class="fw-semibold" id="statusText">Select session, class and section</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card panel-card controls-card mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="sessionSelect">Academic Session</label>
+                            <select class="form-select" id="sessionSelect"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="classSelect">Class</label>
+                            <select class="form-select" id="classSelect">
+                                <option value="">Select class</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="sectionSelect">Section</label>
+                            <select class="form-select" id="sectionSelect">
+                                <option value="">Select section</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex gap-2 justify-content-md-end">
+                            <button class="btn btn-primary" id="previewBtn" type="button">
+                                <i class="fas fa-eye me-2"></i>Build Preview
+                            </button>
+                            <button class="btn btn-outline-secondary" id="printBtn" type="button" disabled>
+                                <i class="fas fa-print me-2"></i>Print
+                            </button>
+                        </div>
+                        <div class="col-md-12 d-flex gap-3 flex-wrap">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hideLogoCheck">
+                                <label class="form-check-label" for="hideLogoCheck">Hide logo</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hideSchoolNameCheck">
+                                <label class="form-check-label" for="hideSchoolNameCheck">Hide school name</label>
+                            </div>
+                            <span class="text-muted" id="pageCountText">0 pages ready</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="previewEmpty" class="empty-state">
+                <div>
+                    <i class="fas fa-file-lines fa-2x mb-3"></i>
+                    <p class="mb-1 fw-semibold">No bulk back pages loaded yet.</p>
+                    <p class="mb-0">Choose a class and section to prepare the print set.</p>
+                </div>
+            </section>
+            <section id="previewContainer" class="d-none"></section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const sessionSelect = document.getElementById('sessionSelect');
+        const classSelect = document.getElementById('classSelect');
+        const sectionSelect = document.getElementById('sectionSelect');
+        const previewBtn = document.getElementById('previewBtn');
+        const printBtn = document.getElementById('printBtn');
+        const hideLogoCheck = document.getElementById('hideLogoCheck');
+        const hideSchoolNameCheck = document.getElementById('hideSchoolNameCheck');
+        const previewEmpty = document.getElementById('previewEmpty');
+        const previewContainer = document.getElementById('previewContainer');
+        const statusText = document.getElementById('statusText');
+
+        let classesByName = [];
+        let currentSchoolProfile = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) return;
+
+            sessionSelect.addEventListener('change', loadClassesForSession);
+            classSelect.addEventListener('change', populateSections);
+            previewBtn.addEventListener('click', buildPreview);
+            printBtn.addEventListener('click', printBackPages);
+            hideLogoCheck.addEventListener('change', syncVisibilityControls);
+            hideSchoolNameCheck.addEventListener('change', syncVisibilityControls);
+
+            await initialize();
+        });
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + Auth.getToken(),
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function initialize() {
+            try {
+                const [sessionsResponse, currentResponse, schoolResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/sessions`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/sessions/current`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/school-profile`, { headers: authHeaders() })
+                ]);
+
+                const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+                const currentPayload = currentResponse.ok ? await currentResponse.json() : {};
+                const schoolPayload = schoolResponse.ok ? await schoolResponse.json() : {};
+                const sessions = Array.isArray(sessionsPayload.sessions) ? sessionsPayload.sessions : [];
+                const currentSession = currentPayload?.session?.name || sessions.find((entry) => entry.isCurrent)?.name || sessions[0]?.name || '';
+
+                currentSchoolProfile = normalizeSchoolProfile(schoolPayload?.profile);
+                sessionSelect.innerHTML = sessions.map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`).join('');
+                sessionSelect.value = currentSession;
+                await loadClassesForSession();
+            } catch (error) {
+                console.error('Failed to initialize bulk back page print:', error);
+                statusText.textContent = 'Unable to load session data';
+            }
+        }
+
+        async function loadClassesForSession() {
+            classSelect.innerHTML = '<option value="">Loading classes</option>';
+            sectionSelect.innerHTML = '<option value="">Select section</option>';
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/classes/year/${encodeURIComponent(sessionSelect.value)}`, {
+                    headers: authHeaders()
+                });
+                if (!response.ok) {
+                    throw new Error(`Classes HTTP ${response.status}`);
+                }
+
+                const classes = await response.json();
+                const grouped = new Map();
+                (Array.isArray(classes) ? classes : []).forEach((entry) => {
+                    const className = entry.className || 'Unknown';
+                    if (!grouped.has(className)) {
+                        grouped.set(className, []);
+                    }
+                    grouped.get(className).push(entry.section || 'A');
+                });
+
+                classesByName = Array.from(grouped.entries()).map(([className, sections]) => ({
+                    className,
+                    sections: Array.from(new Set(sections)).sort((a, b) => String(a).localeCompare(String(b)))
+                })).sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
+
+                classSelect.innerHTML = '<option value="">Select class</option>' + classesByName
+                    .map((entry) => `<option value="${escapeHtml(entry.className)}">${escapeHtml(entry.className)}</option>`)
+                    .join('');
+                populateSections();
+            } catch (error) {
+                console.error('Failed to load classes:', error);
+                classSelect.innerHTML = '<option value="">No classes found</option>';
+            }
+        }
+
+        function populateSections() {
+            const entry = classesByName.find((item) => item.className === classSelect.value);
+            const options = entry
+                ? entry.sections.map((section) => `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`).join('')
+                : '';
+            sectionSelect.innerHTML = '<option value="">Select section</option>' + options;
+        }
+
+        async function buildPreview() {
+            const session = sessionSelect.value;
+            const className = classSelect.value;
+            const section = sectionSelect.value;
+
+            if (!session || !className || !section) {
+                alert('Choose session, class and section first.');
+                return;
+            }
+
+            previewBtn.disabled = true;
+            printBtn.disabled = true;
+            statusText.textContent = 'Loading marks and student records...';
+
+            try {
+                const [studentsResponse, marksResponse, configResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/students/class/${encodeURIComponent(className)}/${encodeURIComponent(section)}?session=${encodeURIComponent(session)}`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/marks/class/${encodeURIComponent(className)}/${encodeURIComponent(section)}?academicYear=${encodeURIComponent(session)}`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/coscholastic/config/${encodeURIComponent(className)}/${encodeURIComponent(section)}/${encodeURIComponent(session)}`, { headers: authHeaders() })
+                ]);
+
+                if (!studentsResponse.ok) {
+                    throw new Error(`Students HTTP ${studentsResponse.status}`);
+                }
+
+                const students = await studentsResponse.json();
+                const marksRecords = marksResponse.ok ? await marksResponse.json() : [];
+                const configPayload = configResponse.ok ? await configResponse.json() : {};
+                const marksByStudentId = new Map((Array.isArray(marksRecords) ? marksRecords : []).map((record) => {
+                    const id = record?.studentId?._id || record?.studentId || '';
+                    return [String(id), record];
+                }));
+
+                const activities = Array.isArray(configPayload?.activities) ? configPayload.activities : [];
+                const pages = (Array.isArray(students) ? students : []).map((student) => {
+                    const marks = marksByStudentId.get(String(student._id)) || {};
+                    return renderPage(student, marks, activities, session);
+                }).join('');
+
+                if (!pages) {
+                    throw new Error('No students found for selected class');
+                }
+
+                previewContainer.innerHTML = pages;
+                previewContainer.classList.remove('d-none');
+                previewEmpty.classList.add('d-none');
+                syncVisibilityControls();
+                document.getElementById('pageCountText').textContent = `${students.length} pages ready`;
+                statusText.textContent = `${students.length} back pages ready`;
+                printBtn.disabled = false;
+            } catch (error) {
+                console.error('Failed to build bulk back page preview:', error);
+                previewContainer.innerHTML = '';
+                previewContainer.classList.add('d-none');
+                previewEmpty.classList.remove('d-none');
+                document.getElementById('pageCountText').textContent = '0 pages ready';
+                statusText.textContent = 'Unable to build preview';
+                alert('Unable to load the bulk back pages right now.');
+            } finally {
+                previewBtn.disabled = false;
+            }
+        }
+
+        function renderPage(student, marks, activities, session) {
+            const coScholasticMap = normalizeCoScholastic(marks?.coScholastic);
+            const attendance = marks?.attendance || {};
+            const remarks = marks?.teacherRemarks || 'No teacher remarks available.';
+            const schoolName = currentSchoolProfile?.name || 'School Name';
+            const schoolAddress = currentSchoolProfile?.address || '';
+            const schoolLogo = currentSchoolProfile?.logo || '';
+
+            return `
+                <article class="preview-sheet ${hideLogoCheck.checked ? 'hide-logo' : ''} ${hideSchoolNameCheck.checked ? 'hide-school-name' : ''}">
+                    <div class="sheet-frame">
+                        <header class="sheet-header">
+                            ${schoolLogo ? `<img class="school-logo" src="${escapeHtml(schoolLogo)}" alt="School Logo">` : ''}
+                            <div class="school-name fw-bold fs-3 text-uppercase">${escapeHtml(schoolName)}</div>
+                            <div class="text-muted">${escapeHtml(schoolAddress)}</div>
+                            <div class="sheet-title">Report Card Back Page</div>
+                        </header>
+
+                        <section class="sheet-panel">
+                            <div class="row g-3">
+                                <div class="col-4">
+                                    <div class="meta-label">Student Name</div>
+                                    <div class="meta-value">${escapeHtml(student?.name || '-')}</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="meta-label">Admission No</div>
+                                    <div class="meta-value">${escapeHtml(student?.studentId || '-')}</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="meta-label">Class / Section</div>
+                                    <div class="meta-value">${escapeHtml(student?.class || '-')} - ${escapeHtml(student?.section || '-')}</div>
+                                </div>
+                                <div class="col-2">
+                                    <div class="meta-label">Session</div>
+                                    <div class="meta-value">${escapeHtml(session)}</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="sheet-panel">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h3 class="h6 mb-0" style="color: var(--accent);">Co-Scholastic Areas</h3>
+                                <span class="badge text-bg-light">Student wise grades</span>
+                            </div>
+                            <table class="sheet-table">
+                                <thead>
+                                    <tr>
+                                        <th>Activity</th>
+                                        <th style="width: 120px;">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${renderActivitiesRows(activities, coScholasticMap)}
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <section class="sheet-panel">
+                            <div class="row g-4">
+                                <div class="col-6">
+                                    <h3 class="h6 mb-2" style="color: var(--accent);">Attendance</h3>
+                                    <table class="sheet-table">
+                                        <tbody>
+                                            <tr><td>Total Working Days</td><td>${escapeHtml(attendance.totalWorkingDays || '-')}</td></tr>
+                                            <tr><td>Days Present</td><td>${escapeHtml(attendance.daysPresent || '-')}</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="h6 mb-2" style="color: var(--accent);">Teacher Remarks</h3>
+                                    <div style="border: 1px solid var(--line); border-radius: 12px; background: #fff; min-height: 88px; padding: 12px;">
+                                        ${escapeHtml(remarks)}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="sheet-panel mb-0">
+                            <div class="row g-4">
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid var(--ink); padding-top: 6px; margin-top: 34px; font-size: 12px; font-weight: 600;">Class Teacher</div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid var(--ink); padding-top: 6px; margin-top: 34px; font-size: 12px; font-weight: 600;">Parent / Guardian</div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid var(--ink); padding-top: 6px; margin-top: 34px; font-size: 12px; font-weight: 600;">Principal</div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderActivitiesRows(activities, coScholasticMap) {
+            const normalizedActivities = activities.length
+                ? activities.map((item) => item.activity || item.name || item)
+                : Object.keys(coScholasticMap);
+
+            if (!normalizedActivities.length) {
+                return '<tr><td colspan="2" class="text-center text-muted">No co-scholastic configuration found.</td></tr>';
+            }
+
+            return normalizedActivities.map((activity) => `
+                <tr>
+                    <td>${escapeHtml(activity)}</td>
+                    <td class="text-center"><span class="grade-pill">${escapeHtml(coScholasticMap[activity] || '-')}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function normalizeCoScholastic(value) {
+            if (Array.isArray(value)) {
+                return value.reduce((acc, entry) => {
+                    const key = entry?.activity || entry?.name || entry?.area;
+                    if (key) {
+                        acc[key] = entry?.grade || entry?.value || '-';
+                    }
+                    return acc;
+                }, {});
+            }
+
+            if (value && typeof value === 'object') {
+                return Object.entries(value).reduce((acc, [key, entry]) => {
+                    acc[key] = typeof entry === 'object' ? (entry.grade || entry.value || '-') : entry;
+                    return acc;
+                }, {});
+            }
+
+            return {};
+        }
+
+        function syncVisibilityControls() {
+            previewContainer.querySelectorAll('.preview-sheet').forEach((sheet) => {
+                sheet.classList.toggle('hide-logo', hideLogoCheck.checked);
+                sheet.classList.toggle('hide-school-name', hideSchoolNameCheck.checked);
+            });
+        }
+
+        function printBackPages() {
+            if (!previewContainer.querySelector('.preview-sheet')) {
+                alert('Build the preview before printing.');
+                return;
+            }
+
+            window.print();
+        }
+
+        function normalizeSchoolProfile(profile) {
+            const source = profile || {};
+            const address = [
+                source.addressLine1 || source.address,
+                source.addressLine2
+            ].filter(Boolean).join(' | ');
+
+            return {
+                name: source.name || source.schoolName || 'School Name',
+                address,
+                logo: source.logo || source.logoUrl || ''
+            };
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

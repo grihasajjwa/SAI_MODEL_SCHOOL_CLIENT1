@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Reconciliation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .panel-card,
+        .table-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #5b21b6, #7c3aed 55%, #a78bfa);
+            color: #fff;
+        }
+
+        .summary-card {
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid #ddd6fe;
+            padding: 16px;
+            min-height: 100%;
+        }
+
+        .summary-label {
+            color: #6d28d9;
+            font-size: 0.88rem;
+        }
+
+        .summary-value {
+            color: #1f2937;
+            font-size: 1.45rem;
+            font-weight: 700;
+        }
+
+        .tx-table th,
+        .dup-table th {
+            background: #f5f3ff;
+            color: #000;
+            white-space: nowrap;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            #navbar-container,
+            .filters-card,
+            .action-bar {
+                display: none !important;
+            }
+
+            .hero-card,
+            .panel-card,
+            .table-card {
+                box-shadow: none;
+                border: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container-fluid" style="max-width: 1480px;">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-lg-8">
+                            <span class="badge rounded-pill px-3 py-2 mb-3" style="background: rgba(255,255,255,0.16); color: #fff;">Finance Audit</span>
+                            <h1 class="h2 mb-3">Receipt reconciliation</h1>
+                            <p class="mb-0 text-white-50">
+                                Reconcile receipt and voucher activity session-wise with payment mode totals, duplicate detection, and a clean transaction register for review.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="summary-card border-0" style="background: rgba(255,255,255,0.14); color: #fff;">
+                                <div class="summary-label text-white-50">Status</div>
+                                <div class="summary-value text-white fs-5" id="statusText">Choose filters to begin</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card panel-card filters-card mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="sessionSelect">Academic Session</label>
+                            <select class="form-select" id="sessionSelect"></select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="classInput">Class</label>
+                            <input type="text" class="form-control" id="classInput" placeholder="Optional class">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="paymentModeSelect">Payment Mode</label>
+                            <select class="form-select" id="paymentModeSelect">
+                                <option value="">All modes</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Online">Online</option>
+                                <option value="Mixed">Mixed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="particularInput">Particular</label>
+                            <input type="text" class="form-control" id="particularInput" placeholder="Tuition / Transport">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="startDateInput">From Date</label>
+                            <input type="date" class="form-control" id="startDateInput">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="endDateInput">To Date</label>
+                            <input type="date" class="form-control" id="endDateInput">
+                        </div>
+                        <div class="col-12 d-flex justify-content-between flex-wrap gap-2 action-bar">
+                            <div class="text-muted">Up to 500 transactions are loaded per query using the existing API.</div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" id="loadBtn" type="button">
+                                    <i class="fas fa-list-check me-2"></i>Load Reconciliation
+                                </button>
+                                <button class="btn btn-outline-success" id="exportBtn" type="button" disabled>
+                                    <i class="fas fa-file-excel me-2"></i>Export
+                                </button>
+                                <button class="btn btn-outline-secondary" id="printBtn" type="button" disabled>
+                                    <i class="fas fa-print me-2"></i>Print
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-label">Receipts Loaded</div>
+                        <div class="summary-value" id="statReceipts">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-label">Total Collected</div>
+                        <div class="summary-value" id="statCollected">0.00</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-label">Cash Total</div>
+                        <div class="summary-value" id="statCash">0.00</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-label">Online / Mixed</div>
+                        <div class="summary-value" id="statNonCash">0.00</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card table-card mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Duplicate watch</h2>
+                            <p class="text-muted mb-0">Repeated receipt or voucher numbers inside the current result set.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border" id="dupCountBadge">0 flagged</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle dup-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Number</th>
+                                    <th>Count</th>
+                                </tr>
+                            </thead>
+                            <tbody id="duplicatesTableBody">
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">No reconciliation loaded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card table-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Transactions register</h2>
+                            <p class="text-muted mb-0">Session-filtered fee transactions with receipt and voucher references.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border" id="rowCountBadge">0 rows</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle tx-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Receipt No</th>
+                                    <th>Voucher No</th>
+                                    <th>Admission No</th>
+                                    <th>Student</th>
+                                    <th>Class</th>
+                                    <th>Month</th>
+                                    <th>Particulars</th>
+                                    <th>Mode</th>
+                                    <th>Paid</th>
+                                    <th>Due</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTableBody">
+                                <tr>
+                                    <td colspan="11" class="text-center text-muted py-4">No reconciliation loaded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const sessionSelect = document.getElementById('sessionSelect');
+        const classInput = document.getElementById('classInput');
+        const paymentModeSelect = document.getElementById('paymentModeSelect');
+        const particularInput = document.getElementById('particularInput');
+        const startDateInput = document.getElementById('startDateInput');
+        const endDateInput = document.getElementById('endDateInput');
+        const loadBtn = document.getElementById('loadBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const printBtn = document.getElementById('printBtn');
+        const statusText = document.getElementById('statusText');
+
+        let currentTransactions = [];
+        let currentDuplicates = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) return;
+
+            loadBtn.addEventListener('click', loadReconciliation);
+            exportBtn.addEventListener('click', exportData);
+            printBtn.addEventListener('click', () => window.print());
+
+            await loadSessions();
+        });
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + Auth.getToken(),
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function loadSessions() {
+            try {
+                const [sessionsResponse, currentResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/sessions`, { headers: authHeaders() }),
+                    fetch(`${CONFIG.API_URL}/sessions/current`, { headers: authHeaders() })
+                ]);
+
+                const sessionsPayload = sessionsResponse.ok ? await sessionsResponse.json() : {};
+                const currentPayload = currentResponse.ok ? await currentResponse.json() : {};
+                const sessions = Array.isArray(sessionsPayload.sessions) ? sessionsPayload.sessions : [];
+                const currentSession = currentPayload?.session?.name || sessions.find((item) => item.isCurrent)?.name || sessions[0]?.name || '';
+
+                sessionSelect.innerHTML = sessions.map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`).join('');
+                sessionSelect.value = currentSession;
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+                statusText.textContent = 'Unable to load sessions';
+            }
+        }
+
+        async function loadReconciliation() {
+            const query = new URLSearchParams();
+            if (sessionSelect.value) query.set('session', sessionSelect.value);
+            if (classInput.value.trim()) query.set('className', classInput.value.trim());
+            if (paymentModeSelect.value) query.set('paymentMode', paymentModeSelect.value);
+            if (particularInput.value.trim()) query.set('particular', particularInput.value.trim());
+            if (startDateInput.value) query.set('startDate', startDateInput.value);
+            if (endDateInput.value) query.set('endDate', endDateInput.value);
+            query.set('limit', '500');
+
+            loadBtn.disabled = true;
+            exportBtn.disabled = true;
+            printBtn.disabled = true;
+            statusText.textContent = 'Loading transactions...';
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/fees/transactions?${query.toString()}`, {
+                    headers: authHeaders()
+                });
+                if (!response.ok) {
+                    throw new Error(`Transactions HTTP ${response.status}`);
+                }
+
+                const payload = await response.json();
+                currentTransactions = Array.isArray(payload.transactions) ? payload.transactions : [];
+                currentDuplicates = detectDuplicates(currentTransactions);
+
+                renderTransactions(currentTransactions);
+                renderDuplicates(currentDuplicates);
+                renderStats(currentTransactions);
+
+                exportBtn.disabled = !currentTransactions.length;
+                printBtn.disabled = !currentTransactions.length;
+                statusText.textContent = `${currentTransactions.length} transactions ready`;
+            } catch (error) {
+                console.error('Failed to load reconciliation:', error);
+                currentTransactions = [];
+                currentDuplicates = [];
+                renderTransactions([]);
+                renderDuplicates([]);
+                renderStats([]);
+                statusText.textContent = 'Unable to load transactions';
+                alert('Unable to load receipt reconciliation right now.');
+            } finally {
+                loadBtn.disabled = false;
+            }
+        }
+
+        function detectDuplicates(transactions) {
+            const counters = [
+                { key: 'receiptNo', label: 'Receipt No' },
+                { key: 'voucherNo', label: 'Voucher No' }
+            ];
+
+            return counters.flatMap((counter) => {
+                const seen = new Map();
+                transactions.forEach((transaction) => {
+                    const value = String(transaction[counter.key] || '').trim();
+                    if (!value) return;
+                    seen.set(value, (seen.get(value) || 0) + 1);
+                });
+
+                return Array.from(seen.entries())
+                    .filter(([, count]) => count > 1)
+                    .map(([number, count]) => ({
+                        type: counter.label,
+                        number,
+                        count
+                    }));
+            });
+        }
+
+        function renderStats(transactions) {
+            const collected = transactions.reduce((sum, transaction) => sum + toNumber(transaction.paidAmount), 0);
+            const cash = transactions
+                .filter((transaction) => String(transaction.paymentMode || '').toLowerCase() === 'cash')
+                .reduce((sum, transaction) => sum + toNumber(transaction.paidAmount), 0);
+            const nonCash = collected - cash;
+
+            document.getElementById('statReceipts').textContent = String(transactions.length);
+            document.getElementById('statCollected').textContent = formatCurrency(collected);
+            document.getElementById('statCash').textContent = formatCurrency(cash);
+            document.getElementById('statNonCash').textContent = formatCurrency(nonCash);
+        }
+
+        function renderDuplicates(duplicates) {
+            const tbody = document.getElementById('duplicatesTableBody');
+            document.getElementById('dupCountBadge').textContent = `${duplicates.length} flagged`;
+
+            if (!duplicates.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No duplicate receipt or voucher numbers in the current result set.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = duplicates.map((row) => `
+                <tr>
+                    <td>${escapeHtml(row.type)}</td>
+                    <td>${escapeHtml(row.number)}</td>
+                    <td>${escapeHtml(row.count)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTransactions(transactions) {
+            const tbody = document.getElementById('transactionsTableBody');
+            document.getElementById('rowCountBadge').textContent = `${transactions.length} rows`;
+
+            if (!transactions.length) {
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4">No transactions found for the current filters.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = transactions.map((transaction) => `
+                <tr>
+                    <td>${formatDate(transaction.receiptDate)}</td>
+                    <td>${escapeHtml(transaction.receiptNo || '-')}</td>
+                    <td>${escapeHtml(transaction.voucherNo || '-')}</td>
+                    <td>${escapeHtml(transaction.admissionNo || '-')}</td>
+                    <td>${escapeHtml(transaction.studentName || '-')}</td>
+                    <td>${escapeHtml(transaction.className || '-')}</td>
+                    <td>${escapeHtml(transaction.month || '-')}</td>
+                    <td>${escapeHtml(formatLineItems(transaction.lineItems))}</td>
+                    <td>${escapeHtml(transaction.paymentMode || '-')}</td>
+                    <td class="text-success fw-semibold">${formatCurrency(transaction.paidAmount)}</td>
+                    <td>${formatCurrency(transaction.dueAmount)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function exportData() {
+            if (!currentTransactions.length) return;
+
+            const workbook = XLSX.utils.book_new();
+            const txSheet = XLSX.utils.json_to_sheet(currentTransactions.map((transaction) => ({
+                Date: formatDate(transaction.receiptDate),
+                ReceiptNo: transaction.receiptNo || '',
+                VoucherNo: transaction.voucherNo || '',
+                AdmissionNo: transaction.admissionNo || '',
+                StudentName: transaction.studentName || '',
+                Class: transaction.className || '',
+                Month: transaction.month || '',
+                Particulars: formatLineItems(transaction.lineItems),
+                PaymentMode: transaction.paymentMode || '',
+                PaidAmount: toNumber(transaction.paidAmount),
+                DueAmount: toNumber(transaction.dueAmount)
+            })));
+            const dupSheet = XLSX.utils.json_to_sheet(currentDuplicates);
+            XLSX.utils.book_append_sheet(workbook, txSheet, 'Transactions');
+            XLSX.utils.book_append_sheet(workbook, dupSheet, 'Duplicates');
+            XLSX.writeFile(workbook, `receipt-reconciliation-${sanitizeFileName(sessionSelect.value)}.xlsx`);
+        }
+
+        function formatLineItems(items) {
+            return (Array.isArray(items) ? items : [])
+                .map((item) => `${item.particular || 'Fee'}: ${formatCurrency(item.amount)}`)
+                .join(', ') || '-';
+        }
+
+        function formatDate(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-GB');
+        }
+
+        function formatCurrency(value) {
+            return toNumber(value).toFixed(2);
+        }
+
+        function toNumber(value) {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function sanitizeFileName(value) {
+            return String(value || 'data').replace(/[^a-z0-9-_]+/gi, '-');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

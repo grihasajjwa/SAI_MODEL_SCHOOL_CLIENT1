@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Receipt</title>
+    <style>
+        :root {
+            --ink: #516cb5;
+            --paper: #fefefc;
+            --border: rgba(81, 108, 181, 0.7);
+            --ink-dark: #213c7c;
+            --highlight: #eef4ff;
+            --highlight-strong: #d9e7ff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            background: linear-gradient(135deg, #f6d7cf, #edf3ff 58%, #fff8ea);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        .toolbar {
+            max-width: 980px;
+            margin: 0 auto 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .toolbar button,
+        .toolbar a {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 16px;
+            background: #1f57aa;
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: var(--paper);
+            border: 3px solid rgba(81, 108, 181, 0.65);
+            box-shadow: 0 18px 45px rgba(58, 74, 119, 0.16);
+            padding: 10mm;
+        }
+
+        .receipt,
+        .meta-grid,
+        .items-table,
+        .bottom-grid {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .receipt td,
+        .receipt th,
+        .meta-grid td,
+        .items-table td,
+        .items-table th,
+        .bottom-grid td {
+            border: 2px solid var(--border);
+            vertical-align: middle;
+            color: var(--ink);
+        }
+
+        .receipt td,
+        .receipt th {
+            padding: 0;
+        }
+
+        .page-header {
+            border: 2px solid var(--border);
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 86px 1fr;
+            gap: 14px;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(237, 243, 255, 0.92), rgba(255, 248, 234, 0.65));
+        }
+
+        .brand-logo {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            justify-self: center;
+        }
+
+        .header-copy {
+            text-align: center;
+        }
+
+        .school-name {
+            font-size: 29px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            line-height: 1.1;
+            color: var(--ink-dark);
+        }
+
+        .school-copy {
+            margin-top: 6px;
+            font-size: 12.5px;
+            line-height: 1.4;
+            color: var(--ink-dark);
+        }
+
+        .signature {
+            font-size: 18px;
+        }
+
+        .receipt-head {
+            padding: 7px 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            min-height: 44px;
+            gap: 12px;
+        }
+
+        .pill {
+            display: inline-block;
+            justify-self: start;
+            padding: 4px 14px;
+            border-radius: 999px;
+            color: #fff;
+            background: var(--ink);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .date-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--ink-dark);
+        }
+
+        .meta-grid td {
+            height: 43px;
+            padding: 0 10px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            min-height: 43px;
+        }
+
+        .label {
+            white-space: nowrap;
+            color: var(--ink-dark);
+            font-weight: 700;
+        }
+
+        .blank {
+            flex: 1;
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+            padding-bottom: 2px;
+            border-bottom: 2px solid rgba(81, 108, 181, 0.35);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #0f2558;
+            font-weight: 700;
+        }
+
+        .student-highlight td {
+            background: linear-gradient(180deg, var(--highlight), var(--highlight-strong));
+        }
+
+        .student-highlight .blank {
+            border-bottom-color: rgba(33, 60, 124, 0.45);
+        }
+
+        .items-table th,
+        .items-table td {
+            padding: 0 10px;
+            height: 38px;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .items-table thead th {
+            text-align: left;
+            background: #edf4ff;
+            color: var(--ink-dark);
+            font-weight: 700;
+        }
+
+        .num-col {
+            width: 74px;
+            text-align: center;
+        }
+
+        .amount-col {
+            width: 170px;
+            text-align: right;
+            padding-right: 18px;
+        }
+
+        .summary-row td {
+            height: 42px;
+            font-weight: 600;
+        }
+
+        .bottom-left {
+            width: 64%;
+        }
+
+        .bottom-right {
+            width: 36%;
+        }
+
+        .paid-by,
+        .words-box,
+        .notes,
+        .side-summary > div {
+            padding: 10px 12px;
+        }
+
+        .paid-by {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .payment-breakdown-note {
+            margin-top: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--ink-dark);
+        }
+
+        .words-box {
+            min-height: 88px;
+        }
+
+        .words-label {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .dotted {
+            height: 26px;
+            border-bottom: 2px dotted rgba(81, 108, 181, 0.55);
+        }
+
+        .notes {
+            min-height: 82px;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+
+        .side-summary {
+            display: grid;
+            grid-template-rows: 44px 44px 1fr;
+            min-height: 214px;
+        }
+
+        .side-summary > div {
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .side-summary > div:last-child {
+            border-bottom: none;
+            align-items: flex-start;
+            padding-top: 18px;
+        }
+
+        .muted {
+            color: #7487bd;
+        }
+
+        #lineItemsSummary {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        #amountInWords,
+        #paidAmount {
+            color: var(--ink-dark);
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+
+            .toolbar {
+                display: none;
+            }
+
+            .sheet {
+                margin: 0;
+                box-shadow: none;
+                border: none;
+                width: 210mm;
+                min-height: 297mm;
+                padding: 10mm;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                padding: 12px;
+            }
+
+            .sheet {
+                width: 100%;
+                overflow-x: auto;
+            }
+
+            .receipt {
+                min-width: 820px;
+            }
+
+            .page-header {
+                min-width: 820px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page-header {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .school-name {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a href="fee-transactions.html">Back</a>
+        <a id="editReceiptBtn" href="#">Edit Receipt</a>
+        <button type="button" id="downloadPdfBtn" onclick="downloadReceiptPdf()">Download PDF</button>
+        <button type="button" onclick="window.print()">Print Receipt</button>
+    </div>
+
+    <div class="sheet">
+        <div class="page-header">
+            <img class="brand-logo" src="../assets/images/logo1.png" alt="School logo">
+            <div class="header-copy">
+                <div class="school-name">SKYVIEW PUBLIC SCHOOL</div>
+                <div class="school-copy">
+                    (An English Medium school based on CBSE curriculum)<br>
+                    Uttar Andaranfulbari, Tufanganj, Coochbehar, West Bengal, India, PIN: 736159<br>
+                    www.skyviewpublicschool.in
+                </div>
+            </div>
+        </div>
+
+        <table class="receipt" aria-label="School fee receipt">
+            <tr>
+                <td>
+                    <div class="receipt-head">
+                        <span class="pill">Fee Receipt</span>
+                        <div class="date-line">
+                            <span>Date:</span>
+                            <strong id="receiptDate">-</strong>
+                        </div>
+                    </div>
+
+                    <table class="meta-grid">
+                        <tr>
+                            <td>
+                                <div class="field-row">
+                                    <span class="label">Sl. No.</span>
+                                    <span class="blank" id="receiptNo">-</span>
+                                </div>
+                                <div class="field-row">
+                                    <span class="label">Voucher No.</span>
+                                    <span class="blank" id="voucherNo">-</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="field-row">
+                                    <span class="label">Admission No.</span>
+                                    <span class="blank" id="admissionNo">-</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="student-highlight">
+                            <td colspan="2">
+                                <div class="field-row">
+                                    <span class="label">Name:</span>
+                                    <span class="blank" id="studentName">-</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="student-highlight">
+                            <td colspan="2">
+                                <div class="field-row">
+                                    <span class="label">Father's Name:</span>
+                                    <span class="blank" id="fatherName">-</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="student-highlight">
+                            <td>
+                                <div class="field-row">
+                                    <span class="label">Class:</span>
+                                    <span class="blank" id="className">-</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="field-row">
+                                    <span class="label">Roll No:</span>
+                                    <span class="blank" id="rollNo">-</span>
+                                    <span class="label">Section:</span>
+                                    <span class="blank" id="section">-</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div class="field-row">
+                                    <span class="label">For the month of</span>
+                                    <span class="blank" id="month">-</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th class="num-col">Sl. No</th>
+                                <th>Particulars</th>
+                                <th class="amount-col">Amount (Rs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lineItemsBody"></tbody>
+                        <tbody>
+                            <tr class="summary-row">
+                                <td colspan="2">Previous Due Amount</td>
+                                <td class="amount-col" id="previousDue">0.00</td>
+                            </tr>
+                        </tbody>
+                        <tbody id="paymentBreakdownRows"></tbody>
+                        <tbody>
+                            <tr class="summary-row">
+                                <td colspan="2">Due Amount</td>
+                                <td class="amount-col" id="chargesTotal">0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="bottom-grid">
+                        <tr>
+                            <td class="bottom-left">
+                                <div class="paid-by">Amount in Words- <span class="ms-2" id="amountInWords">-</span></div>
+                                <div class="words-box">
+                                    <div class="words-label muted">Line Items</div>
+                                    <div id="lineItemsSummary" class="muted">-</div>
+                                    <div id="paymentBreakdownSummary" class="payment-breakdown-note">-</div>
+                                </div>
+                                <div class="notes">
+                                    <strong>Important Notes:</strong><br>
+                                    1) Date for paying fee is 1st to 15th of every month.<br>
+                                    2) After 15th of every month Rs.50/- late fine will be charged.<br>
+                                    <span id="notesText"></span>
+                                </div>
+                            </td>
+                            <td class="bottom-right">
+                                <div class="side-summary">
+                                    <div>Paid Amount-</div>
+                                    <div id="paidAmount">0.00</div>
+                                    <div><span class="signature">Receiver's Signature</span></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/school-profile.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        let currentReceipt = null;
+
+        function formatMoney(value) {
+            const amount = Number(value) || 0;
+            return amount.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function buildReceiptPdfName(receipt) {
+            const suffix = receipt?.receiptNo || receipt?.admissionNo || 'receipt';
+            return `fee_receipt_${String(suffix).replace(/[^a-z0-9_-]+/gi, '_')}.pdf`;
+        }
+
+        function numberToWords(num) {
+            const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+                'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            function convertHundreds(n) {
+                let result = '';
+                if (n > 99) {
+                    result += `${ones[Math.floor(n / 100)]} Hundred `;
+                    n %= 100;
+                }
+                if (n > 19) {
+                    result += `${tens[Math.floor(n / 10)]} `;
+                    n %= 10;
+                }
+                if (n > 0) {
+                    result += `${ones[n]} `;
+                }
+                return result.trim();
+            }
+
+            if (!num) return 'Zero Only';
+            const whole = Math.floor(Number(num));
+            const paise = Math.round((Number(num) - whole) * 100);
+
+            const crore = Math.floor(whole / 10000000);
+            const lakh = Math.floor((whole % 10000000) / 100000);
+            const thousand = Math.floor((whole % 100000) / 1000);
+            const hundred = whole % 1000;
+
+            let words = '';
+            if (crore) words += `${convertHundreds(crore)} Crore `;
+            if (lakh) words += `${convertHundreds(lakh)} Lakh `;
+            if (thousand) words += `${convertHundreds(thousand)} Thousand `;
+            if (hundred) words += `${convertHundreds(hundred)} `;
+
+            words = `${words.trim()} Rupees`.trim();
+            if (paise) {
+                words += ` and ${convertHundreds(paise)} Paise`;
+            }
+            return `${words} Only`;
+        }
+
+        function setText(id, value) {
+            document.getElementById(id).textContent = value || '-';
+        }
+
+        function normalizePaymentBreakdown(paymentBreakdown = [], fallbackPaymentMode = '', fallbackPaidAmount = 0) {
+            if (Array.isArray(paymentBreakdown) && paymentBreakdown.length) {
+                return paymentBreakdown.map((entry) => ({
+                    modeLabel: entry.modeLabel || entry.baseMode || 'Cash',
+                    baseMode: entry.baseMode || ((entry.modeLabel || '') === 'Cash' ? 'Cash' : 'Online'),
+                    amount: Number(entry.amount) || 0
+                }));
+            }
+
+            if (!fallbackPaymentMode && !fallbackPaidAmount) {
+                return [];
+            }
+
+            return [{
+                modeLabel: fallbackPaymentMode || 'Cash',
+                baseMode: fallbackPaymentMode === 'Cash' ? 'Cash' : 'Online',
+                amount: Number(fallbackPaidAmount) || 0
+            }];
+        }
+
+        function formatPaymentBreakdown(paymentBreakdown = [], fallbackPaymentMode = '', fallbackPaidAmount = 0) {
+            const normalizedBreakdown = normalizePaymentBreakdown(paymentBreakdown, fallbackPaymentMode, fallbackPaidAmount);
+            if (!normalizedBreakdown.length) return '-';
+
+            return normalizedBreakdown
+                .map((entry) => `${entry.modeLabel}: Rs. ${formatMoney(entry.amount)}`)
+                .join(', ');
+        }
+
+        function renderReceipt(receipt) {
+            currentReceipt = receipt;
+            const paidAmount = Number(receipt.paidAmount) || 0;
+            const normalizedBreakdown = normalizePaymentBreakdown(receipt.paymentBreakdown, receipt.paymentMode, paidAmount);
+            document.getElementById('editReceiptBtn').href = `fee-collection.html?receiptId=${receipt._id}`;
+            setText('receiptDate', new Date(receipt.receiptDate || receipt.createdAt).toLocaleDateString('en-IN'));
+            setText('receiptNo', receipt.receiptNo);
+            setText('voucherNo', receipt.voucherNo);
+            setText('admissionNo', receipt.admissionNo);
+            setText('studentName', receipt.studentName);
+            setText('fatherName', receipt.fatherName);
+            setText('className', receipt.className);
+            setText('rollNo', receipt.rollNo || '-');
+            setText('section', receipt.section || '-');
+            setText('month', receipt.month);
+            setText('previousDue', formatMoney(receipt.previousDueAmount));
+            setText('chargesTotal', formatMoney(receipt.dueAmount));
+            setText('paidAmount', formatMoney(paidAmount));
+            setText('amountInWords', numberToWords(paidAmount));
+            setText('notesText', receipt.notes ? `3) ${receipt.notes}` : '');
+            setText('paymentBreakdownSummary', `Payment Split: ${formatPaymentBreakdown(receipt.paymentBreakdown, receipt.paymentMode, paidAmount)}`);
+
+            document.getElementById('paymentBreakdownRows').innerHTML = normalizedBreakdown.length
+                ? normalizedBreakdown.map((entry) => `
+                    <tr class="summary-row">
+                        <td colspan="2">Paid by - ${entry.modeLabel}</td>
+                        <td class="amount-col">${formatMoney(entry.amount)}</td>
+                    </tr>
+                `).join('')
+                : `
+                    <tr class="summary-row">
+                        <td colspan="2">Paid by - Cash</td>
+                        <td class="amount-col">0.00</td>
+                    </tr>
+                `;
+
+            document.getElementById('lineItemsSummary').textContent = receipt.lineItems
+                .map((item) => `${item.particular}: Rs. ${formatMoney(item.amount)}`)
+                .join(', ');
+
+            document.getElementById('lineItemsBody').innerHTML = receipt.lineItems.map((item, index) => `
+                <tr>
+                    <td class="num-col">${index + 1}</td>
+                    <td>${item.particular}</td>
+                    <td class="amount-col">${formatMoney(item.amount)}</td>
+                </tr>
+            `).join('') + `
+                <tr class="summary-row">
+                    <td colspan="2">Current Charges Total</td>
+                    <td class="amount-col">${formatMoney(receipt.currentChargesTotal)}</td>
+                </tr>
+            `;
+        }
+
+        async function downloadReceiptPdf() {
+            if (!window.html2pdf) {
+                alert('PDF library is not available right now.');
+                return;
+            }
+
+            const button = document.getElementById('downloadPdfBtn');
+            const sheet = document.querySelector('.sheet');
+            const originalLabel = button.textContent;
+
+            button.disabled = true;
+            button.textContent = 'Preparing PDF...';
+
+            try {
+                await html2pdf().set({
+                    margin: 0,
+                    filename: buildReceiptPdfName(currentReceipt),
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 3,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        letterRendering: true
+                    },
+                    jsPDF: {
+                        unit: 'mm',
+                        format: 'a4',
+                        orientation: 'portrait'
+                    },
+                    pagebreak: {
+                        mode: ['avoid-all']
+                    }
+                }).from(sheet).save();
+            } catch (error) {
+                console.error('Error generating fee receipt PDF:', error);
+                alert('Failed to download PDF. Please try again.');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalLabel;
+            }
+        }
+
+        async function loadReceipt() {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = '../pages/login.html';
+                return;
+            }
+
+            const receiptId = new URLSearchParams(window.location.search).get('id');
+            if (!receiptId) {
+                alert('Receipt id is missing');
+                return;
+            }
+
+            const result = await API.fees.getReceipt(receiptId);
+            if (!result || !result.success) {
+                alert(result?.message || 'Unable to fetch receipt');
+                return;
+            }
+
+            renderReceipt(result.receipt);
+        }
+
+        document.addEventListener('DOMContentLoaded', loadReceipt);
+    </script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Today's Finance - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #eef5ff, #ffffff);
+        }
+
+        .summary-card,
+        .table-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(34, 73, 129, 0.08);
+        }
+
+        .metric-box {
+            border-radius: 16px;
+            padding: 18px;
+            height: 100%;
+            border: 1px solid #dce9ff;
+            background: linear-gradient(135deg, #f7fbff, #eef5ff);
+        }
+
+        .metric-box span {
+            display: block;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .metric-box strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 1.45rem;
+            color: #133f79;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid py-4" style="max-width: 1450px;">
+        <div class="card summary-card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Today's Transactions</h4>
+                <div>Report Date: <strong id="todayDateLabel">-</strong></div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Fee Cash</span>
+                            <strong>Rs. <span id="todayFeeCash">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Fee Online</span>
+                            <strong>Rs. <span id="todayFeeOnline">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Expense Cash</span>
+                            <strong>Rs. <span id="todayExpenseCash">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Expense Online</span>
+                            <strong>Rs. <span id="todayExpenseOnline">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Net Cash Balance</span>
+                            <strong>Rs. <span id="todayNetCash">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Net Online Balance</span>
+                            <strong>Rs. <span id="todayNetOnline">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Total Income</span>
+                            <strong>Rs. <span id="todayIncome">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <span>Total Expense</span>
+                            <strong>Rs. <span id="todayExpense">0.00</span></strong>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="metric-box">
+                            <span>Net Balance</span>
+                            <strong>Rs. <span id="todayNetBalance">0.00</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card table-card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Today's Fee Receipts</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Admission No.</th>
+                                <th>Student</th>
+                                <th>Particulars</th>
+                                <th>Paid</th>
+                                <th>Due</th>
+                                <th>Mode</th>
+                                <th>Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="todayReceiptsBody">
+                            <tr><td colspan="8" class="text-center text-muted py-4">Loading today's receipts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Today's Expenses</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Head of Account</th>
+                                <th>Paid To</th>
+                                <th>Particulars</th>
+                                <th>Amount</th>
+                                <th>Mode</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="todayExpensesBody">
+                            <tr><td colspan="7" class="text-center text-muted py-4">Loading today's expenses...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/today-finance.js"></script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

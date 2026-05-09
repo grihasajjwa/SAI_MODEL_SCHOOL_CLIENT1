@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Class Students - Skyview Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
     <style>
@@ -24,6 +24,11 @@
     <div id="navbar-container"></div>
 
     <div class="container mt-4">
+          <div class="alert py-2 px-3 mb-3 no-print" style="background-color:red; color:white; font-size:14px;">
+                <strong>Before preparing marksheets:</strong>
+                Step 1: Set Exam Config for this class and section.
+                Step 2: Create Co-Scholastic Config so grades appear correctly.
+            </div>
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
@@ -32,6 +37,9 @@
                         <div>
                             <button class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#examConfigModal">
                                 <i class="fas fa-cog"></i> Exam Configuration
+                            </button>
+                            <button class="btn btn-info btn-sm me-2" data-bs-toggle="modal" data-bs-target="#coScholasticConfigModal">
+                                <i class="fas fa-graduation-cap"></i> Co-Scholastic Configuration
                             </button>
                             <button id="bulkPdfBtn" class="btn btn-light btn-sm me-2" disabled onClick="generateBulkPrint()">
                                 <i class="fas fa-file-pdf"></i> Generate All Marksheets
@@ -174,8 +182,47 @@
         </div>
     </div>
 
+    <!-- Co-Scholastic Configuration Modal -->
+    <div class="modal fade" id="coScholasticConfigModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" style="color: blue;">Co-Scholastic Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="input-group-text" style="font-size: 18px; font-weight: bold; color: #060e62; display: block; text-align: center;"><span id="coScholasticClassTitleSpan"></span></div>
+                <div class="modal-body">
+                    <form id="coScholasticConfigForm">
+                        <div class="mb-3">
+                            <h6>Co-Scholastic Activities</h6>
+                            <p class="text-muted">Configure co-scholastic activities for this class. You can add, remove, and customize activities as needed.</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-success btn-sm" onclick="addNewActivity()">
+                                <i class="fas fa-plus"></i> Add New Activity
+                            </button>
+                        </div>
+                        
+                        <div id="activitiesContainer" class="row">
+                            <!-- Activities will be dynamically added here -->
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> <strong>Note:</strong> Click "Add New Activity" to create co-scholastic activities. You can customize the activity names and remove unwanted activities.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCoScholasticConfig()">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="../js/config.js"></script>
@@ -187,11 +234,14 @@
         let examConfig = {};
         let className = '';
         let section = '';
+        let session = '';
+        let coScholasticConfig = {};
 
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         className = urlParams.get('class');
         section = urlParams.get('section');
+        session = urlParams.get('session');
 
         // Function to get authentication token
         function getAuthToken() {
@@ -225,7 +275,10 @@
                     return;
                 }
 
-                document.getElementById('classTitle').textContent = `${className} - Section ${section} Students`;
+                const titleText = session 
+                    ? `${className} - Section ${section} Students (${session})`
+                    : `${className} - Section ${section} Students`;
+                document.getElementById('classTitle').textContent = titleText;
 
                 // First get class details to know the subjects
                 const classResponse = await apiCall(`${API_BASE_URL}/classes/details/${encodeURIComponent(className)}/${encodeURIComponent(section)}`);
@@ -234,8 +287,11 @@
                 }
                 const classData = await classResponse.json();
 
-                // Get students for this class
-                const response = await apiCall(`${API_BASE_URL}/students/class/${className}/${section}`);
+                // Get students for this class (with session filter if available)
+                const studentUrl = session 
+                    ? `${API_BASE_URL}/students/class/${className}/${section}?session=${encodeURIComponent(session)}`
+                    : `${API_BASE_URL}/students/class/${className}/${section}`;
+                const response = await apiCall(studentUrl);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
@@ -243,7 +299,7 @@
                 students = await response.json();
 
                 // Get marks data for all students to check ranks
-                const marksResponse = await apiCall(`${API_BASE_URL}/marks/class/${className}/${section}`);
+                const marksResponse = await apiCall(`${API_BASE_URL}/marks/class/${className}/${section}?academicYear=${encodeURIComponent(session || CONFIG.CURRENT_SESSION || 'Default')}`);
                 if (!marksResponse.ok) {
                     throw new Error('Failed to fetch marks data');
                 }
@@ -301,6 +357,7 @@
                                     rollNo: data.rollNo || '0',
                                     className: className,
                                     section: section,
+                                    academicYear: session || CONFIG.CURRENT_SESSION || 'Default',
                                     studentName: data.name,
                                     admissionNo: data.studentId,
                                     fatherName: data.fatherName,
@@ -336,10 +393,10 @@
                                 if (hasRank) params.rank = studentMarks.rank;
 
                                 // Create URL for marks page
-                                 const marksUrl = new URL('../pages/marksheet-template4.html', window.location.href);
+                                 const marksUrl = new URL('../pages/skymarksheet.html', window.location.href);
                                // const marksUrl = new URL('../pages/marksheet-new-template.html', window.location.href);
                                 
-                                console.group('URL Parameters');
+                                // console.group('URL Parameters');
                                 Object.entries(params).forEach(([key, value]) => {
                                     if (value) {
                                         marksUrl.searchParams.set(key, value);
@@ -406,6 +463,7 @@ async function generateBulkPrint() {
                   studentId: student._id,
                         className: className,
                         section: section,
+                        academicYear: session || CONFIG.CURRENT_SESSION || 'Default',
                         studentName: student.name,
                         admissionNo: student.studentId,
                         rollNo: student.rollNo || '',
@@ -459,6 +517,7 @@ async function generateBulkPrint() {
             const urlParams = new URLSearchParams(window.location.search);
             className = urlParams.get('class');
             section = urlParams.get('section');
+            session = urlParams.get('session');
             
             if (!className || !section) {
                 alert('Class and section parameters are missing');
@@ -470,6 +529,10 @@ async function generateBulkPrint() {
             // Add event listener for modal open
             const examConfigModal = document.getElementById('examConfigModal');
             examConfigModal.addEventListener('show.bs.modal', loadExamConfig);
+            
+            // Add event listener for co-scholastic modal open
+            const coScholasticConfigModal = document.getElementById('coScholasticConfigModal');
+            coScholasticConfigModal.addEventListener('show.bs.modal', loadCoScholasticConfig);
 
             // Add event listeners for marks inputs
             ['pt1', 'hy', 'pt2', 'final'].forEach(examType => {
@@ -483,7 +546,7 @@ async function generateBulkPrint() {
         // Load exam configuration
         async function loadExamConfig() {
             try {
-                const academicYear = '2024-2025';
+                const academicYear = session || CONFIG.CURRENT_SESSION || 'Default';
                 const response = await apiCall(`${API_BASE_URL}/exam/config/${encodeURIComponent(className)}/${encodeURIComponent(section)}/${encodeURIComponent(academicYear)}`);
                 
                 if (response.ok) {
@@ -531,7 +594,7 @@ async function generateBulkPrint() {
         // Save exam configuration
         async function saveExamConfig() {
             try {
-                const academicYear = '2024-2025';
+                const academicYear = session || CONFIG.CURRENT_SESSION || 'Default';
                 const examTypes = ['pt1', 'hy', 'pt2', 'final'];
                 const configData = {};
                 
@@ -571,8 +634,212 @@ async function generateBulkPrint() {
                 alert('Error saving exam configuration');
             }
         }
+        
+        // Load co-scholastic configuration
+        async function loadCoScholasticConfig() {
+            try {
+                const academicYear = session || CONFIG.CURRENT_SESSION || 'Default';
+                const response = await apiCall(`${API_BASE_URL}/coscholastic/config/${encodeURIComponent(className)}/${encodeURIComponent(section)}/${encodeURIComponent(academicYear)}`);
+                
+                document.getElementById('coScholasticClassTitleSpan').textContent = `Class ${className}-${section} - ${academicYear}`;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Loaded co-scholastic config:', data);
+                    coScholasticConfig = data;
+                    
+                    // Clear existing activities
+                    document.getElementById('activitiesContainer').innerHTML = '';
+                    
+                    // Add activities from configuration
+                    if (data.activities && data.activities.length > 0) {
+                        data.activities.forEach((activity, index) => {
+                            addActivityToForm(activity.id, activity.label, activity.enabled, index);
+                        });
+                    } else {
+                        // Add one empty activity if no activities exist
+                        addActivityToForm('', '', true, 0);
+                    }
+                } else {
+                    console.log('No co-scholastic configuration found, starting with empty form');
+                    // Start with one empty activity
+                    document.getElementById('activitiesContainer').innerHTML = '';
+                    addActivityToForm('', '', true, 0);
+                }
+            } catch (error) {
+                console.error('Error loading co-scholastic config:', error);
+                // Start with one empty activity on error
+                document.getElementById('activitiesContainer').innerHTML = '';
+                addActivityToForm('', '', true, 0);
+            }
+        }
+        
+        // Add activity to form
+        function addActivityToForm(id, label, enabled, index) {
+            const activitiesContainer = document.getElementById('activitiesContainer');
+            const activityDiv = document.createElement('div');
+            activityDiv.className = 'col-md-6 mb-3';
+            activityDiv.id = `activity-${index}`;
+            
+            activityDiv.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="card-title mb-0">Activity ${index + 1}</h6>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeActivity(${index})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" class="form-control form-control-sm" id="activityLabel-${index}" 
+                                   value="${label}" placeholder="Enter activity name" required>
+                        </div>
+                        <input type="hidden" id="activityId-${index}" value="${id}">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="activityEnabled-${index}" ${enabled ? 'checked' : ''}>
+                            <label class="form-check-label" for="activityEnabled-${index}">
+                                Enabled
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            activitiesContainer.appendChild(activityDiv);
+        }
+        
+        // Add new activity
+        function addNewActivity() {
+            const activitiesContainer = document.getElementById('activitiesContainer');
+            const existingActivities = activitiesContainer.children.length;
+            const newIndex = existingActivities;
+            
+            // Generate a unique ID for the new activity
+            const newId = `activity_${Date.now()}_${newIndex}`;
+            addActivityToForm(newId, '', true, newIndex);
+        }
+        
+        // Remove activity
+        function removeActivity(index) {
+            const activityDiv = document.getElementById(`activity-${index}`);
+            if (activityDiv) {
+                activityDiv.remove();
+                // Re-index remaining activities
+                reindexActivities();
+            }
+        }
+        
+        // Re-index activities after removal
+        function reindexActivities() {
+            const activitiesContainer = document.getElementById('activitiesContainer');
+            const activities = activitiesContainer.children;
+            
+            for (let i = 0; i < activities.length; i++) {
+                const activity = activities[i];
+                const labelInput = activity.querySelector(`input[id^="activityLabel-"]`);
+                const idInput = activity.querySelector(`input[id^="activityId-"]`);
+                const enabledCheckbox = activity.querySelector(`input[id^="activityEnabled-"]`);
+                const titleElement = activity.querySelector('.card-title');
+                const removeButton = activity.querySelector('button[onclick^="removeActivity"]');
+                
+                if (labelInput && idInput && enabledCheckbox && titleElement && removeButton) {
+                    // Update IDs
+                    const oldLabelId = labelInput.id;
+                    const oldIdId = idInput.id;
+                    const oldEnabledId = enabledCheckbox.id;
+                    
+                    labelInput.id = `activityLabel-${i}`;
+                    idInput.id = `activityId-${i}`;
+                    enabledCheckbox.id = `activityEnabled-${i}`;
+                    
+                    // Update label for checkbox
+                    enabledCheckbox.setAttribute('for', `activityEnabled-${i}`);
+                    
+                    // Update activity div id
+                    activity.id = `activity-${i}`;
+                    
+                    // Update title
+                    titleElement.textContent = `Activity ${i + 1}`;
+                    
+                    // Update remove button
+                    removeButton.setAttribute('onclick', `removeActivity(${i})`);
+                }
+            }
+        }
+        
+        // Save co-scholastic configuration
+        async function saveCoScholasticConfig() {
+            try {
+                const academicYear = session || CONFIG.CURRENT_SESSION || 'Default';
+                const activities = [];
+                
+                // Collect all activities from the form
+                const activitiesContainer = document.getElementById('activitiesContainer');
+                const activityDivs = activitiesContainer.children;
+                
+                for (let i = 0; i < activityDivs.length; i++) {
+                    const labelInput = document.getElementById(`activityLabel-${i}`);
+                    const idInput = document.getElementById(`activityId-${i}`);
+                    const enabledCheckbox = document.getElementById(`activityEnabled-${i}`);
+                    
+                    if (labelInput && idInput && enabledCheckbox) {
+                        const label = labelInput.value.trim();
+                        let id = idInput.value.trim();
+                        
+                        // Skip if label is empty
+                        if (!label) {
+                            continue;
+                        }
+                        
+                        // Generate ID if not provided
+                        if (!id) {
+                            id = label.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now();
+                        }
+                        
+                        activities.push({
+                            id: id,
+                            label: label,
+                            enabled: enabledCheckbox.checked
+                        });
+                    }
+                }
+                
+                if (activities.length === 0) {
+                    alert('Please add at least one activity with a name.');
+                    return;
+                }
+
+                const configData = {
+                    class: className,
+                    section: section,
+                    academicYear: academicYear,
+                    activities: activities
+                };
+
+                const response = await apiCall(`${API_BASE_URL}/coscholastic/config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(configData)
+                });
+
+                if (!response.ok) throw new Error('Failed to save co-scholastic configuration');
+
+                const savedConfig = await response.json();
+                console.log('Saved co-scholastic config:', savedConfig);
+
+                alert('Co-Scholastic configuration saved successfully');
+                bootstrap.Modal.getInstance(document.getElementById('coScholasticConfigModal')).hide();
+            } catch (error) {
+                console.error('Error saving co-scholastic config:', error);
+                alert('Error saving co-scholastic configuration');
+            }
+        }
     </script>
     <script src="../js/auth.js"></script>
     <script src="../components/navbar.js"></script>
+    <script src='../js/page-shell.js'></script>
 </body>
 </html>
+

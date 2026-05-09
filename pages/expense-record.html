@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Receipt - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f9ff, #ffffff);
+        }
+
+        .form-card,
+        .summary-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(34, 73, 129, 0.08);
+        }
+
+        .metric-box {
+            background: linear-gradient(135deg, #f7fbff, #eef5ff);
+            border: 1px solid #dce9ff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .metric-box span {
+            display: block;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .metric-box strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 1.45rem;
+            color: #113f7a;
+        }
+
+        .payment-entry-row,
+        .recent-item {
+            border: 1px solid #e3ecfb;
+            border-radius: 14px;
+            padding: 14px;
+            background: #fdfefe;
+            margin-bottom: 12px;
+        }
+
+        .recent-list {
+            max-height: 560px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid py-4" style="max-width: 1380px;">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card form-card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0" id="expenseFormTitle">Expense Receipt</h4>
+                        <a href="expense-transactions.html" class="btn btn-light btn-sm">
+                            <i class="fas fa-list me-2"></i>Expense History
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <form id="expenseForm">
+                            <input type="hidden" id="selectedExpenseId">
+                            <div id="expenseFormMessage" class="alert alert-danger d-none mb-3" role="alert"></div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="expenseVoucherNo">
+                                        <i class="fas fa-receipt text-success me-2"></i>Voucher No.
+                                    </label>
+                                    <input type="text" class="form-control" id="expenseVoucherNo" placeholder="Enter voucher number" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="expenseDate">
+                                        <i class="fas fa-calendar-day text-danger me-2"></i>Expense Date
+                                    </label>
+                                    <input type="date" class="form-control" id="expenseDate" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="expenseNotes">
+                                        <i class="fas fa-sticky-note text-warning me-2"></i>Notes
+                                    </label>
+                                    <input type="text" class="form-control" id="expenseNotes" placeholder="Optional note">
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="headOfAccount">Head of Account</label>
+                                    <div class="input-group">
+                                        <select class="form-select" id="headOfAccount" required>
+                                            <option value="">Select Head of Account</option>
+                                        </select>
+                                        <button type="button" class="btn btn-outline-primary" id="addExpenseHeadBtn">
+                                            <i class="fas fa-plus me-2"></i>Add New
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="paidTo">Paid To</label>
+                                    <input type="text" class="form-control" id="paidTo" placeholder="Vendor or person name" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="paidFor">Paid For</label>
+                                    <input type="text" class="form-control" id="paidFor" placeholder="Purpose of expense" required>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mt-1 d-none" id="expenseEditReasonRow">
+                                <div class="col-12">
+                                    <label class="form-label" for="expenseEditReason">
+                                        <i class="fas fa-pen-to-square text-danger me-2"></i>Reason For Edit
+                                    </label>
+                                    <input type="text" class="form-control" id="expenseEditReason" placeholder="Why are you changing this expense?">
+                                    <div class="form-text">Required when updating or deleting an expense.</div>
+                                </div>
+                            </div>
+
+                            <div class="card border-secondary bg-light-subtle mt-4">
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label fw-bold mb-0">
+                                                    <i class="fas fa-credit-card text-success me-2"></i>Payment Breakdown
+                                                </label>
+                                                <div class="d-flex gap-2">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="addExpenseOnlineAccountBtn">
+                                                        <i class="fas fa-plus me-2"></i>Add Online Account
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" id="addExpensePaymentRowBtn">
+                                                        <i class="fas fa-plus me-2"></i>Add Payment Row
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div id="expensePaymentEntriesContainer"></div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold" for="expenseAmount">
+                                                <i class="fas fa-money-bill-wave text-primary me-2"></i>Total Expense Amount
+                                            </label>
+                                            <div class="input-group" style="width: 220px;">
+                                                <span class="input-group-text">Rs.</span>
+                                                <input type="number" class="form-control text-end bg-white border-success border-2" id="expenseAmount" min="0" step="0.01" value="0" readonly>
+                                            </div>
+                                            <div class="form-text mt-3">You can split one expense between Cash and Online in the same transaction.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <button type="button" class="btn btn-outline-danger d-none" id="deleteExpenseBtn">
+                                    <i class="fas fa-trash me-2"></i>Delete Expense
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="resetExpenseFormBtn">Reset</button>
+                                <button type="submit" class="btn btn-success" id="saveExpenseBtn">
+                                    <i class="fas fa-save me-2"></i>Save Expense
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card summary-card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Finance Snapshot</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="metric-box">
+                            <span>Total Expense</span>
+                            <strong>Rs. <span id="expenseDashboardExpense">0.00</span></strong>
+                        </div>
+                        <div class="metric-box">
+                            <span>Total Fee Collected</span>
+                            <strong>Rs. <span id="expenseDashboardCollected">0.00</span></strong>
+                        </div>
+                        <div class="metric-box">
+                            <span>Total Outstanding Due</span>
+                            <strong>Rs. <span id="expenseDashboardOutstanding">0.00</span></strong>
+                        </div>
+                        <div class="metric-box mb-0">
+                            <span>Net Balance</span>
+                            <strong>Rs. <span id="expenseDashboardNet">0.00</span></strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card summary-card">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">Recent Expenses</h5>
+                            <small class="text-muted">Latest vouchers with edit and delete actions</small>
+                        </div>
+                        <a href="expense-transactions.html" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="recent-list" id="recentExpenses">Loading recent expenses...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/expense-record.js"></script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>

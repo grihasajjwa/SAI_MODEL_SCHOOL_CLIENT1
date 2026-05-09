@@ -6,6 +6,9 @@
     <title>Lesson Plan</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/lesson-plan-navbar.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="../js/config.js"></script>
@@ -116,20 +119,13 @@
     </style>
 </head>
 <body>
+    <!-- Navbar will be loaded here -->
+    <div id="navbar-container"></div>
+    
     <!-- Add loading overlay -->
     <div class="loading-overlay">
         <div class="loading-spinner"></div>
     </div>
-
-    <nav class="blue darken-1 no-print">
-        <div class="nav-wrapper container">
-            <a href="#" class="brand-logo">Lesson Plan</a>
-            <ul class="right">
-                <li><a href="#" onclick="Auth.logout()" class="waves-effect waves-light"><i class="material-icons left">exit_to_app</i>Logout</a></li>
-            </ul>
-        </div>
-    </nav>
-    
 
     <div class="container">
         <!-- Add print header -->
@@ -254,17 +250,19 @@
                 window.location.href = '../pages/login.html';
                 throw new Error('Authentication required');
             }
+
+            const { allowError = false, ...fetchOptions } = options;
             
             const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
-                ...options.headers
+                ...fetchOptions.headers
             };
 
            // return fetch(url, { ...options, headers });
             try {
-                const response = await fetch(url, { ...options, headers });
-                if (!response.ok) {
+                const response = await fetch(url, { ...fetchOptions, headers });
+                if (!response.ok && !allowError) {
                     console.error(`API call failed: ${response.status} ${response.statusText}`);
                     throw new Error(`API call failed: ${response.status} ${response.statusText}`);
                 }
@@ -449,7 +447,10 @@
                 // Clear existing table first
                 tbody.innerHTML = '';
 
-                const response = await apiCall(`${API_BASE_URL}/lesson-plan/${className}/${subjectName}`);
+                const response = await apiCall(
+                    `${API_BASE_URL}/lesson-plan/${encodeURIComponent(className)}/${encodeURIComponent(subjectName)}`,
+                    { allowError: true }
+                );
                 if (!response.ok) {
                     if (response.status === 404) {
                         // If no plan exists, add an empty chapter
@@ -469,6 +470,11 @@
                     hideLoading();
                     return;
                 }
+
+                document.getElementById("academicYear").value = data[0].academicYear || document.getElementById("academicYear").value;
+                const teacherInput = document.querySelector('input[type="text"]');
+                teacherInput.value = data[0].teacherName || teacherInput.value;
+                M.FormSelect.init(document.getElementById("academicYear"));
 
                 // Group lessons by chapter
                 const chapterMap = new Map();
@@ -946,7 +952,7 @@
                 const className = document.getElementById("class").value;
                 const subjectName = document.getElementById("subjectName").value;
                 const academicYear = document.getElementById("academicYear").value;
-                const teacherName = document.querySelector('input[type="text"]').value;
+                const teacherName = document.querySelector('input[type="text"]').value.trim();
 
                 if (!className || !subjectName || !academicYear || !teacherName) {
                     M.toast({html: 'Please fill in all required fields (Class, Subject, Academic Year, and Teacher Name)', classes: 'red'});
@@ -958,133 +964,65 @@
                     return;
                 }
 
-                // First fetch existing lesson plan to check for existing chapters
-                let existingPlan;
-                try {
-                    const response = await apiCall(`${API_BASE_URL}/lesson-plan/${className}`);
-                    if (response.ok) {
-                        existingPlan = await response.json();
-                    }
-                } catch (error) {
-                    console.log('No existing lesson plan found:', error);
-                }
-
+                const chapters = [];
                 let currentChapter = null;
-                let chapters = new Map(); // Use Map to track chapters by number
-
-                // If we have an existing plan, pre-populate our chapters map
-                if (existingPlan) {
-                    const existingSubject = existingPlan.subjects.find(s => s.subjectName === subjectName);
-                    if (existingSubject) {
-                        existingSubject.chapters.forEach(chapter => {
-                            chapters.set(chapter.chapterNo, {
-                                chapterNo: chapter.chapterNo,
-                                chapterName: chapter.chapterName,
-                                lessons: [...chapter.lessons]
-                            });
-                        });
-                    }
-                }
 
                 for (let i = 0; i < table.rows.length; i++) {
                     const row = table.rows[i];
-                    const chapterText = row.cells[0].innerText;
-                    
+                    const chapterText = row.cells[0].innerText.trim();
+
                     if (chapterText.startsWith('Chapter ')) {
-                        const chapterNo = parseInt(chapterText.replace('Chapter ', ''));
+                        const chapterNo = parseInt(chapterText.replace('Chapter ', ''), 10);
                         const chapterNameDiv = row.cells[1].querySelector('.multiline-input');
                         const chapterName = chapterNameDiv ? chapterNameDiv.textContent.trim() : '';
-                        
-                        if (!chapterName) {
-                            M.toast({html: `Please enter chapter name for Chapter ${chapterNo}`, classes: 'red'});
+
+                        if (!chapterNo || !chapterName) {
+                            M.toast({html: `Please enter chapter name for ${chapterText || 'the chapter'}`, classes: 'red'});
                             return;
                         }
 
-                        // Get existing chapter or create new one
-                        currentChapter = chapters.get(chapterNo);
-                        if (currentChapter) {
-                            // Update chapter name if changed
-                            currentChapter.chapterName = chapterName;
-                            // Clear existing lessons as we'll rebuild them
-                            currentChapter.lessons = [];
-                        } else {
-                            currentChapter = {
-                                chapterNo,
-                                chapterName,
-                                lessons: []
-                            };
-                        }
-                        chapters.set(chapterNo, currentChapter);
+                        currentChapter = {
+                            chapterNo,
+                            chapterName,
+                            lessons: []
+                        };
+                        chapters.push(currentChapter);
                     }
 
-                    // Process lesson data (for both chapter rows and sub-rows)
                     const topicDiv = row.cells[3].querySelector('.multiline-input');
                     const methodSelect = row.cells[4].querySelector('select');
                     const remarksDiv = row.cells[7].querySelector('.multiline-input');
 
-                    if (!topicDiv || !topicDiv.textContent.trim() || !methodSelect || !methodSelect.value) {
+                    if (!currentChapter || !topicDiv || !topicDiv.textContent.trim() || !methodSelect || !methodSelect.value) {
                         M.toast({html: 'Please fill all required fields for lessons', classes: 'red'});
                         return;
                     }
 
-                    if (currentChapter) {
-                        const lesson = {
-                            day: parseInt(row.cells[2].innerText) || 1,
-                            topic: topicDiv.textContent.trim(),
-                            method: methodSelect.value,
-                            teachingAids: Array.from(row.cells[5].querySelectorAll('input[type="checkbox"]'))
-                                .filter(cb => cb.checked)
-                                .map(cb => cb.nextElementSibling.textContent),
-                            assessment: Array.from(row.cells[6].querySelectorAll('input[type="checkbox"]'))
-                                .filter(cb => cb.checked)
-                                .map(cb => cb.nextElementSibling.textContent),
-                            remarks: remarksDiv ? remarksDiv.textContent.trim() : ''
-                        };
-                        currentChapter.lessons.push(lesson);
-                    }
-                }
-
-                // Create new class if it doesn't exist
-                if (!existingPlan) {
-                    await apiCall(`${API_BASE_URL}/lesson-plan/add`, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            className,
-                            subjects: [{
-                                subjectName,
-                                academicYear,
-                                teacherName,
-                                chapters: []
-                            }]
-                        })
+                    currentChapter.lessons.push({
+                        day: parseInt(row.cells[2].innerText, 10) || currentChapter.lessons.length + 1,
+                        topic: topicDiv.textContent.trim(),
+                        method: methodSelect.value,
+                        teachingAids: Array.from(row.cells[5].querySelectorAll('input[type="checkbox"]'))
+                            .filter(cb => cb.checked)
+                            .map(cb => cb.nextElementSibling.textContent.trim()),
+                        assessment: Array.from(row.cells[6].querySelectorAll('input[type="checkbox"]'))
+                            .filter(cb => cb.checked)
+                            .map(cb => cb.nextElementSibling.textContent.trim()),
+                        remarks: remarksDiv ? remarksDiv.textContent.trim() : ''
                     });
                 }
 
-                // Save each chapter
-                for (const [chapterNo, chapter] of chapters) {
-                    try {
-                        console.log('Saving chapter:', chapter);
-                        const response = await apiCall(`${API_BASE_URL}/lesson-plan/${className}/${subjectName}/add-chapter`, {
-                            method: 'PUT',
-                            body: JSON.stringify({
-                                chapterNo: chapter.chapterNo,
-                                chapterName: chapter.chapterName,
-                                lessons: chapter.lessons,
-                                teacherName
-                            })
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`Failed to save chapter ${chapterNo}`);
-                        }
-                    } catch (error) {
-                        console.error(`Error saving chapter ${chapterNo}:`, error);
-                        M.toast({html: `Error saving chapter ${chapterNo}`, classes: 'red'});
-                        return;
-                    }
-                }
+                await apiCall(`${API_BASE_URL}/lesson-plan/${encodeURIComponent(className)}/${encodeURIComponent(subjectName)}/save`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        academicYear,
+                        teacherName,
+                        chapters
+                    })
+                });
 
                 M.toast({html: 'Lesson plan saved successfully!', classes: 'green'});
+                await loadExistingPlan();
             } catch (error) {
                 console.error('Error saving lesson plan:', error);
 
@@ -1222,5 +1160,8 @@
             M.toast({html: 'Excel file downloaded successfully!'});
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
 </body>
 </html>

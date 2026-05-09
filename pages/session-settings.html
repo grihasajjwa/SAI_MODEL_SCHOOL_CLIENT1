@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Settings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <h3 class="mb-4">Academic Session Settings</h3>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Create Session</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input id="newSessionName" class="form-control" placeholder="e.g. 2026-2027">
+                    </div>
+                    <div class="col-md-3">
+                        <input id="newSessionStart" type="date" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <input id="newSessionEnd" type="date" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <button id="createSessionBtn" class="btn btn-primary w-100">Create</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Existing Sessions</h5>
+                <div id="sessionList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function authFetch(url, options = {}) {
+            const token = Auth.getToken();
+            return fetch(url, {
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                }
+            });
+        }
+
+        async function loadSessions() {
+            const res = await authFetch(`${CONFIG.API_URL}/sessions`);
+            const data = await res.json();
+            const sessions = data.sessions || [];
+            const list = document.getElementById('sessionList');
+            list.innerHTML = '';
+            if (!sessions.length) {
+                list.innerHTML = '<p class="text-muted">No sessions found</p>';
+                return;
+            }
+
+            sessions.forEach(session => {
+                const row = document.createElement('div');
+                row.className = 'd-flex justify-content-between align-items-center border rounded p-2 mb-2';
+                row.innerHTML = `
+                    <div>
+                        <strong>${session.name}</strong>
+                        <span class="badge ${session.isCurrent ? 'bg-success' : 'bg-secondary'} ms-2">
+                            ${session.isCurrent ? 'Current' : 'Not Current'}
+                        </span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-success">Set Current</button>
+                `;
+                row.querySelector('button').addEventListener('click', async () => {
+                    await authFetch(`${CONFIG.API_URL}/sessions/current`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ name: session.name })
+                    });
+                    await loadSessions();
+                });
+                list.appendChild(row);
+            });
+        }
+
+        document.getElementById('createSessionBtn').addEventListener('click', async () => {
+            const name = document.getElementById('newSessionName').value.trim();
+            const startDate = document.getElementById('newSessionStart').value || null;
+            const endDate = document.getElementById('newSessionEnd').value || null;
+            if (!name) {
+                alert('Session name is required');
+                return;
+            }
+            const res = await authFetch(`${CONFIG.API_URL}/sessions`, {
+                method: 'POST',
+                body: JSON.stringify({ name, active: true, startDate, endDate })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.message || 'Failed to create session');
+                return;
+            }
+            document.getElementById('newSessionName').value = '';
+            document.getElementById('newSessionStart').value = '';
+            document.getElementById('newSessionEnd').value = '';
+            await loadSessions();
+        });
+
+        loadSessions();
+    </script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>
+

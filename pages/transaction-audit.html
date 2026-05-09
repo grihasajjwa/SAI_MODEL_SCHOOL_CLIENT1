@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Audit - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .hero-card,
+        .panel-card,
+        .table-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #0f4c81, #2563eb 55%, #60a5fa);
+            color: #fff;
+        }
+
+        .summary-card {
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid #dbeafe;
+            padding: 16px;
+            min-height: 100%;
+        }
+
+        .summary-label {
+            color: #1d4ed8;
+            font-size: 0.88rem;
+        }
+
+        .summary-value {
+            color: #111827;
+            font-size: 1.45rem;
+            font-weight: 700;
+        }
+
+        .audit-table th,
+        .changes-table th {
+            background: #eff6ff;
+            white-space: nowrap;
+            color: #000;
+        }
+
+        .detail-row td {
+            background: #f8fbff;
+        }
+
+        .detail-panel {
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            padding: 16px;
+            background: #fff;
+        }
+
+        .value-box {
+            max-width: 100%;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .edited-value {
+            background: #fff3bf;
+            border: 1px solid #f59f00;
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: #000;
+            font-weight: 700;
+        }
+
+        .previous-value {
+            color: #000;
+        }
+
+        .badge-soft {
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-update {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-delete {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge-fee {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-expense {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            #navbar-container,
+            .filters-card,
+            .action-bar,
+            .toggle-detail-btn {
+                display: none !important;
+            }
+
+            .hero-card,
+            .panel-card,
+            .table-card {
+                box-shadow: none;
+                border: 0;
+            }
+
+            .detail-row {
+                display: table-row !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container-fluid" style="max-width: 1500px;">
+            <section class="card hero-card mb-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-lg-8">
+                            <span class="badge rounded-pill px-3 py-2 mb-3" style="background: rgba(255,255,255,0.16); color: #fff;">Finance Audit Trail</span>
+                            <h1 class="h2 mb-3">Transaction audit register</h1>
+                            <p class="mb-0 text-white-50">
+                                Review fee collection and expense edits with actor name, audit time, and side-by-side previous versus updated values.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="summary-card border-0" style="background: rgba(255,255,255,0.14); color: #fff;">
+                                <div class="summary-label text-white-50">Status</div>
+                                <div class="summary-value text-white fs-5" id="auditStatusText">Ready to load audit logs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card panel-card filters-card mb-4">
+                <div class="card-body p-4">
+                    <form id="auditFilterForm" class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="auditEntityType">Transaction Type</label>
+                            <select class="form-select" id="auditEntityType">
+                                <option value="">All Types</option>
+                                <option value="FeeReceipt">Fee Collection</option>
+                                <option value="Expense">Expense</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="auditAction">Action</label>
+                            <select class="form-select" id="auditAction">
+                                <option value="">All Actions</option>
+                                <option value="UPDATE">Updated</option>
+                                <option value="DELETE">Deleted</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="auditActor">Edited By</label>
+                            <input type="text" class="form-control" id="auditActor" placeholder="Username">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="auditVoucherNo">Voucher No.</label>
+                            <input type="text" class="form-control" id="auditVoucherNo" placeholder="Search voucher">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold" for="auditAdmissionNo">Admission No.</label>
+                            <input type="text" class="form-control" id="auditAdmissionNo" placeholder="Optional">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label fw-semibold" for="auditStartDate">From</label>
+                            <input type="date" class="form-control" id="auditStartDate">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label fw-semibold" for="auditEndDate">To</label>
+                            <input type="date" class="form-control" id="auditEndDate">
+                        </div>
+                        <div class="col-12 d-flex justify-content-between flex-wrap gap-2 action-bar">
+                            <div class="text-muted">Shows audit time, not transaction date. Expand a row to inspect field-by-field changes.</div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" id="loadAuditBtn" type="submit">
+                                    <i class="fas fa-shield-halved me-2"></i>Load Audit
+                                </button>
+                                <button class="btn btn-outline-success" id="exportAuditBtn" type="button" disabled>
+                                    <i class="fas fa-file-excel me-2"></i>Export
+                                </button>
+                                <button class="btn btn-outline-secondary" id="printAuditBtn" type="button" disabled>
+                                    <i class="fas fa-print me-2"></i>Print
+                                </button>
+                                <button class="btn btn-outline-secondary" id="resetAuditBtn" type="button">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <section class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-label">Tracked Transactions</div>
+                        <div class="summary-value" id="auditStatTotal">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-label">Fee Collection Edits</div>
+                        <div class="summary-value" id="auditStatFees">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-label">Expense Edits</div>
+                        <div class="summary-value" id="auditStatExpenses">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-label">Deleted Rows</div>
+                        <div class="summary-value" id="auditStatDeletes">0</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card table-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Audit log table</h2>
+                            <p class="text-muted mb-0">Each row represents one transaction. Open details to inspect the full edit flow.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border" id="auditRowCountBadge">0 transactions</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle audit-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Last Audit Date</th>
+                                    <th>Type</th>
+                                    <th>Current Status</th>
+                                    <th>Voucher / Ref</th>
+                                    <th>Last Edited By</th>
+                                    <th>Record</th>
+                                    <th>Change Flow</th>
+                                    <th>Inspect</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">No audit logs loaded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/transaction-audit.js"></script>
+    <script src="../js/page-shell.js"></script>
+</body>
+</html>

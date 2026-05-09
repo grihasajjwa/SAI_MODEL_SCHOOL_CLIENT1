@@ -36,6 +36,33 @@
             background-color: #e9ecef;
             font-weight: 600;
         }
+        #subjectsTable {
+            width: 100% !important;
+        }
+        #subjectsTable th:last-child,
+        #subjectsTable td:last-child {
+            width: 1%;
+            white-space: nowrap;
+        }
+        .action-buttons {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: nowrap;
+        }
+        .action-buttons .btn {
+            padding: 0.28rem 0.5rem;
+            line-height: 1.1;
+            border-radius: 0.45rem;
+        }
+        .action-buttons .btn i {
+            margin-right: 0.2rem;
+        }
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+        }
     </style>
 </head>
 <body>
@@ -47,7 +74,12 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Manage Subjects</h4>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <h4 class="card-title mb-0">Manage Subjects</h4>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#classModal">
+                                <i class="fas fa-plus"></i> Add New Class
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <table id="subjectsTable" class="table table-striped">
@@ -72,12 +104,49 @@
         </div>
     </div>
 
+    <!-- Add/Edit Class Modal -->
+    <div class="modal fade" id="classModal" tabindex="-1" aria-labelledby="classModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="classModalLabel">Add New Class</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="classForm">
+                        <input type="hidden" id="classId">
+                        <div class="mb-3">
+                            <label for="academicYear" class="form-label">Academic Year</label>
+                            <input type="text" class="form-control" id="academicYear" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="className" class="form-label">Class Name</label>
+                            <input type="text" class="form-control" id="className" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="section" class="form-label">Section</label>
+                            <input type="text" class="form-control" id="section" placeholder="A" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="classTeacher" class="form-label">Class Teacher</label>
+                            <input type="text" class="form-control" id="classTeacher" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveClass">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Subject Modal -->
     <div class="modal fade" id="editSubjectModal" tabindex="-1" role="dialog" aria-labelledby="editSubjectModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editSubjectModalLabel">Edit Class Subjects</h5>
+                    <h5 class="modal-title" id="editSubjectModalLabel">Create / Edit Subjects & Teachers</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -145,6 +214,169 @@
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="../js/config.js"></script>
     <script>
+        let classesCache = [];
+        let subjectsTableInstance = null;
+
+        function getAuthToken() {
+            return localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+        }
+
+        function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '../pages/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        async function apiCall(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '../pages/login.html';
+                throw new Error('Authentication required');
+            }
+
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
+            if (options.body) {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            const response = await fetch(url, { ...options, headers });
+            if (response.status === 401) {
+                window.location.href = '../pages/login.html';
+                throw new Error('Authentication required');
+            }
+
+            return response;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function normalizeClassData(classData = {}) {
+            return {
+                _id: classData._id || classData.id || '',
+                className: classData.className || '',
+                section: classData.section || 'A',
+                academicYear: classData.academicYear || '',
+                classTeacher: classData.classTeacher || 'Not Assigned',
+                studentCount: classData.studentCount || 0,
+                subjects: Array.isArray(classData.subjects) ? classData.subjects : []
+            };
+        }
+
+        function createClassTableRow(classData) {
+            const normalized = normalizeClassData(classData);
+            const row = document.createElement('tr');
+            const safeSubjects = JSON.stringify(normalized.subjects).replace(/"/g, '&quot;');
+
+            row.innerHTML = `
+                <td class="details-control" data-subjects='${safeSubjects}'></td>
+                <td>${escapeHtml(normalized.className)}</td>
+                <td>${escapeHtml(normalized.section)}</td>
+                <td>${escapeHtml(normalized.academicYear)}</td>
+                <td>${escapeHtml(normalized.classTeacher)}</td>
+                <td>${escapeHtml(normalized.studentCount)}</td>
+                <td>
+                    <div class="action-buttons" role="group" aria-label="Class actions">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editClassDetails('${normalized._id}')">
+                            <i class="fas fa-school"></i> Edit Class
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="editSubjects('${normalized._id}')">
+                            <i class="fas fa-edit"></i> Edit Subjects
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteClass('${normalized._id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </td>
+            `;
+
+            return row;
+        }
+
+        function renderClassesTable() {
+            if ($.fn.DataTable.isDataTable('#subjectsTable')) {
+                (subjectsTableInstance || $('#subjectsTable').DataTable()).destroy();
+                subjectsTableInstance = null;
+            }
+
+            const tableBody = document.getElementById('subjectsTableBody');
+            tableBody.innerHTML = '';
+
+            classesCache.forEach(classData => {
+                tableBody.appendChild(createClassTableRow(classData));
+            });
+
+            subjectsTableInstance = $('#subjectsTable').DataTable({
+                order: [[1, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: [0, 6] }
+                ]
+            });
+
+            $('#subjectsTable tbody').off('click', 'td.details-control');
+            $('#subjectsTable tbody').on('click', 'td.details-control', function () {
+                const tr = $(this).closest('tr');
+                const row = subjectsTableInstance.row(tr);
+
+                try {
+                    const subjects = JSON.parse($(this).attr('data-subjects'));
+
+                    if (row.child.isShown()) {
+                        row.child.hide();
+                        tr.removeClass('shown');
+                    } else {
+                        row.child(formatSubjectDetails(subjects)).show();
+                        tr.addClass('shown');
+                    }
+                } catch (error) {
+                    console.error('Error parsing subjects data:', error);
+                    alert('Error showing subject details');
+                }
+            });
+        }
+
+        function upsertClassInCache(classData) {
+            const normalized = normalizeClassData(classData);
+            const existingIndex = classesCache.findIndex(item => item._id === normalized._id);
+
+            if (existingIndex >= 0) {
+                classesCache[existingIndex] = normalized;
+            } else {
+                classesCache.push(normalized);
+            }
+
+            classesCache.sort((a, b) => {
+                const yearCompare = String(a.academicYear).localeCompare(String(b.academicYear));
+                if (yearCompare !== 0) {
+                    return yearCompare;
+                }
+
+                const classCompare = String(a.className).localeCompare(String(b.className), undefined, { numeric: true });
+                if (classCompare !== 0) {
+                    return classCompare;
+                }
+
+                return String(a.section).localeCompare(String(b.section));
+            });
+        }
+
+        function removeClassFromCache(classId) {
+            classesCache = classesCache.filter(item => item._id !== classId);
+        }
+
         // Function to format the subject details
         function formatSubjectDetails(subjects) {
             if (!subjects || subjects.length === 0) {
@@ -165,8 +397,8 @@
                             ${subjects.map((subject, index) => `
                                 <tr>
                                     <td>${index + 1}</td>
-                                    <td>${subject.name}</td>
-                                    <td>${subject.teacher}</td>
+                                    <td>${escapeHtml(subject.name)}</td>
+                                    <td>${escapeHtml(subject.teacher)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -175,8 +407,7 @@
             `;
         }
 
-        function addSubjectRow(containerId) {
-            const container = document.getElementById(containerId);
+        function createSubjectRow(subject = {}) {
             const row = document.createElement('div');
             row.className = 'subject-row mb-3 p-3 border rounded';
             row.innerHTML = `
@@ -184,13 +415,13 @@
                     <div class="col-md-5">
                         <div class="form-group">
                             <label class="form-label">Subject Name</label>
-                            <input type="text" class="form-control subject-name" placeholder="Enter subject name" required>
+                            <input type="text" class="form-control subject-name" value="${escapeHtml(subject.name)}" placeholder="Enter subject name" required>
                         </div>
                     </div>
                     <div class="col-md-5">
                         <div class="form-group">
                             <label class="form-label">Subject Teacher</label>
-                            <input type="text" class="form-control subject-teacher" placeholder="Enter teacher name" required>
+                            <input type="text" class="form-control subject-teacher" value="${escapeHtml(subject.teacher)}" placeholder="Enter teacher name" required>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -200,6 +431,12 @@
                     </div>
                 </div>
             `;
+            return row;
+        }
+
+        function addSubjectRow(containerId, subject = {}) {
+            const container = document.getElementById(containerId);
+            const row = createSubjectRow(subject);
             container.appendChild(row);
         }
 
@@ -212,19 +449,28 @@
             }
         }
 
+        function resetClassForm() {
+            document.getElementById('classForm').reset();
+            document.getElementById('classId').value = '';
+            document.getElementById('section').value = 'A';
+            document.getElementById('classModalLabel').textContent = 'Add New Class';
+        }
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            if (!checkAuth()) {
+                return;
+            }
+
+            document.getElementById('saveClass').addEventListener('click', saveClass);
+            document.getElementById('classModal').addEventListener('hidden.bs.modal', resetClassForm);
             loadClasses();
         });
 
         async function loadClasses() {
             try {
                 console.log('\n=== Loading classes ===');
-                const response = await fetch(`${CONFIG.API_URL}/classes`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)}`
-                    }
-                });
+                const response = await apiCall(`${CONFIG.API_URL}/classes`);
                 
                 if (!response.ok) {
                     throw new Error('Failed to fetch classes');
@@ -232,72 +478,8 @@
 
                 const classes = await response.json();
                 console.log('Fetched classes:', JSON.stringify(classes, null, 2));
-
-                const tableBody = document.getElementById('subjectsTableBody');
-                tableBody.innerHTML = '';
-
-                classes.forEach(classData => {
-                    console.log('Processing class:', classData._id);
-                    const row = document.createElement('tr');
-                    const safeSubjects = JSON.stringify(classData.subjects || []).replace(/"/g, '&quot;');
-                    console.log('Subjects for class:', classData._id, ':', safeSubjects);
-                    
-                    row.innerHTML = `
-                        <td class="details-control" data-subjects='${safeSubjects}'></td>
-                        <td>${classData.className}</td>
-                        <td>${classData.section}</td>
-                        <td>${classData.academicYear}</td>
-                        <td>${classData.classTeacher}</td>
-                        <td>${classData.studentCount}</td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-primary" onclick="editClass('${classData._id}')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                
-                            </div>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-
-                // Initialize DataTable
-                if ($.fn.DataTable.isDataTable('#subjectsTable')) {
-                    console.log('Destroying existing DataTable');
-                    $('#subjectsTable').DataTable().destroy();
-                }
-                
-                console.log('Initializing new DataTable');
-                const table = $('#subjectsTable').DataTable({
-                    order: [[1, 'asc']],
-                    columnDefs: [
-                        { orderable: false, targets: [0, 6] }
-                    ]
-                });
-
-                // Add event listener for opening and closing details
-                $('#subjectsTable tbody').on('click', 'td.details-control', function () {
-                    const tr = $(this).closest('tr');
-                    const row = table.row(tr);
-                    
-                    try {
-                        const subjects = JSON.parse($(this).attr('data-subjects'));
-                        console.log('Clicked row subjects:', subjects);
-                        
-                        if (row.child.isShown()) {
-                            console.log('Hiding row details');
-                            row.child.hide();
-                            tr.removeClass('shown');
-                        } else {
-                            console.log('Showing row details');
-                            row.child(formatSubjectDetails(subjects)).show();
-                            tr.addClass('shown');
-                        }
-                    } catch (error) {
-                        console.error('Error parsing subjects data:', error);
-                        alert('Error showing subject details');
-                    }
-                });
+                classesCache = Array.isArray(classes) ? classes.map(normalizeClassData) : [];
+                renderClassesTable();
 
                 console.log('=== Classes loaded successfully ===\n');
             } catch (error) {
@@ -306,16 +488,90 @@
             }
         }
 
-        async function editClass(classId) {
+        async function saveClass() {
+            try {
+                const classId = document.getElementById('classId').value;
+                const academicYear = document.getElementById('academicYear').value.trim();
+                const className = document.getElementById('className').value.trim();
+                const section = document.getElementById('section').value.trim();
+                const classTeacher = document.getElementById('classTeacher').value.trim();
+
+                if (!academicYear || !className || !section || !classTeacher) {
+                    alert('Please fill in all class fields.');
+                    return;
+                }
+
+                const payload = {
+                    academicYear,
+                    className,
+                    section,
+                    classTeacher
+                };
+
+                const url = classId ? `${CONFIG.API_URL}/classes/${classId}` : `${CONFIG.API_URL}/classes`;
+                const method = classId ? 'PUT' : 'POST';
+                const response = await apiCall(url, {
+                    method,
+                    body: JSON.stringify(payload)
+                });
+
+                const responseData = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(responseData.message || 'Failed to save class');
+                }
+
+                const updatedClass = normalizeClassData({
+                    ...payload,
+                    ...responseData,
+                    _id: responseData._id || responseData.id || classId
+                });
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('classModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                if (updatedClass._id) {
+                    upsertClassInCache(updatedClass);
+                    renderClassesTable();
+                } else {
+                    await loadClasses();
+                }
+            } catch (error) {
+                console.error('Error saving class:', error);
+                alert(error.message || 'Failed to save class');
+            }
+        }
+
+        async function editClassDetails(classId) {
+            try {
+                const response = await apiCall(`${CONFIG.API_URL}/classes/${classId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch class details');
+                }
+
+                const classData = await response.json();
+                document.getElementById('classId').value = classData._id;
+                document.getElementById('academicYear').value = classData.academicYear || '';
+                document.getElementById('className').value = classData.className || '';
+                document.getElementById('section').value = classData.section || 'A';
+                document.getElementById('classTeacher').value = classData.classTeacher || '';
+                document.getElementById('classModalLabel').textContent = 'Edit Class';
+
+                const modal = new bootstrap.Modal(document.getElementById('classModal'));
+                modal.show();
+            } catch (error) {
+                console.error('Error loading class details:', error);
+                alert(error.message || 'Failed to load class details');
+            }
+        }
+
+        async function editSubjects(classId) {
             try {
                 console.log('\n=== Starting class edit ===');
                 console.log('Editing class:', classId);
 
-                const response = await fetch(`${CONFIG.API_URL}/classes/${classId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)}`
-                    }
-                });
+                const response = await apiCall(`${CONFIG.API_URL}/classes/${classId}`);
                 
                 if (!response.ok) {
                     throw new Error('Failed to fetch class details');
@@ -338,30 +594,7 @@
                 if (classData.subjects && classData.subjects.length > 0) {
                     console.log('Adding existing subjects:', classData.subjects);
                     classData.subjects.forEach(subject => {
-                        const row = document.createElement('div');
-                        row.className = 'subject-row mb-3 p-3 border rounded';
-                        row.innerHTML = `
-                            <div class="row">
-                                <div class="col-md-5">
-                                    <div class="form-group">
-                                        <label class="form-label">Subject Name</label>
-                                        <input type="text" class="form-control subject-name" value="${subject.name}" placeholder="Enter subject name" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="form-group">
-                                        <label class="form-label">Subject Teacher</label>
-                                        <input type="text" class="form-control subject-teacher" value="${subject.teacher}" placeholder="Enter teacher name" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <button type="button" class="btn btn-danger remove-subject mt-4" onclick="removeSubjectRow(this)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        container.appendChild(row);
+                        container.appendChild(createSubjectRow(subject));
                     });
                 } else {
                     console.log('No existing subjects, adding empty row');
@@ -375,6 +608,34 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('Failed to load class details');
+            }
+        }
+
+        async function deleteClass(classId) {
+            const classData = classesCache.find(item => item._id === classId);
+            const label = classData
+                ? `${classData.className} - ${classData.section} (${classData.academicYear})`
+                : 'this class';
+
+            if (!confirm(`Are you sure you want to delete ${label}?`)) {
+                return;
+            }
+
+            try {
+                const response = await apiCall(`${CONFIG.API_URL}/classes/${classId}`, {
+                    method: 'DELETE'
+                });
+
+                const responseData = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(responseData.message || 'Failed to delete class');
+                }
+
+                removeClassFromCache(classId);
+                renderClassesTable();
+            } catch (error) {
+                console.error('Error deleting class:', error);
+                alert(error.message || 'Failed to delete class');
             }
         }
 
@@ -488,12 +749,8 @@
 
                 // Make the API call
                 console.log('Sending request to:', `${CONFIG.API_URL}/classes/${classId}`);
-                const response = await fetch(`${CONFIG.API_URL}/classes/${classId}`, {
+                const response = await apiCall(`${CONFIG.API_URL}/classes/${classId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)}`
-                    },
                     body: JSON.stringify(requestData)
                 });
 
@@ -532,5 +789,7 @@
     </script>
      <script src="../js/auth.js"></script>
      <script src="../components/navbar.js"></script>
+    <script src='../js/page-shell.js'></script>
 </body>
 </html>
+

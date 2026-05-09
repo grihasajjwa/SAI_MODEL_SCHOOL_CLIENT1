@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Receipt</title>
+    <style>
+        :root {
+            --ink: #516cb5;
+            --paper: #fefefc;
+            --border: rgba(81, 108, 181, 0.7);
+            --ink-dark: #213c7c;
+            --highlight: #eef4ff;
+            --highlight-strong: #d9e7ff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            background: linear-gradient(135deg, #f6d7cf, #edf3ff 58%, #fff8ea);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        .toolbar {
+            max-width: 980px;
+            margin: 0 auto 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar button,
+        .toolbar a {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 16px;
+            background: #1f57aa;
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: var(--paper);
+            border: 3px solid rgba(81, 108, 181, 0.65);
+            box-shadow: 0 18px 45px rgba(58, 74, 119, 0.16);
+            padding: 10mm;
+        }
+
+        .page-header {
+            border: 2px solid var(--border);
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 86px 1fr;
+            gap: 14px;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(237, 243, 255, 0.92), rgba(255, 248, 234, 0.65));
+        }
+
+        .brand-logo {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            justify-self: center;
+        }
+
+        .header-copy {
+            text-align: center;
+        }
+
+        .school-name {
+            font-size: 29px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            line-height: 1.1;
+            color: var(--ink-dark);
+        }
+
+        .school-copy {
+            margin-top: 6px;
+            font-size: 12.5px;
+            line-height: 1.4;
+            color: var(--ink-dark);
+        }
+
+        .receipt,
+        .meta-grid,
+        .items-table,
+        .bottom-grid {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .receipt td,
+        .receipt th,
+        .meta-grid td,
+        .items-table td,
+        .items-table th,
+        .bottom-grid td {
+            border: 2px solid var(--border);
+            vertical-align: middle;
+            color: var(--ink);
+        }
+
+        .receipt-head {
+            padding: 7px 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            min-height: 44px;
+            gap: 12px;
+        }
+
+        .pill {
+            display: inline-block;
+            justify-self: start;
+            padding: 4px 14px;
+            border-radius: 999px;
+            color: #fff;
+            background: var(--ink);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .date-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--ink-dark);
+        }
+
+        .meta-grid td {
+            height: 43px;
+            padding: 0 10px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            min-height: 43px;
+        }
+
+        .label {
+            white-space: nowrap;
+            color: var(--ink-dark);
+            font-weight: 700;
+        }
+
+        .blank {
+            flex: 1;
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+            padding-bottom: 2px;
+            border-bottom: 2px solid rgba(81, 108, 181, 0.35);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #0f2558;
+            font-weight: 700;
+        }
+
+        .highlight td {
+            background: linear-gradient(180deg, var(--highlight), var(--highlight-strong));
+        }
+
+        .items-table th,
+        .items-table td {
+            padding: 0 10px;
+            height: 38px;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .items-table thead th {
+            text-align: left;
+            background: #edf4ff;
+            color: var(--ink-dark);
+            font-weight: 700;
+        }
+
+        .num-col {
+            width: 74px;
+            text-align: center;
+        }
+
+        .amount-col {
+            width: 190px;
+            text-align: right;
+            padding-right: 18px;
+        }
+
+        .summary-row td {
+            height: 42px;
+            font-weight: 600;
+        }
+
+        .bottom-left {
+            width: 64%;
+        }
+
+        .bottom-right {
+            width: 36%;
+        }
+
+        .notes,
+        .words-box,
+        .side-summary > div {
+            padding: 10px 12px;
+        }
+
+        .words-box {
+            min-height: 96px;
+        }
+
+        .notes {
+            min-height: 82px;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+
+        .side-summary {
+            display: grid;
+            grid-template-rows: 44px 44px 1fr;
+            min-height: 214px;
+        }
+
+        .side-summary > div {
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .side-summary > div:last-child {
+            border-bottom: none;
+            align-items: flex-start;
+            padding-top: 18px;
+        }
+
+        .payment-breakdown-note,
+        #lineItemsSummary {
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--ink-dark);
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+
+            .toolbar {
+                display: none;
+            }
+
+            .sheet {
+                margin: 0;
+                box-shadow: none;
+                border: none;
+                width: 210mm;
+                min-height: 297mm;
+                padding: 10mm;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                padding: 12px;
+            }
+
+            .sheet {
+                width: 100%;
+                overflow-x: auto;
+            }
+
+            .receipt,
+            .page-header {
+                min-width: 820px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a href="expense-transactions.html">Back</a>
+        <a id="editExpenseBtn" href="#">Edit Expense</a>
+        <button type="button" id="downloadExpensePdfBtn" onclick="downloadExpensePdf()">Download PDF</button>
+        <button type="button" onclick="window.print()">Print Receipt</button>
+    </div>
+
+    <div class="sheet">
+        <div class="page-header">
+            <img class="brand-logo" src="../assets/images/logo1.png" alt="School logo">
+            <div class="header-copy">
+                <div class="school-name">SKYVIEW PUBLIC SCHOOL</div>
+                <div class="school-copy">
+                    (An English Medium school based on CBSE curriculum)<br>
+                    Uttar Andaranfulbari, Tufanganj, Coochbehar, West Bengal, India, PIN: 736159<br>
+                    www.skyviewpublicschool.in
+                </div>
+            </div>
+        </div>
+
+        <table class="receipt" aria-label="Expense receipt">
+            <tr>
+                <td>
+                    <div class="receipt-head">
+                        <span class="pill">Expense Receipt</span>
+                        <div class="date-line">
+                            <span>Date:</span>
+                            <strong id="expenseDateView">-</strong>
+                        </div>
+                    </div>
+
+                    <table class="meta-grid">
+                        <tr>
+                            <td>
+                                <div class="field-row">
+                                    <span class="label">Voucher No.</span>
+                                    <span class="blank" id="voucherNo">-</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="field-row">
+                                    <span class="label">Head of Account</span>
+                                    <span class="blank" id="headOfAccount">-</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="highlight">
+                            <td colspan="2">
+                                <div class="field-row">
+                                    <span class="label">Paid To:</span>
+                                    <span class="blank" id="paidTo">-</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="highlight">
+                            <td colspan="2">
+                                <div class="field-row">
+                                    <span class="label">Paid For:</span>
+                                    <span class="blank" id="paidFor">-</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th class="num-col">Sl. No</th>
+                                <th>Payment Details</th>
+                                <th class="amount-col">Amount (Rs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentBreakdownRows"></tbody>
+                        <tbody>
+                            <tr class="summary-row">
+                                <td colspan="2">Total Expense Amount</td>
+                                <td class="amount-col" id="totalAmount">0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="bottom-grid">
+                        <tr>
+                            <td class="bottom-left">
+                                <div class="words-box">
+                                    <div><strong>Amount in Words</strong></div>
+                                    <div id="amountInWords">-</div>
+                                    <div id="lineItemsSummary" class="payment-breakdown-note" style="margin-top: 12px;">-</div>
+                                    <div id="paymentBreakdownSummary" class="payment-breakdown-note" style="margin-top: 10px;">-</div>
+                                </div>
+                                <div class="notes">
+                                    <strong>Notes:</strong><br>
+                                    <span id="notesText">-</span>
+                                </div>
+                            </td>
+                            <td class="bottom-right">
+                                <div class="side-summary">
+                                    <div>Payment Mode</div>
+                                    <div id="paymentModeView">-</div>
+                                    <div><span>Receiver's Signature</span></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/school-profile.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        let currentExpense = null;
+
+        function formatMoney(value) {
+            const amount = Number(value) || 0;
+            return amount.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function buildExpensePdfName(expense) {
+            const suffix = expense?.voucherNo || 'expense_receipt';
+            return `expense_receipt_${String(suffix).replace(/[^a-z0-9_-]+/gi, '_')}.pdf`;
+        }
+
+        function numberToWords(num) {
+            const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+                'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            function convertHundreds(n) {
+                let result = '';
+                if (n > 99) {
+                    result += `${ones[Math.floor(n / 100)]} Hundred `;
+                    n %= 100;
+                }
+                if (n > 19) {
+                    result += `${tens[Math.floor(n / 10)]} `;
+                    n %= 10;
+                }
+                if (n > 0) {
+                    result += `${ones[n]} `;
+                }
+                return result.trim();
+            }
+
+            if (!num) return 'Zero Only';
+            const whole = Math.floor(Number(num));
+            const paise = Math.round((Number(num) - whole) * 100);
+
+            const crore = Math.floor(whole / 10000000);
+            const lakh = Math.floor((whole % 10000000) / 100000);
+            const thousand = Math.floor((whole % 100000) / 1000);
+            const hundred = whole % 1000;
+
+            let words = '';
+            if (crore) words += `${convertHundreds(crore)} Crore `;
+            if (lakh) words += `${convertHundreds(lakh)} Lakh `;
+            if (thousand) words += `${convertHundreds(thousand)} Thousand `;
+            if (hundred) words += `${convertHundreds(hundred)} `;
+
+            words = `${words.trim()} Rupees`.trim();
+            if (paise) {
+                words += ` and ${convertHundreds(paise)} Paise`;
+            }
+            return `${words} Only`;
+        }
+
+        function setText(id, value) {
+            document.getElementById(id).textContent = value || '-';
+        }
+
+        function normalizePaymentBreakdown(paymentBreakdown = [], fallbackPaymentMode = '', fallbackAmount = 0) {
+            if (Array.isArray(paymentBreakdown) && paymentBreakdown.length) {
+                return paymentBreakdown.map((entry) => ({
+                    modeLabel: entry.modeLabel || entry.baseMode || 'Cash',
+                    baseMode: entry.baseMode || ((entry.modeLabel || '') === 'Cash' ? 'Cash' : 'Online'),
+                    amount: Number(entry.amount) || 0
+                }));
+            }
+
+            if (!fallbackPaymentMode && !fallbackAmount) {
+                return [];
+            }
+
+            return [{
+                modeLabel: fallbackPaymentMode === 'Cash' ? 'Cash' : 'Online-1',
+                baseMode: fallbackPaymentMode === 'Cash' ? 'Cash' : 'Online',
+                amount: Number(fallbackAmount) || 0
+            }];
+        }
+
+        function formatPaymentBreakdown(paymentBreakdown = [], fallbackPaymentMode = '', fallbackAmount = 0) {
+            const normalizedBreakdown = normalizePaymentBreakdown(paymentBreakdown, fallbackPaymentMode, fallbackAmount);
+            if (!normalizedBreakdown.length) return '-';
+
+            return normalizedBreakdown
+                .map((entry) => `${entry.modeLabel}: Rs. ${formatMoney(entry.amount)}`)
+                .join(', ');
+        }
+
+        function renderExpense(expense) {
+            currentExpense = expense;
+            const totalAmount = Number(expense.amount) || 0;
+            const normalizedBreakdown = normalizePaymentBreakdown(expense.paymentBreakdown, expense.paymentMode, totalAmount);
+
+            document.getElementById('editExpenseBtn').href = `expense-record.html?expenseId=${expense._id}`;
+            setText('expenseDateView', new Date(expense.expenseDate || expense.createdAt).toLocaleDateString('en-IN'));
+            setText('voucherNo', expense.voucherNo);
+            setText('headOfAccount', expense.headOfAccount);
+            setText('paidTo', expense.paidTo);
+            setText('paidFor', expense.paidFor);
+            setText('totalAmount', formatMoney(totalAmount));
+            setText('amountInWords', numberToWords(totalAmount));
+            setText('paymentModeView', expense.paymentMode || '-');
+            setText('notesText', expense.notes || '-');
+            setText('lineItemsSummary', `Expense Head: ${expense.headOfAccount || '-'} | Paid To: ${expense.paidTo || '-'} | Paid For: ${expense.paidFor || '-'}`);
+            setText('paymentBreakdownSummary', `Payment Split: ${formatPaymentBreakdown(expense.paymentBreakdown, expense.paymentMode, totalAmount)}`);
+
+            document.getElementById('paymentBreakdownRows').innerHTML = normalizedBreakdown.length
+                ? normalizedBreakdown.map((entry, index) => `
+                    <tr>
+                        <td class="num-col">${index + 1}</td>
+                        <td>Paid by ${entry.modeLabel}</td>
+                        <td class="amount-col">${formatMoney(entry.amount)}</td>
+                    </tr>
+                `).join('')
+                : `
+                    <tr>
+                        <td class="num-col">1</td>
+                        <td>Paid by Cash</td>
+                        <td class="amount-col">0.00</td>
+                    </tr>
+                `;
+        }
+
+        async function downloadExpensePdf() {
+            if (!window.html2pdf) {
+                alert('PDF library is not available right now.');
+                return;
+            }
+
+            const button = document.getElementById('downloadExpensePdfBtn');
+            const sheet = document.querySelector('.sheet');
+            const originalLabel = button.textContent;
+
+            button.disabled = true;
+            button.textContent = 'Preparing PDF...';
+
+            try {
+                await html2pdf().set({
+                    margin: 0,
+                    filename: buildExpensePdfName(currentExpense),
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 3,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        letterRendering: true
+                    },
+                    jsPDF: {
+                        unit: 'mm',
+                        format: 'a4',
+                        orientation: 'portrait'
+                    },
+                    pagebreak: {
+                        mode: ['avoid-all']
+                    }
+                }).from(sheet).save();
+            } catch (error) {
+                console.error('Error generating expense receipt PDF:', error);
+                alert('Failed to download PDF. Please try again.');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalLabel;
+            }
+        }
+
+        async function loadExpense() {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = '../pages/login.html';
+                return;
+            }
+
+            const expenseId = new URLSearchParams(window.location.search).get('id');
+            if (!expenseId) {
+                alert('Expense id is missing');
+                return;
+            }
+
+            const result = await API.fees.getExpense(expenseId);
+            if (!result || !result.success) {
+                alert(result?.message || 'Unable to fetch expense receipt');
+                return;
+            }
+
+            renderExpense(result.expense);
+        }
+
+        document.addEventListener('DOMContentLoaded', loadExpense);
+    </script>
+    <script src='../js/page-shell.js'></script>
+</body>
+</html>

@@ -3,80 +3,749 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Report Card</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <title>Student Back Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
     <style>
-        body {
-            font-family: Consolas, monospace;
-            background-color: #f8f9fa;
-            position: relative;
+        :root {
+            --ink: #0f172a;
+            --muted: #475569;
+            --line: #cbd5e1;
+            --panel: #f8fafc;
+            --accent: #0f4c81;
+            --accent-soft: #e7f0fb;
         }
-        .report-card {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+
+        body {
+            background: linear-gradient(180deg, #eef4ff 0%, #ffffff 100%);
+            color: var(--ink);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .page-shell {
+            padding: 24px 0 48px;
+        }
+
+        .toolbar-card {
+            border: 0;
+            border-radius: 18px;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+            margin-bottom: 16px;
+        }
+
+        .report-shell {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #fff;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 18px;
+            padding: 12mm;
             position: relative;
             overflow: hidden;
         }
+
+        .report-frame {
+            border: 2px solid var(--ink);
+            min-height: calc(297mm - 24mm);
+            padding: 9mm;
+            position: relative;
+        }
+
         .watermark {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-           font-family: Consolas, monospace;
-            font-size: 4rem;
-            color: rgba(0, 0, 0, 0.05);
-            white-space: nowrap;
-            font-weight: bold;
-            z-index: 999;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 56px;
+            font-weight: 800;
+            color: rgba(15, 76, 129, 0.06);
+            transform: rotate(-28deg);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            pointer-events: none;
         }
-        .table th {
-            background-color: #d9eaff !important;
-            text-align: center;
+
+        .page-header,
+        .info-panel,
+        .section-card,
+        .signature-row {
             position: relative;
             z-index: 1;
         }
-        .table td {
+
+        .page-header {
             text-align: center;
-            position: relative;
-            z-index: 1;
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 12px;
+            margin-bottom: 14px;
         }
-        h5.attendance-title {
-            text-decoration: underline;
+
+        .page-header img {
+            width: 62px;
+            height: 62px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .school-name {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .report-title {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            background: var(--ink);
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .info-panel,
+        .section-card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
+
+        .info-panel {
+            margin-bottom: 14px;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 2px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .section-heading h3 {
+            font-size: 18px;
+            margin: 0;
+            color: var(--accent);
+        }
+
+        .section-badge {
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 10px;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .report-table th,
+        .report-table td {
+            border: 1px solid var(--line);
+            padding: 8px 10px;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .report-table th {
+            background: #eaf2ff;
+            color: #000;
+            text-align: center;
+        }
+
+        .report-table td:first-child {
+            font-weight: 600;
+        }
+
+        .grade-pill {
+            display: inline-flex;
+            min-width: 42px;
+            justify-content: center;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            font-weight: 700;
+        }
+
+        .remarks-box {
+            min-height: 92px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #fff;
+            padding: 12px;
+            line-height: 1.55;
+            font-size: 13px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px 16px;
+            font-size: 13px;
+        }
+
+        .signature-row {
+            margin-top: 22px;
+        }
+
+        .signature-line {
+            border-top: 1px solid var(--ink);
+            margin-top: 34px;
+            padding-top: 6px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .empty-note {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .hide-logo #schoolLogo {
+            display: none !important;
+        }
+
+        .hide-school-name #schoolName {
+            display: none !important;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            #navbar-container,
+            .toolbar-card {
+                display: none !important;
+            }
+
+            .report-shell {
+                margin: 0;
+                box-shadow: none;
+                border: 0;
+                border-radius: 0;
+                width: auto;
+                min-height: auto;
+                padding: 0;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="report-card position-relative">
-            <div class="watermark">SKYVIEW PUBLIC SCHOOL</div>
-            <h3 class="text-center mb-4">CO-SCHOLASTIC AREAS</h3>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Activity</th>
-                        <th>Term-I</th>
-                        <th>Term-II</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>Art Education</td><td></td><td></td></tr>
-                    <tr><td>Moral Values</td><td></td><td></td></tr>
-                    <tr><td>Dance & Music</td><td></td><td></td></tr>
-                    <tr><td>Yoga</td><td></td><td></td></tr>
-                    <tr><td>Games</td><td></td><td></td></tr>
-                    <tr><td>Hand Writing</td><td></td><td></td></tr>
-                    <tr><td>Discipline</td><td></td><td></td></tr>
-                </tbody>
-            </table>
-            <h5 class="attendance-title mt-4">Attendance</h5>
-            <p><strong>Total Days:</strong> </p>
-            <p><strong>Days Present:</strong> </p>
-            <!-- <p><strong>Days Absent:</strong> 18</p> -->
-            <h5 class="text-success">Class Teacher's Remarks: <strong></strong></h5>
+    <div id="navbar-container"></div>
+
+    <main class="page-shell">
+        <div class="container">
+            <section class="card toolbar-card">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="sessionSelect">Academic Year</label>
+                            <select class="form-select" id="sessionSelect"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="admissionInput">Admission No</label>
+                            <input type="text" class="form-control" id="admissionInput" placeholder="Enter admission number">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold d-block">Print Controls</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hideLogoCheck">
+                                <label class="form-check-label" for="hideLogoCheck">Hide logo</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hideSchoolNameCheck">
+                                <label class="form-check-label" for="hideSchoolNameCheck">Hide school name</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex gap-2 justify-content-md-end">
+                            <button class="btn btn-outline-primary" id="fetchBtn" type="button">
+                                <i class="fas fa-magnifying-glass me-2"></i>Fetch
+                            </button>
+                            <button class="btn btn-outline-secondary" id="printBtn" type="button">
+                                <i class="fas fa-print me-2"></i>Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="report-shell">
+                <div class="report-frame" id="reportFrame">
+                    <div class="watermark" id="watermarkText">SCHOOL</div>
+
+                    <header class="page-header">
+                        <img id="schoolLogo" src="../assets/images/logo.png" alt="School Logo">
+                        <div class="school-name" id="schoolName">Skyview Public School</div>
+                        <div id="schoolAddress">School address not configured</div>
+                        <div id="schoolContact">Academic profile</div>
+                        <div class="report-title">CO-SCHOLASTIC PROFILE</div>
+                    </header>
+
+                    <section class="info-panel">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="meta-label">Student Name</div>
+                                <div class="meta-value" id="studentName">-</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="meta-label">Admission No.</div>
+                                <div class="meta-value" id="admissionNo">-</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="meta-label">Roll No.</div>
+                                <div class="meta-value" id="rollNo">-</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="meta-label">Class</div>
+                                <div class="meta-value" id="className">-</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="meta-label">Section</div>
+                                <div class="meta-value" id="section">-</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="meta-label">Academic Year</div>
+                                <div class="meta-value" id="academicYear">-</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="meta-label">Date of Birth</div>
+                                <div class="meta-value" id="dob">-</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="meta-label">Teacher Remarks Status</div>
+                                <div class="meta-value" id="remarksStatus">Pending</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="row g-3">
+                        <div class="col-lg-7">
+                            <section class="section-card">
+                                <div class="section-heading">
+                                    <h3>Co-Scholastic Areas</h3>
+                                    <span class="section-badge" id="activityCountBadge">0 Activities</span>
+                                </div>
+                                <table class="report-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Activity</th>
+                                            <th style="width: 120px;">Grade</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="coScholasticBody">
+                                        <tr>
+                                            <td colspan="2" class="text-center empty-note">Loading co-scholastic activities...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </section>
+                        </div>
+
+                        <div class="col-lg-5">
+                            <section class="section-card mb-3">
+                                <div class="section-heading">
+                                    <h3>Attendance</h3>
+                                    <span class="section-badge" id="attendancePercentageBadge">0%</span>
+                                </div>
+                                <table class="report-table">
+                                    <tbody>
+                                        <tr>
+                                            <td>Total Working Days</td>
+                                            <td id="totalDays">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Days Present</td>
+                                            <td id="daysPresent">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Attendance Percentage</td>
+                                            <td id="attendancePercentage">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </section>
+
+                            <section class="section-card">
+                                <div class="section-heading">
+                                    <h3>Class Teacher's Remarks</h3>
+                                    <span class="section-badge">Student Wise</span>
+                                </div>
+                                <div class="remarks-box" id="teacherRemarks">No remarks available.</div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-lg-7">
+                            <section class="section-card">
+                                <div class="section-heading">
+                                    <h3>Grade Guide</h3>
+                                    <span class="section-badge">Reference</span>
+                                </div>
+                                <div class="legend-grid">
+                                    <div><strong>A:</strong> Excellent</div>
+                                    <div><strong>B:</strong> Very Good</div>
+                                    <div><strong>C:</strong> Good</div>
+                                    <div><strong>D:</strong> Needs Improvement</div>
+                                </div>
+                            </section>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="signature-row">
+                                <div class="row g-3">
+                                    <div class="col-4">
+                                        <div class="signature-line">Class Teacher</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="signature-line">Principal</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="signature-line">Parent</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/page-shell.js"></script>
+    <script>
+        const API_BASE_URL = CONFIG.API_URL;
+        const params = new URLSearchParams(window.location.search);
+        const sessionSelect = document.getElementById('sessionSelect');
+        const admissionInput = document.getElementById('admissionInput');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const printBtn = document.getElementById('printBtn');
+        const hideLogoCheck = document.getElementById('hideLogoCheck');
+        const hideSchoolNameCheck = document.getElementById('hideSchoolNameCheck');
+        const reportFrame = document.getElementById('reportFrame');
+
+        let studentId = '';
+        let className = '';
+        let section = '';
+        let academicYear = '';
+        let studentRecord = null;
+        let marksRecord = null;
+        let coScholasticConfig = { activities: [] };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) {
+                return;
+            }
+
+            try {
+                bindToolbarEvents();
+                await Promise.all([
+                    loadSessions(),
+                    loadSchoolProfile()
+                ]);
+
+                studentId = params.get('studentId') || '';
+                className = params.get('className') || params.get('class') || '';
+                section = params.get('section') || '';
+                academicYear = params.get('academicYear') || params.get('session') || CONFIG.CURRENT_SESSION || 'Default';
+
+                if (academicYear) {
+                    sessionSelect.value = academicYear;
+                }
+
+                const admissionNo = params.get('admissionNo') || '';
+                if (admissionNo) {
+                    admissionInput.value = admissionNo;
+                }
+
+                if (admissionNo || studentId) {
+                    await fetchAndRenderStudent();
+
+                    if (params.get('print') === 'true') {
+                        setTimeout(() => window.print(), 800);
+                    }
+                } else {
+                    renderStudentHeader();
+                    renderCoScholasticSection();
+                    renderAttendanceSection();
+                    renderTeacherRemarks();
+                }
+            } catch (error) {
+                console.error('Failed to initialize backside page:', error);
+                alert('Unable to load this student back page right now.');
+            }
+        });
+
+        function bindToolbarEvents() {
+            printBtn.addEventListener('click', () => window.print());
+            fetchBtn.addEventListener('click', fetchAndRenderStudent);
+            admissionInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    fetchAndRenderStudent();
+                }
+            });
+            hideLogoCheck.addEventListener('change', syncVisibilityControls);
+            hideSchoolNameCheck.addEventListener('change', syncVisibilityControls);
+        }
+
+        async function loadSessions() {
+            const response = await authFetch(`${API_BASE_URL}/sessions`);
+            const payload = response.ok ? await response.json() : { sessions: [] };
+            const sessions = Array.isArray(payload.sessions) && payload.sessions.length
+                ? payload.sessions
+                : [{ name: 'Default', active: true, isCurrent: true }];
+
+            const preferred = sessions.find((entry) => entry.isCurrent)?.name
+                || sessions.find((entry) => entry.active)?.name
+                || sessions[0]?.name
+                || 'Default';
+
+            sessionSelect.innerHTML = sessions
+                .map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`)
+                .join('');
+
+            if (!sessionSelect.value) {
+                sessionSelect.value = preferred;
+            }
+        }
+
+        async function loadSchoolProfile() {
+            try {
+                const response = await authFetch(`${API_BASE_URL}/school-profile`);
+                const payload = response.ok ? await response.json() : null;
+                const profile = payload?.profile || window.SchoolProfile?.getCachedProfile?.() || null;
+
+                document.getElementById('schoolName').textContent = profile?.schoolName || 'Skyview Public School';
+                document.getElementById('schoolAddress').textContent = profile?.address || 'School address not configured';
+                document.getElementById('schoolContact').textContent = [profile?.contactNo || profile?.phone, profile?.email]
+                    .filter(Boolean)
+                    .join(' | ') || 'Academic profile';
+                document.getElementById('watermarkText').textContent = (profile?.schoolName || 'Skyview Public School').toUpperCase();
+
+                const logo = profile?.logoUrl || profile?.logo;
+                if (logo) {
+                    document.getElementById('schoolLogo').src = logo;
+                }
+            } catch (error) {
+                console.error('Failed to load school profile:', error);
+            }
+        }
+
+        async function fetchAndRenderStudent() {
+            const admissionNo = admissionInput.value.trim() || params.get('admissionNo') || '';
+            academicYear = sessionSelect.value || CONFIG.CURRENT_SESSION || 'Default';
+
+            if (!admissionNo) {
+                alert('Enter an admission number first.');
+                return;
+            }
+
+            fetchBtn.disabled = true;
+            fetchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Fetching';
+
+            try {
+                await loadStudentByAdmission(admissionNo);
+
+                if (!studentRecord) {
+                    throw new Error('Student record not found');
+                }
+
+                studentId = studentRecord._id || '';
+                className = studentRecord.class || '';
+                section = studentRecord.section || '';
+
+                await Promise.all([
+                    loadStudentAndMarks(),
+                    loadCoScholasticConfig()
+                ]);
+
+                renderStudentHeader();
+                renderCoScholasticSection();
+                renderAttendanceSection();
+                renderTeacherRemarks();
+                syncVisibilityControls();
+            } catch (error) {
+                console.error('Failed to fetch student data for back page:', error);
+                alert('Unable to fetch student data for the selected admission number and academic year.');
+            } finally {
+                fetchBtn.disabled = false;
+                fetchBtn.innerHTML = '<i class="fas fa-magnifying-glass me-2"></i>Fetch';
+            }
+        }
+
+        async function loadStudentByAdmission(admissionNo) {
+            const studentResponse = await authFetch(`${API_BASE_URL}/student/${encodeURIComponent(admissionNo)}?session=${encodeURIComponent(academicYear)}`);
+            if (!studentResponse.ok) {
+                studentRecord = null;
+                throw new Error(`Failed to fetch student record: ${studentResponse.status}`);
+            }
+
+            const payload = await studentResponse.json();
+            studentRecord = payload?.student || null;
+        }
+
+        async function loadStudentAndMarks() {
+            marksRecord = null;
+
+            if (!studentId) {
+                return;
+            }
+
+            const marksResponse = await authFetch(`${API_BASE_URL}/marks/${encodeURIComponent(studentId)}?academicYear=${encodeURIComponent(academicYear)}`);
+            if (marksResponse.ok) {
+                marksRecord = await marksResponse.json();
+            } else if (marksResponse.status !== 404) {
+                throw new Error(`Failed to fetch marks record: ${marksResponse.status}`);
+            }
+        }
+
+        async function loadCoScholasticConfig() {
+            if (!className || !section || !academicYear) {
+                coScholasticConfig = { activities: [] };
+                return;
+            }
+
+            const response = await authFetch(`${API_BASE_URL}/coscholastic/config/${encodeURIComponent(className)}/${encodeURIComponent(section)}/${encodeURIComponent(academicYear)}`);
+
+            if (!response.ok) {
+                coScholasticConfig = { activities: [] };
+                return;
+            }
+
+            coScholasticConfig = await response.json();
+            if (!Array.isArray(coScholasticConfig.activities)) {
+                coScholasticConfig.activities = [];
+            }
+        }
+
+        function renderStudentHeader() {
+            const studentName = marksRecord?.studentName || studentRecord?.name || params.get('studentName') || 'Unknown Student';
+            const admissionNo = marksRecord?.admissionNo || studentRecord?.studentId || admissionInput.value.trim() || params.get('admissionNo') || '-';
+            const rollNo = marksRecord?.rollNo || studentRecord?.rollNo || params.get('rollNo') || '-';
+            const dob = formatDate(studentRecord?.dob) || params.get('dob') || '-';
+
+            document.getElementById('studentName').textContent = studentName;
+            document.getElementById('admissionNo').textContent = admissionNo;
+            document.getElementById('rollNo').textContent = rollNo;
+            document.getElementById('className').textContent = className;
+            document.getElementById('section').textContent = section;
+            document.getElementById('academicYear').textContent = academicYear;
+            document.getElementById('dob').textContent = dob;
+        }
+
+        function renderCoScholasticSection() {
+            const tbody = document.getElementById('coScholasticBody');
+            const activities = (coScholasticConfig.activities || []).filter((activity) => activity.enabled);
+            const studentGrades = marksRecord?.coScholastic || {};
+
+            document.getElementById('activityCountBadge').textContent = `${activities.length} Activities`;
+
+            if (!activities.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="2" class="text-center empty-note">
+                            No co-scholastic activities are configured for this class and session yet.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = activities.map((activity) => {
+                const grade = studentGrades[activity.id] || '-';
+                return `
+                    <tr>
+                        <td>${escapeHtml(activity.label)}</td>
+                        <td><span class="grade-pill">${escapeHtml(formatGrade(grade))}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderAttendanceSection() {
+            const totalDays = Number(marksRecord?.attendance?.totalDays || 0);
+            const daysPresent = Number(marksRecord?.attendance?.daysPresent || 0);
+            const percentage = totalDays > 0 ? ((daysPresent / totalDays) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('totalDays').textContent = totalDays || '-';
+            document.getElementById('daysPresent').textContent = daysPresent || '-';
+            document.getElementById('attendancePercentage').textContent = `${percentage}%`;
+            document.getElementById('attendancePercentageBadge').textContent = `${percentage}%`;
+        }
+
+        function renderTeacherRemarks() {
+            const remarks = marksRecord?.teacherRemarks || 'No remarks available.';
+            document.getElementById('teacherRemarks').textContent = remarks;
+            document.getElementById('remarksStatus').textContent = marksRecord?.teacherRemarks ? 'Available' : 'Pending';
+        }
+
+        function syncVisibilityControls() {
+            reportFrame.classList.toggle('hide-logo', hideLogoCheck.checked);
+            reportFrame.classList.toggle('hide-school-name', hideSchoolNameCheck.checked);
+        }
+
+        async function authFetch(url, options = {}) {
+            return fetch(url, {
+                ...options,
+                headers: {
+                    Authorization: `Bearer ${Auth.getToken()}`,
+                    ...(options.headers || {})
+                }
+            });
+        }
+
+        function formatDate(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return String(value);
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function formatGrade(value) {
+            const grade = String(value || '').trim();
+            return grade ? grade.toUpperCase() : '-';
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
 </body>
 </html>
