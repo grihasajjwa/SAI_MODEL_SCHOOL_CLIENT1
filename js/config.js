@@ -22,7 +22,7 @@ function resolveApiUrl() {
         return `${origin.replace(/\/+$/, '')}/api`;
     }
 
-    return 'https://skyview-server-7-0.vercel.app/api';
+    return 'https://sai-model-school-server-1.vercel.app/api';
 }
 
 var CONFIG = {
