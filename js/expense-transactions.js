@@ -17,6 +17,115 @@ function formatExpenseHistoryPayment(expense = {}) {
 }
 
 let expenseFilterTimer = null;
+let expenseHistoryRows = [];
+let activeExpenseHistoryTab = 'all';
+
+function expenseHasPaymentLabel(expense = {}, label = '') {
+    const expected = String(label || '').toLowerCase();
+    return (expense.paymentBreakdown || []).some((entry) => String(entry.modeLabel || '').toLowerCase() === expected);
+}
+
+function expenseHasHeadOfAccount(expense = {}, headName = '') {
+    return String(expense.headOfAccount || '').trim().toLowerCase() === String(headName || '').trim().toLowerCase();
+}
+
+function filterExpenseRowsForActiveTab(expenses = []) {
+    if (activeExpenseHistoryTab === 'due-list') {
+        return expenses.filter((expense) => (
+            expenseHasPaymentLabel(expense, 'Due') ||
+            (expenseHasHeadOfAccount(expense, 'Due') && !expenseHasPaymentLabel(expense, 'Due Payment'))
+        ));
+    }
+
+    if (activeExpenseHistoryTab === 'due-payment') {
+        return expenses.filter((expense) => expenseHasPaymentLabel(expense, 'Due Payment'));
+    }
+
+    return expenses;
+}
+
+function getExpenseHistoryTotals(expenses = []) {
+    return {
+        totalAmount: expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0),
+        transactionCount: expenses.length
+    };
+}
+
+function getDuePersonBalances(expenses = expenseHistoryRows) {
+    return expenses.reduce((balances, expense) => {
+        const name = String(expense.paidTo || '').trim();
+        if (!name) return balances;
+
+        if (!balances[name]) {
+            balances[name] = 0;
+        }
+
+        if (expenseHasPaymentLabel(expense, 'Due Payment')) {
+            balances[name] -= Number(expense.amount) || 0;
+            return balances;
+        }
+
+        if (expenseHasPaymentLabel(expense, 'Due') || expenseHasHeadOfAccount(expense, 'Due')) {
+            balances[name] += Number(expense.amount) || 0;
+        }
+
+        return balances;
+    }, {});
+}
+
+function populateDuePaymentPeople() {
+    const select = document.getElementById('duePaymentReceivedFrom');
+    if (!select) return;
+
+    const currentValue = select.value;
+    const balances = getDuePersonBalances();
+    const people = Object.entries(balances)
+        .filter(([, balance]) => balance > 0)
+        .sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
+
+    select.innerHTML = `
+        <option value="">Select Person</option>
+        ${people.map(([name, balance]) => `<option value="${name}">${name} - Due Rs. ${formatExpenseHistoryMoney(balance)}</option>`).join('')}
+    `;
+
+    if (currentValue && [...select.options].some((option) => option.value === currentValue)) {
+        select.value = currentValue;
+    }
+    updateDuePaymentCurrentDue();
+}
+
+function updateDuePaymentCurrentDue() {
+    const select = document.getElementById('duePaymentReceivedFrom');
+    const dueInput = document.getElementById('duePaymentCurrentDue');
+    if (!select || !dueInput) return;
+
+    const balances = getDuePersonBalances();
+    dueInput.value = formatExpenseHistoryMoney(balances[select.value] || 0);
+}
+
+function setDuePaymentFormVisibility() {
+    const formCard = document.getElementById('duePaymentFormCard');
+    if (!formCard) return;
+
+    formCard.classList.toggle('d-none', activeExpenseHistoryTab !== 'due-payment');
+    if (activeExpenseHistoryTab === 'due-payment') {
+        populateDuePaymentPeople();
+    }
+}
+
+function setExpenseHistoryTab(tabName = 'all') {
+    const nextTab = ['all', 'due-list', 'due-payment'].includes(tabName) ? tabName : 'all';
+    activeExpenseHistoryTab = nextTab;
+    document.querySelectorAll('[data-expense-tab]').forEach((tabButton) => {
+        tabButton.classList.toggle('active', tabButton.dataset.expenseTab === nextTab);
+    });
+    renderExpenseHistory(expenseHistoryRows);
+    setDuePaymentFormVisibility();
+}
+
+function getExpenseTabFromHash() {
+    return String(window.location.hash || '').replace('#', '').trim();
+}
 
 function populateExpenseHistoryHeads(heads = []) {
     const select = document.getElementById('expenseHeadFilter');
@@ -30,10 +139,12 @@ function populateExpenseHistoryHeads(heads = []) {
 
 function renderExpenseHistory(expenses = [], totals = {}) {
     const tbody = document.getElementById('expenseTransactionsTableBody');
-    document.getElementById('expenseHistoryTotalAmount').textContent = formatExpenseHistoryMoney(totals.totalAmount || 0);
-    document.getElementById('expenseHistoryCount').textContent = totals.transactionCount || 0;
+    const visibleExpenses = filterExpenseRowsForActiveTab(expenses);
+    const visibleTotals = getExpenseHistoryTotals(visibleExpenses);
+    document.getElementById('expenseHistoryTotalAmount').textContent = formatExpenseHistoryMoney(visibleTotals.totalAmount || 0);
+    document.getElementById('expenseHistoryCount').textContent = visibleTotals.transactionCount || 0;
 
-    if (!expenses.length) {
+    if (!visibleExpenses.length) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="9" class="text-center text-muted py-4">No expense transactions found.</td>
@@ -42,7 +153,7 @@ function renderExpenseHistory(expenses = [], totals = {}) {
         return;
     }
 
-    tbody.innerHTML = expenses.map((expense) => `
+    tbody.innerHTML = visibleExpenses.map((expense) => `
         <tr>
             <td>${expense.voucherNo || '-'}</td>
             <td>${expense.expenseDate ? new Date(expense.expenseDate).toLocaleDateString('en-IN') : '-'}</td>
@@ -68,9 +179,14 @@ function renderExpenseHistory(expenses = [], totals = {}) {
             const voucherNo = button.dataset.voucherNo;
             const confirmed = window.confirm(`Delete expense voucher ${voucherNo}?`);
             if (!confirmed) return;
+            const editReason = window.prompt('Enter reason for deleting this expense:');
+            if (!editReason || !editReason.trim()) {
+                alert('Delete reason is required for deleting an expense.');
+                return;
+            }
 
             try {
-                const result = await API.fees.deleteExpense(expenseId);
+                const result = await API.fees.deleteExpense(expenseId, { editReason: editReason.trim() });
                 if (!result?.success) {
                     throw new Error(result?.message || 'Unable to delete expense');
                 }
@@ -90,7 +206,9 @@ async function loadExpenseHistory(filters = {}) {
         throw new Error(result?.message || 'Unable to fetch expense transactions');
     }
 
-    renderExpenseHistory(result.expenses || [], result.totals || {});
+    expenseHistoryRows = result.expenses || [];
+    renderExpenseHistory(expenseHistoryRows, result.totals || {});
+    populateDuePaymentPeople();
 }
 
 async function loadExpenseHeadFilters() {
@@ -162,6 +280,93 @@ document.addEventListener('DOMContentLoaded', async () => {
             await loadExpenseHistory();
         } catch (error) {
             console.error(error);
+        }
+    });
+
+    document.querySelectorAll('[data-expense-tab]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setExpenseHistoryTab(button.dataset.expenseTab || 'all');
+        });
+    });
+
+    if (getExpenseTabFromHash()) {
+        setExpenseHistoryTab(getExpenseTabFromHash());
+    }
+
+    window.addEventListener('hashchange', () => {
+        setExpenseHistoryTab(getExpenseTabFromHash());
+    });
+
+    document.getElementById('duePaymentReceivedFrom').addEventListener('change', updateDuePaymentCurrentDue);
+
+    document.getElementById('duePaymentForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const receivedFrom = document.getElementById('duePaymentReceivedFrom').value;
+        const paymentMode = document.getElementById('duePaymentMode').value;
+        const amount = Number(document.getElementById('duePaymentAmount').value) || 0;
+        const notes = document.getElementById('duePaymentNotes').value.trim();
+        const currentDue = Number(String(document.getElementById('duePaymentCurrentDue').value || '0').replace(/,/g, '')) || 0;
+
+        if (!receivedFrom) {
+            alert('Please select Received From.');
+            return;
+        }
+
+        if (amount <= 0) {
+            alert('Received amount must be greater than zero.');
+            return;
+        }
+
+        if (amount > currentDue) {
+            alert('Received amount cannot be greater than current due.');
+            return;
+        }
+
+        const saveButton = document.getElementById('saveDuePaymentBtn');
+        const originalHtml = saveButton.innerHTML;
+
+        try {
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving';
+
+            const voucherResult = await API.fees.getNextExpenseVoucher();
+            if (!voucherResult?.success || !voucherResult.voucherNo) {
+                throw new Error(voucherResult?.message || 'Unable to generate voucher number');
+            }
+
+            const result = await API.fees.saveExpense({
+                voucherNo: voucherResult.voucherNo,
+                headOfAccount: 'Due',
+                paidTo: receivedFrom,
+                paidFor: 'Due Payment',
+                amount,
+                paymentMode,
+                paymentBreakdown: [{
+                    modeLabel: 'Due Payment',
+                    baseMode: paymentMode === 'Online' ? 'Online' : 'Cash',
+                    amount
+                }],
+                expenseDate: new Date().toISOString().split('T')[0],
+                notes
+            });
+
+            if (!result?.success) {
+                throw new Error(result?.message || 'Unable to save due payment');
+            }
+
+            document.getElementById('duePaymentForm').reset();
+            await loadExpenseHistory(getExpenseFilters());
+            activeExpenseHistoryTab = 'due-payment';
+            renderExpenseHistory(expenseHistoryRows);
+            setDuePaymentFormVisibility();
+            alert('Due payment saved successfully.');
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Unable to save due payment');
+        } finally {
+            saveButton.disabled = false;
+            saveButton.innerHTML = originalHtml;
         }
     });
 });

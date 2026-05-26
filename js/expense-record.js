@@ -1,6 +1,13 @@
 let editingExpenseId = null;
 let expenseOnlineAccountCounter = 0;
 const expenseOnlineAccounts = [];
+let fuelOptions = {
+    centres: [],
+    vehicles: []
+};
+let supplierOptions = { suppliers: [] };
+let salaryDueOptions = { employees: [] };
+let salaryPaymentPrefillDetails = null;
 
 function formatExpenseMoney(value) {
     const amount = Number(value) || 0;
@@ -30,12 +37,239 @@ function showExpenseFormMessage(message) {
     messageBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+function escapeExpenseHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char]));
+}
+
 function populateExpenseHeads(heads = [], selectedValue = '') {
     const select = document.getElementById('headOfAccount');
     select.innerHTML = `
         <option value="">Select Head of Account</option>
         ${heads.map((head) => `<option value="${head.name}" ${head.name === selectedValue ? 'selected' : ''}>${head.name}</option>`).join('')}
     `;
+}
+
+function getSalaryDuePersonLabel(employee = {}) {
+    return [employee.name, employee.designation, employee.employeeType]
+        .filter(Boolean)
+        .join(' - ');
+}
+
+function populateSalaryDueDropdown(selectedPerson = '') {
+    const dueSelect = document.getElementById('salaryDuePerson');
+    if (!dueSelect) return;
+
+    dueSelect.innerHTML = `
+        <option value="">Select Teacher / Staff</option>
+        ${salaryDueOptions.employees.map((employee) => {
+            const name = employee.name || '';
+            const label = getSalaryDuePersonLabel(employee) || name;
+            return `<option value="${escapeExpenseHtml(name)}" ${name === selectedPerson ? 'selected' : ''}>${escapeExpenseHtml(label)}</option>`;
+        }).join('')}
+    `;
+}
+
+async function loadSalaryDueOptions(selectedPerson = '') {
+    const result = await API.salary.getEmployees();
+    if (!result?.success) return;
+    salaryDueOptions = { employees: result.employees || [] };
+    populateSalaryDueDropdown(selectedPerson);
+}
+
+function populateFuelDropdowns(selectedCentre = '') {
+    const centreSelect = document.getElementById('fuelCentreName');
+    if (!centreSelect) return;
+
+    centreSelect.innerHTML = `
+        <option value="">Select Fuel Centre</option>
+        ${fuelOptions.centres.map((centre) => {
+            const name = centre.name || centre;
+            return `<option value="${name}" ${name === selectedCentre ? 'selected' : ''}>${name}</option>`;
+        }).join('')}
+    `;
+
+}
+
+async function loadFuelOptions(selectedCentre = '') {
+    const result = await API.fuel.getOptions();
+    if (!result?.success) {
+        return;
+    }
+
+    fuelOptions = {
+        centres: result.centres || [],
+        vehicles: result.vehicles || []
+    };
+    populateFuelDropdowns(selectedCentre);
+}
+
+function populateSupplierDropdowns(selectedSupplier = '') {
+    const supplierSelect = document.getElementById('supplierName');
+    if (!supplierSelect) return;
+    supplierSelect.innerHTML = `
+        <option value="">Select Supplier</option>
+        ${supplierOptions.suppliers.map((supplier) => {
+            const name = supplier.name || supplier;
+            return `<option value="${name}" ${name === selectedSupplier ? 'selected' : ''}>${name}</option>`;
+        }).join('')}
+    `;
+}
+
+async function loadSupplierOptions(selectedSupplier = '') {
+    const result = await API.suppliers.getOptions();
+    if (!result?.success) return;
+    supplierOptions = { suppliers: result.suppliers || [] };
+    populateSupplierDropdowns(selectedSupplier);
+}
+
+function isFuelExpenseSelected() {
+    const head = document.getElementById('headOfAccount')?.value.toLowerCase() || '';
+    const paidFor = document.getElementById('paidFor')?.value.toLowerCase() || '';
+    return head.includes('fuel') || paidFor.includes('fuel');
+}
+
+function refreshFuelDetailsVisibility() {
+    const fuelCard = document.getElementById('fuelDetailsCard');
+    if (!fuelCard) return;
+
+    const isFuel = isFuelExpenseSelected();
+    fuelCard.classList.toggle('d-none', !isFuel);
+
+    ['fuelCentreName'].forEach((id) => {
+        const field = document.getElementById(id);
+        if (field) field.required = isFuel;
+    });
+
+    if (isFuel) {
+        const centre = document.getElementById('fuelCentreName')?.value || '';
+        const paidToInput = document.getElementById('paidTo');
+        if (centre && paidToInput && !paidToInput.value.trim()) {
+            paidToInput.value = centre;
+        }
+    }
+}
+
+function isSupplierExpenseSelected() {
+    const head = document.getElementById('headOfAccount')?.value.toLowerCase() || '';
+    const paidFor = document.getElementById('paidFor')?.value.toLowerCase() || '';
+    return head.includes('supplier') || paidFor.includes('supplier') || paidFor.includes('purchase payment');
+}
+
+function isSalaryDueExpenseSelected() {
+    const head = document.getElementById('headOfAccount')?.value.trim().toLowerCase() || '';
+    return head === 'due';
+}
+
+function refreshSalaryDueDetailsVisibility() {
+    const dueCard = document.getElementById('salaryDueDetailsCard');
+    if (!dueCard) return;
+
+    const isDue = isSalaryDueExpenseSelected();
+    dueCard.classList.toggle('d-none', !isDue);
+
+    const field = document.getElementById('salaryDuePerson');
+    if (field) field.required = isDue;
+
+    if (isDue) {
+        const person = field?.value || '';
+        const paidToInput = document.getElementById('paidTo');
+        if (person && paidToInput && !paidToInput.value.trim()) {
+            paidToInput.value = person;
+        }
+    }
+}
+
+function refreshSupplierDetailsVisibility() {
+    const supplierCard = document.getElementById('supplierDetailsCard');
+    if (!supplierCard) return;
+    const isSupplier = isSupplierExpenseSelected();
+    supplierCard.classList.toggle('d-none', !isSupplier);
+    const field = document.getElementById('supplierName');
+    if (field) field.required = isSupplier;
+    if (isSupplier) {
+        const supplier = field?.value || '';
+        const paidToInput = document.getElementById('paidTo');
+        if (supplier && paidToInput && !paidToInput.value.trim()) {
+            paidToInput.value = supplier;
+        }
+    }
+}
+
+function getFuelDetailsPayload() {
+    if (!isFuelExpenseSelected()) {
+        return null;
+    }
+
+    return {
+        fuelDate: document.getElementById('expenseDate').value,
+        fuelCentreName: document.getElementById('fuelCentreName').value,
+        amount: Number(document.getElementById('expenseAmount').value) || 0,
+        notes: document.getElementById('expenseNotes').value.trim()
+    };
+}
+
+function validateFuelDetailsPayload(payload) {
+    if (!payload) return '';
+    if (!payload.fuelCentreName) {
+        return 'Fuel centre name is required for fuel expenses.';
+    }
+    return '';
+}
+
+function getSupplierDetailsPayload() {
+    if (!isSupplierExpenseSelected()) return null;
+    return {
+        entryDate: document.getElementById('expenseDate').value,
+        supplierName: document.getElementById('supplierName').value,
+        amount: Number(document.getElementById('expenseAmount').value) || 0,
+        notes: document.getElementById('expenseNotes').value.trim()
+    };
+}
+
+function validateSupplierDetailsPayload(payload) {
+    if (!payload) return '';
+    if (!payload.supplierName) return 'Supplier name is required for supplier payment.';
+    return '';
+}
+
+function validateSalaryDueDetails() {
+    if (!isSalaryDueExpenseSelected()) return '';
+    if (!document.getElementById('salaryDuePerson')?.value) {
+        return 'Teacher / staff name is required for Due expense.';
+    }
+    return '';
+}
+
+function populateFuelDetailsForEdit(fuelDetails = null) {
+    if (!fuelDetails) {
+        populateFuelDropdowns();
+        refreshFuelDetailsVisibility();
+        return;
+    }
+
+    populateFuelDropdowns(fuelDetails.fuelCentreName || '');
+    refreshFuelDetailsVisibility();
+}
+
+function populateSupplierDetailsForEdit(supplierDetails = null) {
+    if (!supplierDetails) {
+        populateSupplierDropdowns();
+        refreshSupplierDetailsVisibility();
+        return;
+    }
+    populateSupplierDropdowns(supplierDetails.supplierName || '');
+    refreshSupplierDetailsVisibility();
+}
+
+function populateSalaryDueDetailsForEdit(personName = '') {
+    populateSalaryDueDropdown(personName || '');
+    refreshSalaryDueDetailsVisibility();
 }
 
 async function loadExpenseHeads(selectedValue = '') {
@@ -61,12 +295,12 @@ async function loadExpenseDashboard() {
 }
 
 function getExpensePaymentModeOptions() {
-    const options = ['Cash', ...expenseOnlineAccounts];
+    const options = ['Cash', 'Due', 'Due Payment', ...expenseOnlineAccounts];
     return options.map((option) => `<option value="${option}">${option}</option>`).join('');
 }
 
 function inferExpenseBaseMode(modeLabel = '') {
-    return modeLabel === 'Cash' ? 'Cash' : 'Online';
+    return ['Cash', 'Due', 'Due Payment'].includes(modeLabel) ? 'Cash' : 'Online';
 }
 
 function refreshExpensePaymentModeDropdowns() {
@@ -227,7 +461,7 @@ function getExpensePaymentBreakdownPayload() {
     return Array.from(document.querySelectorAll('.expense-payment-entry-row'))
         .map((row) => ({
             modeLabel: row.dataset.modeLabel || 'Cash',
-            baseMode: row.querySelector('.expense-payment-mode-select').value === 'Cash' ? 'Cash' : 'Online',
+            baseMode: inferExpenseBaseMode(row.querySelector('.expense-payment-mode-select').value || 'Cash'),
             amount: Number(row.querySelector('.expense-payment-amount-input').value) || 0
         }))
         .filter((entry) => entry.amount > 0 && entry.modeLabel);
@@ -253,6 +487,12 @@ function getExpensePaymentModeSummary(paymentBreakdown = getExpensePaymentBreakd
     if (!baseModes.length) return 'Cash';
     if (baseModes.length === 1) return baseModes[0];
     return 'Mixed';
+}
+
+function isSalaryAdvanceOnlyAdjustment(paymentBreakdown = getExpensePaymentBreakdownPayload()) {
+    return !paymentBreakdown.length
+        && String(document.getElementById('headOfAccount')?.value || '').trim().toLowerCase() === 'salary'
+        && Number(salaryPaymentPrefillDetails?.advanceAdjusted) > 0;
 }
 
 function formatExpensePaymentBreakdown(paymentBreakdown = [], fallbackPaymentMode = '', fallbackAmount = 0) {
@@ -361,6 +601,7 @@ async function loadRecentExpenses() {
 
 function populateExpenseFormForEdit(expense) {
     editingExpenseId = expense._id;
+    salaryPaymentPrefillDetails = expense.salaryDetails || null;
     document.getElementById('selectedExpenseId').value = expense._id || '';
     document.getElementById('expenseVoucherNo').value = expense.voucherNo || '';
     document.getElementById('expenseDate').value = expense.expenseDate ? new Date(expense.expenseDate).toISOString().split('T')[0] : '';
@@ -368,6 +609,9 @@ function populateExpenseFormForEdit(expense) {
     document.getElementById('paidTo').value = expense.paidTo || '';
     document.getElementById('paidFor').value = expense.paidFor || '';
     document.getElementById('expenseNotes').value = expense.notes || '';
+    populateFuelDetailsForEdit(expense.fuelDetails || null);
+    populateSupplierDetailsForEdit(expense.supplierDetails || null);
+    populateSalaryDueDetailsForEdit(expense.paidTo || '');
 
     const fallbackPaymentMode = expense.paymentMode === 'Cash' ? 'Cash' : 'Online-1';
     hydrateExpensePaymentBreakdown(
@@ -415,6 +659,7 @@ async function deleteExpense(expenseId) {
 async function resetExpenseForm() {
     hideExpenseFormMessage();
     editingExpenseId = null;
+    salaryPaymentPrefillDetails = null;
     document.getElementById('selectedExpenseId').value = '';
     document.getElementById('expenseForm').reset();
     document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
@@ -423,8 +668,104 @@ async function resetExpenseForm() {
     document.getElementById('expensePaymentEntriesContainer').innerHTML = '';
     hydrateExpensePaymentBreakdown([{ modeLabel: 'Cash', baseMode: 'Cash', amount: 0 }]);
     await loadExpenseHeads();
+    populateFuelDetailsForEdit(null);
+    populateSupplierDetailsForEdit(null);
+    populateSalaryDueDetailsForEdit(null);
     await loadNextExpenseVoucher();
     setExpenseFormMode();
+}
+
+async function applySupplierPaymentPrefill(supplierName = '') {
+    const normalizedSupplier = String(supplierName || '').trim();
+    if (!normalizedSupplier) return;
+
+    document.getElementById('headOfAccount').value = 'Supplier Payment';
+    document.getElementById('paidTo').value = normalizedSupplier;
+    document.getElementById('paidFor').value = 'Supplier Payment';
+    populateSupplierDropdowns(normalizedSupplier);
+    document.getElementById('supplierName').value = normalizedSupplier;
+    refreshSupplierDetailsVisibility();
+}
+
+function parseSalaryAmountDetails(value = '') {
+    try {
+        const details = JSON.parse(value || '[]');
+        if (!Array.isArray(details)) return [];
+        return details
+            .map((detail) => ({
+                label: String(detail?.label || '').trim(),
+                amount: Number(detail?.amount) || 0
+            }))
+            .filter((detail) => detail.label && detail.amount > 0);
+    } catch (error) {
+        return [];
+    }
+}
+
+function formatSalaryAmountDetails(details = []) {
+    if (!details.length) return '-';
+    return details
+        .map((detail) => `${detail.label}: Rs. ${formatExpenseMoney(detail.amount)}`)
+        .join(', ');
+}
+
+async function applySalaryPaymentPrefill(params) {
+    const employeeName = String(params.get('employeeName') || '').trim();
+    const amount = Number(params.get('amount')) || 0;
+    const advanceAdjusted = Number(params.get('advanceAdjusted')) || 0;
+    if (!employeeName || (amount <= 0 && advanceAdjusted <= 0)) return;
+
+    const designation = String(params.get('designation') || '').trim();
+    const employeeType = String(params.get('employeeType') || '').trim();
+    const salaryMonth = String(params.get('salaryMonth') || '').trim();
+    const salaryDate = String(params.get('salaryDate') || '').trim();
+    const grossSalary = Number(params.get('grossSalary')) || amount;
+    const paymentMode = String(params.get('paymentMode') || 'Cash').trim() || 'Cash';
+    const remarks = String(params.get('remarks') || '').trim();
+    const totalDebit = Number(params.get('totalDebit')) || advanceAdjusted;
+    const advanceCarryForward = Number(params.get('advanceCarryForward')) || 0;
+    const creditDetails = parseSalaryAmountDetails(params.get('creditDetails') || '');
+    const debitDetails = parseSalaryAmountDetails(params.get('debitDetails') || '');
+    const paidForParts = ['Salary'];
+
+    if (salaryMonth) paidForParts.push(`for ${salaryMonth}`);
+    if (designation) paidForParts.push(`(${designation})`);
+
+    document.getElementById('headOfAccount').value = 'Salary';
+    document.getElementById('paidTo').value = employeeName;
+    document.getElementById('paidFor').value = paidForParts.join(' ');
+    document.getElementById('expenseNotes').value = [
+        employeeType ? `Type: ${employeeType}` : '',
+        `Credit: ${formatSalaryAmountDetails(creditDetails)}`,
+        `Total Credit: Rs. ${formatExpenseMoney(grossSalary)}`,
+        `Debit: ${formatSalaryAmountDetails(debitDetails)}`,
+        `Total Debit: Rs. ${formatExpenseMoney(totalDebit)}`,
+        `Net Payable: Rs. ${formatExpenseMoney(amount)}`,
+        advanceAdjusted > 0 ? `Advance adjusted in this salary: Rs. ${formatExpenseMoney(advanceAdjusted)}` : '',
+        advanceCarryForward > 0 ? `Advance remaining to carry forward next salary: Rs. ${formatExpenseMoney(advanceCarryForward)}` : 'Advance remaining to carry forward next salary: Rs. 0.00',
+        remarks
+    ].filter(Boolean).join(' | ');
+
+    salaryPaymentPrefillDetails = {
+        employeeName,
+        salaryMonth,
+        grossSalary,
+        advanceAdjusted
+    };
+
+    if (salaryDate) {
+        document.getElementById('expenseDate').value = salaryDate;
+    }
+
+    hydrateExpensePaymentBreakdown([{
+        modeLabel: paymentMode,
+        baseMode: inferExpenseBaseMode(paymentMode),
+        amount
+    }]);
+
+    refreshFuelDetailsVisibility();
+    refreshSupplierDetailsVisibility();
+    refreshSalaryDueDetailsVisibility();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -439,11 +780,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const prefilledExpenseId = new URLSearchParams(window.location.search).get('expenseId');
+    const pageParams = new URLSearchParams(window.location.search);
+    const prefilledExpenseId = pageParams.get('expenseId');
+    const supplierPaymentName = pageParams.get('supplierName') || '';
 
     try {
         await Promise.all([
             loadExpensePaymentAccounts(),
+            loadFuelOptions(),
+            loadSupplierOptions(),
+            loadSalaryDueOptions(),
             loadExpenseDashboard(),
             loadRecentExpenses()
         ]);
@@ -452,6 +798,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (prefilledExpenseId) {
             await loadExpenseForEdit(prefilledExpenseId);
+        } else if (pageParams.get('supplierPayment') === '1') {
+            await applySupplierPaymentPrefill(supplierPaymentName);
+        } else if (pageParams.get('salaryPayment') === '1') {
+            await applySalaryPaymentPrefill(pageParams);
         }
     } catch (error) {
         console.error(error);
@@ -485,12 +835,72 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('addExpensePaymentRowBtn').addEventListener('click', () => addExpensePaymentRow('Cash', 0));
 
+    document.getElementById('headOfAccount').addEventListener('change', () => {
+        refreshFuelDetailsVisibility();
+        refreshSupplierDetailsVisibility();
+        refreshSalaryDueDetailsVisibility();
+    });
+    document.getElementById('paidFor').addEventListener('input', () => {
+        refreshFuelDetailsVisibility();
+        refreshSupplierDetailsVisibility();
+    });
+    document.getElementById('fuelCentreName').addEventListener('change', () => {
+        const centre = document.getElementById('fuelCentreName').value;
+        if (centre) {
+            document.getElementById('paidTo').value = centre;
+        }
+    });
+
+    document.getElementById('addFuelCentreBtn').addEventListener('click', async () => {
+        const name = window.prompt('Enter fuel centre name:');
+        if (!name) return;
+
+        try {
+            const result = await API.fuel.createCentre(name.trim());
+            if (!result?.success) {
+                throw new Error(result?.message || 'Unable to create fuel centre');
+            }
+
+            await loadFuelOptions(result.centre?.name || name.trim(), '');
+            document.getElementById('paidTo').value = result.centre?.name || name.trim();
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Unable to create fuel centre');
+        }
+    });
+
+    document.getElementById('supplierName').addEventListener('change', () => {
+        const supplier = document.getElementById('supplierName').value;
+        if (supplier) document.getElementById('paidTo').value = supplier;
+    });
+
+    document.getElementById('salaryDuePerson').addEventListener('change', () => {
+        const person = document.getElementById('salaryDuePerson').value;
+        if (person) document.getElementById('paidTo').value = person;
+    });
+
+    document.getElementById('addSupplierBtn').addEventListener('click', async () => {
+        const name = window.prompt('Enter supplier name:');
+        if (!name) return;
+        try {
+            const result = await API.suppliers.createSupplier({ name: name.trim() });
+            if (!result?.success) throw new Error(result?.message || 'Unable to create supplier');
+            await loadSupplierOptions(result.supplier?.name || name.trim());
+            document.getElementById('paidTo').value = result.supplier?.name || name.trim();
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Unable to create supplier');
+        }
+    });
+
     document.getElementById('expenseForm').addEventListener('submit', async (event) => {
         event.preventDefault();
         hideExpenseFormMessage();
 
         const paymentBreakdown = getExpensePaymentBreakdownPayload();
         const duplicatePaymentMode = findDuplicateExpensePaymentModes(paymentBreakdown);
+        const fuelDetails = getFuelDetailsPayload();
+        const supplierDetails = getSupplierDetailsPayload();
         const payload = {
             voucherNo: document.getElementById('expenseVoucherNo').value.trim(),
             headOfAccount: document.getElementById('headOfAccount').value,
@@ -500,7 +910,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             paymentMode: getExpensePaymentModeSummary(paymentBreakdown),
             paymentBreakdown,
             expenseDate: document.getElementById('expenseDate').value,
-            notes: document.getElementById('expenseNotes').value.trim()
+            notes: document.getElementById('expenseNotes').value.trim(),
+            fuelDetails,
+            supplierDetails,
+            salaryDetails: salaryPaymentPrefillDetails
         };
 
         if (editingExpenseId) {
@@ -517,13 +930,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        if (!paymentBreakdown.length || payload.amount <= 0) {
+        if ((!paymentBreakdown.length || payload.amount <= 0) && !isSalaryAdvanceOnlyAdjustment(paymentBreakdown)) {
             showExpenseFormMessage('Please add at least one payment row with amount.');
             return;
         }
 
         if (duplicatePaymentMode) {
             showExpenseFormMessage(`Payment type "${duplicatePaymentMode}" is selected more than once. Please use different payment types.`);
+            return;
+        }
+
+        const fuelValidationMessage = validateFuelDetailsPayload(fuelDetails);
+        if (fuelValidationMessage) {
+            showExpenseFormMessage(fuelValidationMessage);
+            return;
+        }
+        const supplierValidationMessage = validateSupplierDetailsPayload(supplierDetails);
+        if (supplierValidationMessage) {
+            showExpenseFormMessage(supplierValidationMessage);
+            return;
+        }
+        const salaryDueValidationMessage = validateSalaryDueDetails();
+        if (salaryDueValidationMessage) {
+            showExpenseFormMessage(salaryDueValidationMessage);
             return;
         }
 

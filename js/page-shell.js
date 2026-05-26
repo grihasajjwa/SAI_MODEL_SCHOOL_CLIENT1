@@ -78,6 +78,22 @@
         });
     }
 
+    function ensureNumberInputGuardScript() {
+        if (window.NumberInputGuard?.initialized) {
+            return;
+        }
+
+        const existing = document.querySelector('script[data-number-input-guard="true"]');
+        if (existing) {
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = resolvePath('js/number-input-guard.js');
+        script.dataset.numberInputGuard = 'true';
+        document.head.appendChild(script);
+    }
+
     function ensureNavbarContainer() {
         if (document.getElementById('navbar-container')) {
             return;
@@ -127,6 +143,8 @@
     }
 
     async function initializeShell() {
+        ensureNumberInputGuardScript();
+
         if (isPublicPage) {
             return;
         }

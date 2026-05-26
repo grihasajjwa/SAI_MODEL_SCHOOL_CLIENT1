@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student 360 - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: #f5f7fb;
+        }
+
+        .page-shell {
+            max-width: 1440px;
+        }
+
+        .hero-band {
+            background: linear-gradient(135deg, #0f172a, #155e75);
+            color: #fff;
+            border-radius: 14px;
+            padding: 22px;
+        }
+
+        .search-panel,
+        .profile-panel,
+        .metric-tile,
+        .data-panel {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .metric-tile {
+            padding: 14px;
+            min-height: 94px;
+        }
+
+        .metric-tile span {
+            display: block;
+            color: #64748b;
+            font-size: 0.84rem;
+        }
+
+        .metric-tile strong {
+            display: block;
+            margin-top: 6px;
+            color: #0f172a;
+            font-size: 1.28rem;
+        }
+
+        .profile-photo {
+            width: 96px;
+            height: 96px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 3px solid #e0f2fe;
+            background: #f8fafc;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .info-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            background: #f8fafc;
+        }
+
+        .info-item span {
+            display: block;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .info-item strong {
+            color: #0f172a;
+        }
+
+        .quick-actions .btn {
+            justify-content: flex-start;
+        }
+
+        .status-pill {
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .empty-state {
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 34px;
+            text-align: center;
+            color: #64748b;
+            background: #fff;
+        }
+
+        .table th {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container-fluid page-shell py-4">
+        <section class="hero-band mb-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                <div>
+                    <h3 class="mb-1">Student 360</h3>
+                    <div class="text-white-50">One professional view for profile, fees, academics, transport, and quick actions.</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge text-bg-light" id="student360SessionBadge">Session: -</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="search-panel p-3 mb-4">
+            <form id="student360SearchForm" class="row g-3 align-items-end">
+                <div class="col-lg-5">
+                    <label class="form-label" for="student360SearchInput">Search Student</label>
+                    <input class="form-control" id="student360SearchInput" list="student360Suggestions" placeholder="Admission no, name, father name, class" autocomplete="off">
+                    <datalist id="student360Suggestions"></datalist>
+                </div>
+                <div class="col-lg-3">
+                    <label class="form-label" for="student360SessionInput">Session</label>
+                    <select class="form-select" id="student360SessionInput">
+                        <option value="">All / Latest</option>
+                    </select>
+                </div>
+                <div class="col-lg-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1" id="student360SearchBtn">
+                        <i class="fas fa-search me-2"></i>Open Profile
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="student360ResetBtn">Reset</button>
+                </div>
+            </form>
+        </section>
+
+        <div id="student360Empty" class="empty-state">
+            <h5 class="mb-2">Search a student to open the 360 profile.</h5>
+            <p class="mb-0">This page combines the most important school operations into one staff-friendly screen.</p>
+        </div>
+
+        <section id="student360Content" class="d-none">
+            <div class="row g-3 mb-4">
+                <div class="col-lg-8">
+                    <div class="profile-panel p-3 h-100">
+                        <div class="d-flex flex-column flex-md-row gap-3">
+                            <img id="student360Photo" class="profile-photo" src="../assets/images/logo.png" alt="Student photo">
+                            <div class="flex-grow-1">
+                                <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                                    <div>
+                                        <h4 class="mb-1" id="student360Name">-</h4>
+                                        <div class="text-muted" id="student360Subtitle">-</div>
+                                    </div>
+                                    <span class="status-pill bg-success-subtle text-success align-self-start" id="student360Status">Active</span>
+                                </div>
+                                <div class="info-grid mt-3">
+                                    <div class="info-item"><span>Admission No.</span><strong id="student360Admission">-</strong></div>
+                                    <div class="info-item"><span>Father</span><strong id="student360Father">-</strong></div>
+                                    <div class="info-item"><span>Mother</span><strong id="student360Mother">-</strong></div>
+                                    <div class="info-item"><span>Contact</span><strong id="student360Contact">-</strong></div>
+                                    <div class="info-item"><span>Date of Birth</span><strong id="student360Dob">-</strong></div>
+                                    <div class="info-item"><span>Admission Date</span><strong id="student360AdmissionDate">-</strong></div>
+                                    <div class="info-item"><span>Tuition Fee</span><strong id="student360TuitionFee">-</strong></div>
+                                    <div class="info-item"><span>Transport Fee</span><strong id="student360TransportFee">-</strong></div>
+                                    <div class="info-item"><span>Transport</span><strong id="student360Transport">-</strong></div>
+                                    <div class="info-item"><span>Address</span><strong id="student360Address">-</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="data-panel p-3 h-100 quick-actions">
+                        <h5 class="mb-3">Quick Actions</h5>
+                        <div class="d-grid gap-2">
+                            <a class="btn btn-success" id="student360CollectFee" href="#"><i class="fas fa-receipt me-2"></i>Collect Fee</a>
+                            <a class="btn btn-outline-danger" id="student360CollectDue" href="#"><i class="fas fa-file-invoice-dollar me-2"></i>Collect Due</a>
+                            <a class="btn btn-outline-primary" id="student360Ledger" href="#"><i class="fas fa-book-open me-2"></i>Fee Ledger</a>
+                            <a class="btn btn-outline-secondary" id="student360Database" href="#"><i class="fas fa-database me-2"></i>Student Database</a>
+                            <a class="btn btn-outline-dark" id="student360Marks" href="#student360Marksheets"><i class="fas fa-square-poll-vertical me-2"></i>Marksheet</a>
+                            <button class="btn btn-outline-info" id="student360PrintBooklet" type="button" disabled><i class="fas fa-print me-2"></i>Print Booklet</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3"><div class="metric-tile"><span>Total Paid</span><strong>Rs. <span id="student360Paid">0.00</span></strong></div></div>
+                <div class="col-md-3"><div class="metric-tile"><span>Outstanding Due</span><strong class="text-danger">Rs. <span id="student360Due">0.00</span></strong></div></div>
+                <div class="col-md-3"><div class="metric-tile"><span>Total Charges</span><strong>Rs. <span id="student360Charges">0.00</span></strong></div></div>
+                <div class="col-md-3"><div class="metric-tile"><span>Last Receipt</span><strong id="student360LastReceipt">-</strong></div></div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="data-panel p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Recent Fee Receipts</h5>
+                            <span class="badge text-bg-light" id="student360ReceiptCount">0 receipts</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped table-sm align-middle mb-0" id="student360ReceiptsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sl No.</th>
+                                        <th>Date</th>
+                                        <th>Session</th>
+                                        <th>Receipt</th>
+                                        <th>Particulars</th>
+                                        <th>Month</th>
+                                        <th class="text-end">Billed</th>
+                                        <th class="text-end">Cash</th>
+                                        <th class="text-end">Online</th>
+                                        <th class="text-end">Due</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="student360ReceiptsBody">
+                                    <tr><td colspan="11" class="text-center text-muted py-3">Search a student to view fee receipts.</td></tr>
+                                </tbody>
+                                <tfoot id="student360ReceiptsFoot"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="data-panel p-3">
+                        <h5 class="mb-3">Academic Snapshot</h5>
+                        <div class="info-grid mb-3">
+                            <div class="info-item"><span>Academic Year</span><strong id="student360AcademicYear">-</strong></div>
+                            <div class="info-item"><span>Rank</span><strong id="student360Rank">-</strong></div>
+                            <div class="info-item"><span>Attendance</span><strong id="student360Attendance">-</strong></div>
+                            <div class="info-item"><span>Teacher Remarks</span><strong id="student360Remarks">-</strong></div>
+                        </div>
+                        <div id="student360MarksSummary" class="text-muted">No marks loaded yet.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-panel p-3 mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Monthly Fee Status</h5>
+                    <span class="badge text-bg-light" id="student360MonthlyStatusSession">0 sessions</span>
+                </div>
+                <div id="student360MonthlyStatusWrap">
+                    <div class="text-center text-muted py-3 border rounded">Search a student to view monthly status.</div>
+                </div>
+            </div>
+
+            <div class="data-panel p-3 mt-3" id="student360Marksheets">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Session Wise Marksheets</h5>
+                    <span class="badge text-bg-light" id="student360MarksheetCount">0 sessions</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0" id="student360MarksheetsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Session</th>
+                                <th>Class</th>
+                                <th>Roll</th>
+                                <th>Rank</th>
+                                <th>Marks Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student360MarksheetsBody">
+                            <tr><td colspan="6" class="text-center text-muted py-3">Search a student to view marksheets.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/student-360.js"></script>
+    <script src="../js/page-shell.js"></script>
+</body>
+</html>

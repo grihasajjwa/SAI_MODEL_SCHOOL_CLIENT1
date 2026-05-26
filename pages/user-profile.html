@@ -274,6 +274,17 @@
             box-shadow: 0 8px 20px rgba(56, 89, 142, 0.08);
         }
 
+        .school-signature-preview {
+            max-width: 190px;
+            max-height: 80px;
+            object-fit: contain;
+            border: 1px solid #dbe6f7;
+            border-radius: 12px;
+            padding: 10px;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(56, 89, 142, 0.08);
+        }
+
         .admin-badge {
             display: inline-flex;
             align-items: center;
@@ -501,10 +512,23 @@
                                             </div>
                                         </div>
                                         <div class="field-span-6">
+                                            <div class="form-group">
+                                                <label class="form-label" for="schoolIdCardAddress">ID Card Short Address</label>
+                                                <input type="text" class="form-control" id="schoolIdCardAddress" placeholder="Tufanganj, Coochbehar">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-6">
                                             <div class="school-logo-panel text-center">
                                                 <label class="form-label d-block text-start" for="schoolLogoFile">School Logo</label>
                                                 <input type="file" class="form-control mb-3" id="schoolLogoFile" accept="image/*">
                                                 <img id="schoolLogoPreview" class="school-logo-preview" src="../assets/images/logo1.png" alt="School logo preview">
+                                            </div>
+                                        </div>
+                                        <div class="field-span-6">
+                                            <div class="school-logo-panel text-center">
+                                                <label class="form-label d-block text-start" for="schoolPrincipalSignatureFile">Principal Signature</label>
+                                                <input type="file" class="form-control mb-3" id="schoolPrincipalSignatureFile" accept="image/*">
+                                                <img id="schoolPrincipalSignaturePreview" class="school-signature-preview" src="../assets/images/principal-signature1.png" alt="Principal signature preview">
                                             </div>
                                         </div>
                                     </div>
@@ -756,9 +780,13 @@
                 document.getElementById('schoolEmail').value = profile.email || '';
                 document.getElementById('schoolWebsite').value = profile.website || '';
                 document.getElementById('schoolWatermarkText').value = profile.watermarkText || '';
+                document.getElementById('schoolIdCardAddress').value = profile.idCardAddress || '';
                 document.getElementById('schoolLogoPreview').src = profile.logo
                     ? new URL(profile.logo, new URL(CONFIG.API_URL).origin).toString()
                     : '../assets/images/logo1.png';
+                document.getElementById('schoolPrincipalSignaturePreview').src = profile.principalSignature
+                    ? new URL(profile.principalSignature, new URL(CONFIG.API_URL).origin).toString()
+                    : '../assets/images/principal-signature1.png';
             } catch (error) {
                 console.error('Error loading school profile:', error);
                 alert(`Failed to load school profile: ${error.message}`);
@@ -810,6 +838,12 @@
             document.getElementById('schoolLogoPreview').src = URL.createObjectURL(file);
         });
 
+        document.getElementById('schoolPrincipalSignatureFile').addEventListener('change', function () {
+            const file = this.files?.[0];
+            if (!file) return;
+            document.getElementById('schoolPrincipalSignaturePreview').src = URL.createObjectURL(file);
+        });
+
         document.getElementById('schoolProfileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -823,10 +857,16 @@
             formData.append('email', document.getElementById('schoolEmail').value.trim());
             formData.append('website', document.getElementById('schoolWebsite').value.trim());
             formData.append('watermarkText', document.getElementById('schoolWatermarkText').value.trim());
+            formData.append('idCardAddress', document.getElementById('schoolIdCardAddress').value.trim());
 
             const logoFile = document.getElementById('schoolLogoFile').files?.[0];
             if (logoFile) {
                 formData.append('logoFile', logoFile);
+            }
+
+            const signatureFile = document.getElementById('schoolPrincipalSignatureFile').files?.[0];
+            if (signatureFile) {
+                formData.append('principalSignatureFile', signatureFile);
             }
 
             try {

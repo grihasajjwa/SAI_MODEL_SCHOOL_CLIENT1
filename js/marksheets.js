@@ -973,6 +973,10 @@ function calculateGrade(percentage) {
 }
 
 function examLabel(examType) {
+    if (window.ExamNameLabels?.get) {
+        return window.ExamNameLabels.get(examType);
+    }
+
     switch (examType) {
         case 'pt1': return 'Periodic Test 1';
         case 'hy': return 'Half Yearly';

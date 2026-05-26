@@ -121,6 +121,22 @@
             pointer-events: none;
         }
 
+        .shape-svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .trace-text-svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+
         .question-table {
             width: 100%;
             height: 100%;
@@ -271,10 +287,7 @@
                     <div class="col-12">
                         <label class="form-label compact-label" for="examNameInput">Exam Name</label>
                         <select id="examNameInput" class="form-select form-select-sm">
-                            <option value="PERIODIC TEST-1 EXAMINATION">PERIODIC TEST-1 EXAMINATION</option>
-                            <option value="HALF YEARLY EXAMINATION">HALF YEARLY EXAMINATION</option>
-                            <option value="PERIODIC TEST-2 EXAMINATION">PERIODIC TEST-2 EXAMINATION</option>
-                            <option value="ANNUAL EXAMINATION">ANNUAL EXAMINATION</option>
+                            <option value="">Select Exam</option>
                         </select>
                     </div>
                     <div class="col-12">
@@ -288,6 +301,8 @@
                 <div class="toolbar-grid">
                     <button class="btn btn-outline-primary" type="button" data-add="schoolHeader"><i class="fa-solid fa-school me-1"></i>Header</button>
                     <button class="btn btn-outline-primary" type="button" data-add="text"><i class="fa-solid fa-font me-1"></i>Text</button>
+                    <button class="btn btn-outline-primary" type="button" data-add="tracingText"><i class="fa-solid fa-pencil me-1"></i>Tracing Text</button>
+                    <button class="btn btn-outline-primary" type="button" data-add="tracingAlphabet"><i class="fa-solid fa-border-all me-1"></i>A-Z Trace</button>
                     <button class="btn btn-outline-primary" type="button" data-add="question"><i class="fa-solid fa-list-ol me-1"></i>Question</button>
                     <button class="btn btn-outline-primary" type="button" data-add="section"><i class="fa-solid fa-heading me-1"></i>Section</button>
                     <button class="btn btn-outline-primary" type="button" data-add="instructions"><i class="fa-solid fa-circle-info me-1"></i>Instructions</button>
@@ -307,6 +322,20 @@
                         <button class="btn btn-outline-dark" type="button" data-add="wordBank"><i class="fa-solid fa-box-archive me-1"></i>Word Bank</button>
                         <button class="btn btn-outline-dark" type="button" data-add="pictureQuestion"><i class="fa-solid fa-images me-1"></i>Picture Q</button>
                         <button class="btn btn-outline-dark" type="button" data-add="marksBox"><i class="fa-solid fa-square-poll-horizontal me-1"></i>Marks Box</button>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <div class="compact-label mb-2">Shapes</div>
+                    <div class="toolbar-grid">
+                        <button class="btn btn-outline-info" type="button" data-add="shapeRectangle"><i class="fa-regular fa-square me-1"></i>Rectangle</button>
+                        <button class="btn btn-outline-info" type="button" data-add="shapeRounded"><i class="fa-regular fa-square me-1"></i>Rounded</button>
+                        <button class="btn btn-outline-info" type="button" data-add="shapeCircle"><i class="fa-regular fa-circle me-1"></i>Circle</button>
+                        <button class="btn btn-outline-info" type="button" data-add="shapeOval"><i class="fa-regular fa-circle me-1"></i>Oval</button>
+                        <button class="btn btn-outline-info" type="button" data-add="shapeTriangle"><i class="fa-solid fa-play me-1"></i>Triangle</button>
+                        <button class="btn btn-outline-info" type="button" data-add="shapeDiamond"><i class="fa-regular fa-gem me-1"></i>Diamond</button>
+                        <button class="btn btn-outline-info" type="button" data-add="shapeArrow"><i class="fa-solid fa-arrow-right-long me-1"></i>Arrow</button>
+                        <button class="btn btn-outline-info" type="button" data-add="shapeStar"><i class="fa-regular fa-star me-1"></i>Star</button>
                     </div>
                 </div>
 
@@ -406,6 +435,20 @@
                         <label class="form-label compact-label" for="heightInput">Height</label>
                         <input id="heightInput" class="form-control form-control-sm" type="number" value="80">
                     </div>
+                    <div class="col-12">
+                        <label class="form-label compact-label" for="contentInput">Text Content</label>
+                        <textarea id="contentInput" class="form-control form-control-sm" rows="4" placeholder="Edit selected text"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input id="traceModeCheck" class="form-check-input" type="checkbox">
+                            <label class="form-check-label fw-semibold small" for="traceModeCheck">Convert to tracing dotted letters</label>
+                        </div>
+                        <div class="form-check">
+                            <input id="traceSingleLineCheck" class="form-check-input" type="checkbox">
+                            <label class="form-check-label fw-semibold small" for="traceSingleLineCheck">Single-line dotted tracing</label>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="tableOptions" class="mt-3 d-none">
@@ -457,7 +500,10 @@
             x: document.getElementById('xInput'),
             y: document.getElementById('yInput'),
             width: document.getElementById('widthInput'),
-            height: document.getElementById('heightInput')
+            height: document.getElementById('heightInput'),
+            content: document.getElementById('contentInput'),
+            traceMode: document.getElementById('traceModeCheck'),
+            traceSingleLine: document.getElementById('traceSingleLineCheck')
         };
 
         let classes = [];
@@ -488,7 +534,10 @@
             document.getElementById('printBtn').addEventListener('click', () => window.print());
             tableRowsInput.addEventListener('change', applyTableSizeChanges);
             tableColumnsInput.addEventListener('change', applyTableSizeChanges);
-            sessionSelect.addEventListener('change', autoLoadPaper);
+            sessionSelect.addEventListener('change', async () => {
+                await loadExamNamesForSelectedSession();
+                autoLoadPaper();
+            });
             classSelect.addEventListener('change', () => {
                 populateSubjects();
                 autoLoadPaper();
@@ -537,6 +586,25 @@
                 .map((className) => `<option value="${escapeHtml(className)}">${escapeHtml(className)}</option>`)
                 .join('');
             populateSubjects();
+            await loadExamNamesForSelectedSession();
+        }
+
+        async function loadExamNamesForSelectedSession() {
+            const token = Auth.getToken();
+            const session = sessionSelect.value;
+            examNameInput.innerHTML = '<option value="">Select Exam</option>';
+            if (!session) return;
+
+            const response = await fetch(`${CONFIG.API_URL}/exam-names/${encodeURIComponent(session)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const payload = response.ok ? await response.json() : {};
+            const exams = payload.config?.exams || [];
+            examNameInput.innerHTML = '<option value="">Select Exam</option>' + exams
+                .filter((exam) => exam.active !== false)
+                .map((exam) => `<option value="${escapeHtml(exam.name)}">${escapeHtml(exam.name)}</option>`)
+                .join('');
+            if (exams[0]) examNameInput.value = exams[0].name;
         }
 
         function populateSubjects() {
@@ -612,6 +680,39 @@
                     fontWeight: '400',
                     align: 'left',
                     color: '#111827'
+                };
+            }
+
+            if (type === 'tracingText') {
+                return {
+                    x: 80,
+                    y: nextY + 150,
+                    width: 360,
+                    height: 118,
+                    content: 'A',
+                    fontSize: 72,
+                    fontWeight: '700',
+                    align: 'center',
+                    color: '#111827',
+                    traceMode: true,
+                    traceSingleLine: false
+                };
+            }
+
+            if (type === 'tracingAlphabet') {
+                return {
+                    x: 52,
+                    y: nextY + 120,
+                    width: 690,
+                    height: 650,
+                    content: 'A B C D E\nF G H I J\nK L M N O\nP Q R S T\nU V W\nX Y Z',
+                    fontSize: 56,
+                    fontWeight: '400',
+                    align: 'center',
+                    color: '#111827',
+                    traceMode: true,
+                    traceSingleLine: false,
+                    tracingGrid: true
                 };
             }
 
@@ -776,6 +877,22 @@
                 };
             }
 
+            if (isShapeType(type)) {
+                return {
+                    x: 80,
+                    y: nextY + 150,
+                    width: type === 'shapeArrow' ? 220 : 150,
+                    height: type === 'shapeArrow' ? 70 : 110,
+                    content: getShapeLabel(type),
+                    fontSize: 16,
+                    fontWeight: '400',
+                    align: 'center',
+                    color: '#111827',
+                    fillColor: 'transparent',
+                    strokeWidth: 3
+                };
+            }
+
             return {
                 x: 52,
                 y: nextY,
@@ -795,6 +912,161 @@
             const examName = examNameInput.value || 'Question Paper';
             const session = sessionSelect.value || '____';
             return `SKYVIEW PUBLIC SCHOOL\n${examName}\nSession: ${session}    Class: ${className}    Subject: ${subject}\nTime: ____    Marks: ____`;
+        }
+
+        function isShapeType(type = '') {
+            return String(type).startsWith('shape');
+        }
+
+        function getShapeLabel(type = '') {
+            const labels = {
+                shapeRectangle: 'Rectangle',
+                shapeRounded: 'Rounded Box',
+                shapeCircle: 'Circle',
+                shapeOval: 'Oval',
+                shapeTriangle: 'Triangle',
+                shapeDiamond: 'Diamond',
+                shapeArrow: 'Arrow',
+                shapeStar: 'Star'
+            };
+            return labels[type] || 'Shape';
+        }
+
+        function canUseTraceMode(element) {
+            return Boolean(element)
+                && !['image', 'line', 'table'].includes(element.type)
+                && !isShapeType(element.type);
+        }
+
+        function createTracingTextElement(element) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'trace-text-svg');
+            svg.setAttribute('viewBox', `0 0 ${Math.max(1, element.width || 300)} ${Math.max(1, element.height || 80)}`);
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            if (element.tracingGrid) {
+                const letters = String(element.content || '')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .split(' ')
+                    .filter(Boolean);
+                const width = Number(element.width || 690);
+                const height = Number(element.height || 560);
+                const fontSize = Math.max(16, Number(element.fontSize || 56));
+                const columns = Math.min(5, Math.max(1, Number(element.tracingColumns || 5)));
+                const rows = Math.ceil(letters.length / columns);
+                const cellWidth = width / columns;
+                const cellHeight = height / Math.max(1, rows);
+
+                letters.forEach((letter, index) => {
+                    const column = index % columns;
+                    const row = Math.floor(index / columns);
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', column * cellWidth + cellWidth / 2);
+                    text.setAttribute('y', row * cellHeight + cellHeight * 0.68);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('font-family', element.fontFamily || getDefaultFontFamily());
+                    text.setAttribute('font-size', fontSize);
+                    text.setAttribute('font-weight', element.fontWeight || '400');
+                    text.setAttribute('fill', 'transparent');
+                    text.setAttribute('stroke', element.color || '#111827');
+                    text.setAttribute('stroke-width', '1.35');
+                    text.setAttribute('stroke-dasharray', '1 6');
+                    text.setAttribute('stroke-linecap', 'round');
+                    text.setAttribute('paint-order', 'stroke');
+                    text.textContent = letter;
+                    svg.appendChild(text);
+                });
+
+                return svg;
+            }
+
+            const lines = element.traceSingleLine
+                ? [String(element.content || '').replace(/\s*\n+\s*/g, ' ').trim()]
+                : String(element.content || '').split('\n');
+            const fontSize = Math.max(8, Number(element.fontSize || 48));
+            const lineHeight = fontSize * 1.18;
+            const startY = Math.max(fontSize, (Number(element.height || 80) - ((lines.length - 1) * lineHeight)) / 2);
+            const align = element.align || 'center';
+            const width = Number(element.width || 300);
+            const x = align === 'right' ? width - 8 : align === 'center' ? width / 2 : 8;
+            const anchor = align === 'right' ? 'end' : align === 'center' ? 'middle' : 'start';
+
+            lines.forEach((line, index) => {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', startY + index * lineHeight);
+                text.setAttribute('text-anchor', anchor);
+                text.setAttribute('font-family', element.fontFamily || getDefaultFontFamily());
+                text.setAttribute('font-size', fontSize);
+                text.setAttribute('font-weight', element.fontWeight || '700');
+                text.setAttribute('fill', 'transparent');
+                text.setAttribute('stroke', element.color || '#111827');
+                text.setAttribute('stroke-width', '1.5');
+                text.setAttribute('stroke-dasharray', '1 6');
+                text.setAttribute('stroke-linecap', 'round');
+                text.setAttribute('paint-order', 'stroke');
+                text.textContent = line || ' ';
+                svg.appendChild(text);
+            });
+
+            return svg;
+        }
+
+        function createShapeElement(element) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'shape-svg');
+            svg.setAttribute('viewBox', '0 0 100 100');
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            const stroke = element.color || '#111827';
+            const fill = element.fillColor || 'transparent';
+            const strokeWidth = Number(element.strokeWidth || 3);
+
+            function setShapeAttrs(node) {
+                node.setAttribute('fill', fill);
+                node.setAttribute('stroke', stroke);
+                node.setAttribute('stroke-width', strokeWidth);
+                node.setAttribute('vector-effect', 'non-scaling-stroke');
+                node.setAttribute('stroke-linejoin', 'round');
+                node.setAttribute('stroke-linecap', 'round');
+                svg.appendChild(node);
+            }
+
+            if (element.type === 'shapeRectangle' || element.type === 'shapeRounded') {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', '4');
+                rect.setAttribute('y', '4');
+                rect.setAttribute('width', '92');
+                rect.setAttribute('height', '92');
+                if (element.type === 'shapeRounded') {
+                    rect.setAttribute('rx', '12');
+                    rect.setAttribute('ry', '12');
+                }
+                setShapeAttrs(rect);
+                return svg;
+            }
+
+            if (element.type === 'shapeCircle' || element.type === 'shapeOval') {
+                const ellipse = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                ellipse.setAttribute('cx', '50');
+                ellipse.setAttribute('cy', '50');
+                ellipse.setAttribute('rx', element.type === 'shapeCircle' ? '42' : '46');
+                ellipse.setAttribute('ry', element.type === 'shapeCircle' ? '42' : '30');
+                setShapeAttrs(ellipse);
+                return svg;
+            }
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const paths = {
+                shapeTriangle: 'M50 8 L94 92 L6 92 Z',
+                shapeDiamond: 'M50 6 L94 50 L50 94 L6 50 Z',
+                shapeArrow: 'M6 36 H66 V16 L96 50 L66 84 V64 H6 Z',
+                shapeStar: 'M50 6 L61 36 L94 36 L67 55 L78 90 L50 68 L22 90 L33 55 L6 36 L39 36 Z'
+            };
+            path.setAttribute('d', paths[element.type] || paths.shapeTriangle);
+            setShapeAttrs(path);
+            return svg;
         }
 
         function renderElements() {
@@ -830,10 +1102,18 @@
                 } else if (element.type === 'line') {
                     content.style.borderTop = `2px solid ${element.color || '#111827'}`;
                     content.style.marginTop = '4px';
+                } else if (isShapeType(element.type)) {
+                    content.style.padding = '0';
+                    content.style.overflow = 'visible';
+                    content.appendChild(createShapeElement(element));
                 } else if (element.type === 'table') {
                     content.style.padding = '0';
                     content.style.whiteSpace = 'normal';
                     content.appendChild(createTableElement(element));
+                } else if (element.traceMode || element.traceSingleLine) {
+                    content.style.padding = '0';
+                    content.style.overflow = 'visible';
+                    content.appendChild(createTracingTextElement(element));
                 } else {
                     content.contentEditable = 'true';
                     content.textContent = element.content || '';
@@ -928,6 +1208,10 @@
                 return `Table (${rows.length} x ${columns})`;
             }
 
+            if (element.type === 'tracingAlphabet') {
+                return 'A-Z Tracing Sheet';
+            }
+
             return (element.content || element.type).slice(0, 38);
         }
 
@@ -951,6 +1235,10 @@
                 return;
             }
 
+            const textEditable = canUseTraceMode(element);
+            controls.content.disabled = !textEditable;
+            controls.traceMode.disabled = !textEditable;
+            controls.traceSingleLine.disabled = !textEditable;
             controls.fontFamily.value = element.fontFamily || getDefaultFontFamily();
             controls.fontSize.value = element.fontSize || 16;
             controls.fontWeight.value = element.fontWeight || '400';
@@ -960,6 +1248,9 @@
             controls.y.value = Math.round(element.y);
             controls.width.value = Math.round(element.width);
             controls.height.value = Math.round(element.height);
+            controls.content.value = textEditable ? (element.content || '') : '';
+            controls.traceMode.checked = Boolean(textEditable && element.traceMode);
+            controls.traceSingleLine.checked = Boolean(textEditable && element.traceSingleLine);
 
             const isTable = element.type === 'table';
             tableOptions.classList.toggle('d-none', !isTable);
@@ -983,6 +1274,11 @@
             element.y = Number(controls.y.value) || 0;
             element.width = Math.max(20, Number(controls.width.value) || 20);
             element.height = Math.max(8, Number(controls.height.value) || 8);
+            if (canUseTraceMode(element)) {
+                element.content = controls.content.value;
+                element.traceSingleLine = controls.traceSingleLine.checked;
+                element.traceMode = controls.traceMode.checked;
+            }
             renderElements();
             selectElement(element.id);
         }

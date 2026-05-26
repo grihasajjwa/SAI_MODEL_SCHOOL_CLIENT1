@@ -77,6 +77,22 @@
             color: #6c757d;
             text-align: center;
         }
+
+        .birthday-card-preview-wrap {
+            background: #eef4fb;
+            border: 1px solid #d5e2f2;
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        #birthdayCardCanvas {
+            width: 100%;
+            max-width: 520px;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15);
+            background: #fff;
+        }
     </style>
 </head>
 <body>
@@ -154,6 +170,7 @@
                                         <th>Class</th>
                                         <th>Birthday</th>
                                         <th>In</th>
+                                        <th>Card</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birthdayTableBody"></tbody>
@@ -161,6 +178,59 @@
                         </div>
                         <div id="upcomingEmpty" class="empty-state d-none">No birthdays found for the selected academic year.</div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="birthdayCardModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Birthday Card</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="birthdayTemplateSelect">Template</label>
+                            <select class="form-select" id="birthdayTemplateSelect">
+                                <option value="classicBlue">Classic Blue</option>
+                                <option value="proSpotlight">Pro Spotlight</option>
+                                <option value="proBalloonFrame">Pro Balloon Frame</option>
+                                <option value="proRibbonPortrait">Pro Ribbon Portrait</option>
+                                <option value="photoCollage">Photo Collage</option>
+                                <option value="photoCollageGrid">Collage Grid</option>
+                                <option value="photoCollageMagazine">Collage Magazine</option>
+                                <option value="photoCollageStrip">Collage Celebration</option>
+                            </select>
+                            <label class="form-label mt-3" for="birthdayPhotoInput">Photo</label>
+                            <input type="file" class="form-control" id="birthdayPhotoInput" accept="image/*">
+                            <label class="form-label mt-3" for="birthdayCollageInput">Collage Photos</label>
+                            <input type="file" class="form-control" id="birthdayCollageInput" accept="image/*" multiple>
+                            <div class="form-text">Best with 3 to 5 photos.</div>
+                            <label class="form-label mt-3" for="birthdayBackgroundInput">Background Image</label>
+                            <input type="file" class="form-control" id="birthdayBackgroundInput" accept="image/*">
+                            <div class="form-text">Optional. If blank, default school-blue background will be used.</div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clearBirthdayPhotoBtn">
+                                Remove Photos / Background
+                            </button>
+                            <div class="mt-3 small text-muted" id="birthdayCardStudentMeta"></div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="birthday-card-preview-wrap">
+                                <canvas id="birthdayCardCanvas" width="1080" height="1350"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="shareBirthdayCardBtn">
+                        <i class="fas fa-share-nodes me-2"></i>Share
+                    </button>
+                    <button type="button" class="btn btn-primary" id="downloadBirthdayCardBtn">
+                        <i class="fas fa-download me-2"></i>Download PNG
+                    </button>
                 </div>
             </div>
         </div>
@@ -238,7 +308,7 @@
             }
 
             empty.classList.add('d-none');
-            students.forEach(student => {
+            students.forEach((student, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>
@@ -248,9 +318,750 @@
                     <td>${student.class || '-'} - ${student.section || '-'}</td>
                     <td>${formatBirthday(student.dob)}</td>
                     <td>${student.daysUntil === 0 ? 'Today' : `${student.daysUntil} day${student.daysUntil === 1 ? '' : 's'}`}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-primary birthday-card-btn" data-index="${index}">
+                            <i class="fas fa-cake-candles me-1"></i>Create
+                        </button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
+
+            tbody.querySelectorAll('.birthday-card-btn').forEach(button => {
+                button.addEventListener('click', () => openBirthdayCard(students[Number(button.dataset.index)]));
+            });
+        }
+
+        let selectedBirthdayStudent = null;
+        let selectedBirthdayPhoto = null;
+        let selectedBirthdayCollagePhotos = [];
+        let selectedBirthdayBackgroundImage = null;
+        let schoolLogoImage = null;
+        let birthdaySchoolProfile = null;
+
+        function resolveSchoolAssetUrl(value) {
+            if (!value) return '../assets/images/logo.png';
+            if (/^https?:\/\//i.test(value) || /^data:/i.test(value)) return value;
+            const apiOrigin = new URL(CONFIG.API_URL).origin;
+            if (value.startsWith('/')) return `${apiOrigin}${value}`;
+            return value;
+        }
+
+        function loadSchoolLogo() {
+            return new Promise(resolve => {
+                if (schoolLogoImage) {
+                    resolve(schoolLogoImage);
+                    return;
+                }
+
+                fetch(`${CONFIG.API_URL}/school-profile`)
+                    .then(response => response.ok ? response.json() : null)
+                    .then(payload => {
+                        birthdaySchoolProfile = payload?.profile || null;
+                        const image = new Image();
+                        image.crossOrigin = 'anonymous';
+                        image.onload = () => {
+                            schoolLogoImage = image;
+                            resolve(image);
+                        };
+                        image.onerror = () => {
+                            const fallback = new Image();
+                            fallback.onload = () => {
+                                schoolLogoImage = fallback;
+                                resolve(fallback);
+                            };
+                            fallback.onerror = () => resolve(null);
+                            fallback.src = '../assets/images/logo.png';
+                        };
+                        image.src = resolveSchoolAssetUrl(birthdaySchoolProfile?.logo || birthdaySchoolProfile?.logoUrl);
+                    })
+                    .catch(() => {
+                        const image = new Image();
+                        image.onload = () => {
+                            schoolLogoImage = image;
+                            resolve(image);
+                        };
+                        image.onerror = () => resolve(null);
+                        image.src = '../assets/images/logo.png';
+                    });
+            });
+        }
+
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function drawCenteredText(ctx, text, x, y, maxWidth, font, color) {
+            ctx.font = font;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.fillText(text, x, y, maxWidth);
+        }
+
+        function drawImageCoverRect(ctx, image, x, y, width, height) {
+            const sourceRatio = image.width / image.height;
+            const targetRatio = width / height;
+            let sourceWidth = image.width;
+            let sourceHeight = image.height;
+            let sourceX = 0;
+            let sourceY = 0;
+
+            if (sourceRatio > targetRatio) {
+                sourceWidth = image.height * targetRatio;
+                sourceX = (image.width - sourceWidth) / 2;
+            } else {
+                sourceHeight = image.width / targetRatio;
+                sourceY = (image.height - sourceHeight) / 2;
+            }
+
+            ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+        }
+
+        function drawBirthdayBackground(ctx, width, height, fallbackColor) {
+            if (selectedBirthdayBackgroundImage) {
+                drawImageCoverRect(ctx, selectedBirthdayBackgroundImage, 0, 0, width, height);
+                ctx.fillStyle = 'rgba(244, 248, 255, 0.72)';
+                ctx.fillRect(0, 0, width, height);
+                return;
+            }
+
+            ctx.fillStyle = fallbackColor;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            const words = String(text || '').split(' ');
+            let line = '';
+            words.forEach((word, index) => {
+                const testLine = line ? `${line} ${word}` : word;
+                if (ctx.measureText(testLine).width > maxWidth && line) {
+                    ctx.fillText(line, x, y);
+                    line = word;
+                    y += lineHeight;
+                } else {
+                    line = testLine;
+                }
+                if (index === words.length - 1 && line) {
+                    ctx.fillText(line, x, y);
+                }
+            });
+        }
+
+        function drawImageCover(ctx, image, x, y, size) {
+            const sourceRatio = image.width / image.height;
+            let sourceWidth = image.width;
+            let sourceHeight = image.height;
+            let sourceX = 0;
+            let sourceY = 0;
+
+            if (sourceRatio > 1) {
+                sourceWidth = image.height;
+                sourceX = (image.width - sourceWidth) / 2;
+            } else if (sourceRatio < 1) {
+                sourceHeight = image.width;
+                sourceY = (image.height - sourceHeight) / 2;
+            }
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, size, size);
+            ctx.restore();
+        }
+
+        function drawLogo(ctx, x, y, size) {
+            if (!schoolLogoImage) return;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x, y, size, size);
+            ctx.drawImage(schoolLogoImage, x + 8, y + 8, size - 16, size - 16);
+            ctx.restore();
+        }
+
+        function drawBluePattern(ctx, template, width, height, primary, soft, accent) {
+            if (template === 'royalRibbon') {
+                ctx.fillStyle = primary;
+                ctx.fillRect(0, 0, width, 250);
+                ctx.fillStyle = accent;
+                ctx.fillRect(0, 250, width, 24);
+                ctx.fillStyle = soft;
+                ctx.beginPath();
+                ctx.moveTo(0, 270);
+                ctx.bezierCurveTo(250, 350, 560, 190, width, 310);
+                ctx.lineTo(width, 0);
+                ctx.lineTo(0, 0);
+                ctx.closePath();
+                ctx.fill();
+                return;
+            }
+
+            if (template === 'modernBadge') {
+                ctx.fillStyle = primary;
+                ctx.beginPath();
+                ctx.arc(width - 120, 120, 220, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = soft;
+                ctx.beginPath();
+                ctx.arc(110, height - 110, 260, 0, Math.PI * 2);
+                ctx.fill();
+                return;
+            }
+
+            if (template === 'photoFrame') {
+                ctx.fillStyle = primary;
+                ctx.fillRect(0, 0, 110, height);
+                ctx.fillRect(width - 110, 0, 110, height);
+                ctx.fillStyle = accent;
+                ctx.fillRect(110, 0, 18, height);
+                ctx.fillRect(width - 128, 0, 18, height);
+                return;
+            }
+
+            ctx.fillStyle = soft;
+            for (let i = 0; i < 18; i += 1) {
+                const x = (i * 173) % width;
+                const y = (i * 251) % height;
+                ctx.beginPath();
+                ctx.arc(x, y, 34 + (i % 4) * 12, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawBalloon(ctx, x, y, radius, color, stringLength = 130) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(x, y, radius * 0.82, radius, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.beginPath();
+            ctx.ellipse(x - radius * 0.25, y - radius * 0.35, radius * 0.18, radius * 0.28, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x, y + radius);
+            ctx.bezierCurveTo(x - 12, y + radius + 35, x + 18, y + radius + 72, x, y + radius + stringLength);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawConfetti(ctx, width, height) {
+            const colors = ['#f97316', '#ec4899', '#22c55e', '#facc15', '#38bdf8', '#a855f7'];
+            for (let i = 0; i < 58; i += 1) {
+                const x = 110 + ((i * 83) % (width - 220));
+                const y = 120 + ((i * 47) % 1020);
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate((i % 8) * 0.35);
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fillRect(-7, -4, 14, 8);
+                ctx.restore();
+            }
+        }
+
+        function drawCelebrationDecor(ctx, template, width, height) {
+            drawConfetti(ctx, width, height);
+            drawBalloon(ctx, 160, 285, 58, '#f97316', 155);
+            drawBalloon(ctx, 245, 225, 50, '#ec4899', 135);
+            drawBalloon(ctx, width - 160, 290, 58, '#22c55e', 155);
+            drawBalloon(ctx, width - 250, 230, 50, '#facc15', 135);
+
+            if (template === 'photoFrame' || template === 'modernBadge') {
+                drawBalloon(ctx, 185, height - 260, 48, '#a855f7', 95);
+                drawBalloon(ctx, width - 185, height - 260, 48, '#38bdf8', 95);
+            }
+        }
+
+        function drawPhotoTile(ctx, image, x, y, width, height, radius, strokeColor) {
+            ctx.save();
+            drawRoundedRect(ctx, x, y, width, height, radius);
+            ctx.clip();
+
+            const sourceRatio = image.width / image.height;
+            const targetRatio = width / height;
+            let sourceWidth = image.width;
+            let sourceHeight = image.height;
+            let sourceX = 0;
+            let sourceY = 0;
+
+            if (sourceRatio > targetRatio) {
+                sourceWidth = image.height * targetRatio;
+                sourceX = (image.width - sourceWidth) / 2;
+            } else {
+                sourceHeight = image.width / targetRatio;
+                sourceY = (image.height - sourceHeight) / 2;
+            }
+
+            ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+            ctx.restore();
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = strokeColor;
+            drawRoundedRect(ctx, x, y, width, height, radius);
+            ctx.stroke();
+        }
+
+        function drawInitialsCard(ctx, name, x, y, width, height, radius, primary, accent) {
+            ctx.save();
+            drawRoundedRect(ctx, x, y, width, height, radius);
+            ctx.fillStyle = '#eaf3ff';
+            ctx.fill();
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+            ctx.fillStyle = primary;
+            ctx.font = '800 108px Arial';
+            ctx.textAlign = 'center';
+            const initials = String(name || 'SV')
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map(part => part[0])
+                .join('')
+                .toUpperCase() || 'SV';
+            ctx.fillText(initials, x + width / 2, y + height / 2 + 38);
+            ctx.fillStyle = accent;
+            ctx.beginPath();
+            ctx.arc(x + width - 44, y + 44, 18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawRotatedPhotoCard(ctx, image, centerX, centerY, width, height, angle, label, primary, accent) {
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle);
+            const x = -width / 2;
+            const y = -height / 2;
+
+            ctx.shadowColor = 'rgba(13, 71, 161, 0.24)';
+            ctx.shadowBlur = 24;
+            ctx.shadowOffsetY = 14;
+            drawRoundedRect(ctx, x, y, width, height, 26);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+
+            drawPhotoTile(ctx, image, x + 18, y + 18, width - 36, height - 74, 20, accent);
+            ctx.fillStyle = primary;
+            ctx.font = '700 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, 0, y + height - 24, width - 34);
+
+            ctx.fillStyle = 'rgba(49, 162, 255, 0.74)';
+            drawRoundedRect(ctx, x + width / 2 - 54, y - 16, 108, 34, 8);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawCollagePhotoBlock(ctx, image, name, x, y, width, height, radius, primary, accent) {
+            if (image) {
+                drawPhotoTile(ctx, image, x, y, width, height, radius, accent);
+            } else {
+                drawInitialsCard(ctx, name, x, y, width, height, radius, primary, accent);
+            }
+        }
+
+        function drawCollageFooter(ctx, name, width, primary, ink, birthday, classText, nameY = 1212) {
+            ctx.fillStyle = primary;
+            ctx.font = '800 64px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(name, width / 2, nameY, 880);
+            drawCenteredText(ctx, `Class ${classText}  |  Birthday: ${birthday}`, width / 2, nameY + 56, 880, '600 34px Arial', ink);
+            drawCenteredText(ctx, 'With warm wishes from Skyview Public School', width / 2, 1318, 860, '700 31px Arial', primary);
+        }
+
+        function drawPhotoCollageTemplate(ctx, student, width, height, primary, ink, soft, accent, schoolName, birthday, classText, style = 'photoCollage') {
+            const name = student?.name || 'Dear Student';
+            const photos = [
+                selectedBirthdayPhoto,
+                ...selectedBirthdayCollagePhotos
+            ].filter(Boolean);
+            const mainPhoto = selectedBirthdayPhoto || photos[0] || null;
+            const supportingPhotos = photos.filter(image => image !== mainPhoto);
+            const fallbackPhotos = supportingPhotos.length ? supportingPhotos : photos;
+            const pickPhoto = index => photos.length ? photos[index % photos.length] : null;
+
+            ctx.clearRect(0, 0, width, height);
+            drawBirthdayBackground(ctx, width, height, '#f4f8ff');
+
+            ctx.fillStyle = primary;
+            ctx.fillRect(0, 0, width, 310);
+            ctx.fillStyle = accent;
+            ctx.fillRect(0, 302, width, 18);
+            ctx.fillStyle = soft;
+            ctx.beginPath();
+            ctx.moveTo(0, 320);
+            ctx.bezierCurveTo(260, 390, 570, 275, width, 360);
+            ctx.lineTo(width, 0);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            drawConfetti(ctx, width, height);
+            drawBalloon(ctx, 125, 230, 50, '#f97316', 135);
+            drawBalloon(ctx, 215, 190, 44, '#ec4899', 115);
+            drawBalloon(ctx, width - 130, 235, 52, '#22c55e', 135);
+            drawBalloon(ctx, width - 230, 190, 45, '#facc15', 118);
+
+            drawLogo(ctx, width / 2 - 46, 55, 92);
+            drawCenteredText(ctx, schoolName, width / 2, 190, 850, '700 42px Arial', primary);
+            drawCenteredText(ctx, 'Happy Birthday', width / 2, 292, 850, '800 84px Arial', ink);
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(13, 71, 161, 0.16)';
+            ctx.shadowBlur = 30;
+            ctx.shadowOffsetY = 16;
+            drawRoundedRect(ctx, 78, 360, width - 156, 790, 42);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.lineWidth = 7;
+            ctx.strokeStyle = primary;
+            ctx.stroke();
+            ctx.restore();
+
+            if (style === 'photoCollageGrid') {
+                const tiles = [
+                    [126, 408, 395, 315, '#0d47a1'],
+                    [560, 408, 395, 315, '#38bdf8'],
+                    [126, 760, 395, 315, '#f97316'],
+                    [560, 760, 395, 315, '#22c55e']
+                ];
+
+                tiles.forEach(([x, y, tileWidth, tileHeight, color], index) => {
+                    drawCollagePhotoBlock(ctx, pickPhoto(index), name, x, y, tileWidth, tileHeight, 28, primary, color);
+                });
+                drawCenteredText(ctx, 'Birthday Memories', width / 2, 1140, 840, '800 44px Arial', primary);
+                drawCollageFooter(ctx, name, width, primary, ink, birthday, classText, 1210);
+                return;
+            }
+
+            if (style === 'photoCollageMagazine') {
+                drawCollagePhotoBlock(ctx, mainPhoto, name, 126, 410, 828, 418, 34, primary, primary);
+                drawRotatedPhotoCard(ctx, pickPhoto(1), 258, 945, 270, 210, -0.08, 'Joy', primary, '#38bdf8');
+                drawRotatedPhotoCard(ctx, pickPhoto(2), 540, 965, 270, 210, 0.04, 'Smile', primary, '#f97316');
+                drawRotatedPhotoCard(ctx, pickPhoto(3), 822, 945, 270, 210, 0.08, 'Wish', primary, '#22c55e');
+
+                ctx.fillStyle = 'rgba(13, 71, 161, 0.88)';
+                drawRoundedRect(ctx, 166, 750, 500, 74, 18);
+                ctx.fill();
+                drawCenteredText(ctx, 'A Day Full of Smiles', 416, 802, 460, '800 34px Arial', '#ffffff');
+                drawCollageFooter(ctx, name, width, primary, ink, birthday, classText, 1210);
+                return;
+            }
+
+            if (style === 'photoCollageStrip') {
+                drawCollagePhotoBlock(ctx, mainPhoto, name, 302, 406, 476, 438, 34, primary, primary);
+                const sideTiles = [
+                    [126, 438, 156, 170, '#38bdf8'],
+                    [798, 438, 156, 170, '#f97316'],
+                    [126, 656, 156, 170, '#22c55e'],
+                    [798, 656, 156, 170, '#ec4899']
+                ];
+                sideTiles.forEach(([x, y, tileWidth, tileHeight, color], index) => {
+                    drawCollagePhotoBlock(ctx, pickPhoto(index + 1), name, x, y, tileWidth, tileHeight, 22, primary, color);
+                });
+
+                ctx.fillStyle = primary;
+                drawRoundedRect(ctx, 136, 908, 808, 96, 28);
+                ctx.fill();
+                drawCenteredText(ctx, 'Celebrate Your Special Day', width / 2, 971, 760, '800 42px Arial', '#ffffff');
+                drawCenteredText(ctx, 'May your year be bright, joyful, and full of learning.', width / 2, 1072, 790, '600 34px Arial', ink);
+                drawCollageFooter(ctx, name, width, primary, ink, birthday, classText, 1208);
+                return;
+            }
+
+            ctx.fillStyle = '#eaf3ff';
+            drawRoundedRect(ctx, 116, 398, 414, 518, 34);
+            ctx.fill();
+            if (mainPhoto) {
+                drawPhotoTile(ctx, mainPhoto, 142, 424, 362, 454, 28, primary);
+            } else {
+                drawInitialsCard(ctx, name, 142, 424, 362, 454, 28, primary, accent);
+            }
+
+            if (fallbackPhotos[0]) {
+                drawRotatedPhotoCard(ctx, fallbackPhotos[0], 710, 500, 330, 250, -0.08, 'Class Smile', primary, '#38bdf8');
+            }
+            if (fallbackPhotos[1] || fallbackPhotos[0]) {
+                drawRotatedPhotoCard(ctx, fallbackPhotos[1] || fallbackPhotos[0], 765, 735, 292, 224, 0.08, 'Sweet Moment', primary, '#f97316');
+            }
+            if (fallbackPhotos[2] || fallbackPhotos[0]) {
+                drawRotatedPhotoCard(ctx, fallbackPhotos[2] || fallbackPhotos[0], 706, 958, 328, 238, -0.05, 'Birthday Star', primary, '#22c55e');
+            }
+
+            drawCollageFooter(ctx, name, width, primary, ink, birthday, classText);
+        }
+
+        function drawStar(ctx, x, y, outerRadius, innerRadius, points, color) {
+            ctx.save();
+            ctx.beginPath();
+            for (let i = 0; i < points * 2; i += 1) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = -Math.PI / 2 + (i * Math.PI) / points;
+                const pointX = x + Math.cos(angle) * radius;
+                const pointY = y + Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(pointX, pointY);
+                else ctx.lineTo(pointX, pointY);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawProLabel(ctx, x, y, primary, accent) {
+            ctx.save();
+            ctx.fillStyle = primary;
+            drawRoundedRect(ctx, x, y, 132, 48, 18);
+            ctx.fill();
+            ctx.fillStyle = accent;
+            ctx.fillRect(x + 12, y + 10, 9, 28);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '800 25px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('PRO', x + 74, y + 33);
+            ctx.restore();
+        }
+
+        function drawProPhoto(ctx, name, image, x, y, width, height, radius, primary, accent) {
+            ctx.save();
+            ctx.shadowColor = 'rgba(13, 71, 161, 0.22)';
+            ctx.shadowBlur = 30;
+            ctx.shadowOffsetY = 18;
+            drawRoundedRect(ctx, x, y, width, height, radius);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+            ctx.restore();
+
+            if (image) {
+                drawPhotoTile(ctx, image, x + 18, y + 18, width - 36, height - 36, radius - 8, accent);
+            } else {
+                drawInitialsCard(ctx, name, x + 18, y + 18, width - 36, height - 36, radius - 8, primary, accent);
+            }
+        }
+
+        function drawProBirthdayTemplate(ctx, student, width, height, primary, ink, soft, accent, schoolName, birthday, classText, style) {
+            const name = student?.name || 'Dear Student';
+            const photo = selectedBirthdayPhoto || selectedBirthdayCollagePhotos[0] || null;
+
+            ctx.clearRect(0, 0, width, height);
+            drawBirthdayBackground(ctx, width, height, '#f4f8ff');
+
+            if (style === 'proSpotlight') {
+                ctx.fillStyle = primary;
+                ctx.fillRect(0, 0, width, 352);
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = 0.18;
+                ctx.beginPath();
+                ctx.arc(width / 2, 250, 360, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                drawBalloon(ctx, 128, 250, 48, '#f97316', 130);
+                drawBalloon(ctx, width - 128, 250, 48, '#22c55e', 130);
+                drawLogo(ctx, width / 2 - 44, 58, 88);
+                drawCenteredText(ctx, schoolName, width / 2, 190, 850, '700 42px Arial', '#ffffff');
+                drawCenteredText(ctx, 'Happy Birthday', width / 2, 300, 850, '800 82px Arial', '#ffffff');
+
+                drawProPhoto(ctx, name, photo, 250, 398, 580, 520, 44, primary, accent);
+                drawStar(ctx, 195, 480, 42, 19, 5, '#facc15');
+                drawStar(ctx, 888, 820, 36, 16, 5, '#f97316');
+                drawCenteredText(ctx, name, width / 2, 1048, 880, '800 68px Arial', primary);
+                drawCenteredText(ctx, `Class ${classText}  |  Birthday: ${birthday}`, width / 2, 1110, 880, '600 34px Arial', ink);
+                drawCenteredText(ctx, 'May your day shine as bright as your smile.', width / 2, 1192, 820, '600 38px Arial', ink);
+                drawCenteredText(ctx, 'With warm wishes from Skyview Public School', width / 2, 1295, 860, '700 31px Arial', primary);
+                return;
+            }
+
+            if (style === 'proBalloonFrame') {
+                ctx.fillStyle = soft;
+                ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = primary;
+                drawRoundedRect(ctx, 78, 88, width - 156, height - 176, 52);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                drawRoundedRect(ctx, 112, 126, width - 224, height - 252, 42);
+                ctx.fill();
+                drawConfetti(ctx, width, height);
+                const balloons = [
+                    [150, 230, '#f97316'], [246, 180, '#ec4899'], [348, 230, '#22c55e'],
+                    [width - 150, 230, '#38bdf8'], [width - 246, 180, '#facc15'], [width - 348, 230, '#a855f7']
+                ];
+                balloons.forEach(([x, y, color]) => drawBalloon(ctx, x, y, 42, color, 115));
+                drawLogo(ctx, width / 2 - 42, 152, 84);
+                drawCenteredText(ctx, schoolName, width / 2, 284, 760, '700 39px Arial', primary);
+                drawCenteredText(ctx, 'Happy Birthday', width / 2, 388, 830, '800 78px Arial', ink);
+                drawProPhoto(ctx, name, photo, 292, 462, 496, 438, 42, primary, '#f97316');
+                drawCenteredText(ctx, name, width / 2, 1018, 820, '800 64px Arial', primary);
+                drawCenteredText(ctx, `Class ${classText}`, width / 2, 1082, 820, '600 35px Arial', ink);
+                drawCenteredText(ctx, `Birthday: ${birthday}`, width / 2, 1136, 820, '600 35px Arial', ink);
+                drawCenteredText(ctx, 'Wishing you joy, confidence, and success.', width / 2, 1228, 780, '600 36px Arial', ink);
+                drawCenteredText(ctx, 'Skyview Public School', width / 2, 1300, 780, '800 33px Arial', primary);
+                return;
+            }
+
+            ctx.fillStyle = primary;
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#ffffff';
+            drawRoundedRect(ctx, 82, 84, width - 164, height - 168, 48);
+            ctx.fill();
+            ctx.fillStyle = soft;
+            drawRoundedRect(ctx, 120, 410, width - 240, 416, 40);
+            ctx.fill();
+            ctx.fillStyle = accent;
+            ctx.beginPath();
+            ctx.moveTo(82, 270);
+            ctx.lineTo(width - 82, 205);
+            ctx.lineTo(width - 82, 312);
+            ctx.lineTo(82, 377);
+            ctx.closePath();
+            ctx.fill();
+            drawLogo(ctx, width / 2 - 44, 120, 88);
+            drawCenteredText(ctx, schoolName, width / 2, 258, 790, '700 42px Arial', primary);
+            drawCenteredText(ctx, 'Happy Birthday', width / 2, 360, 850, '800 78px Arial', '#ffffff');
+            drawProPhoto(ctx, name, photo, 312, 456, 456, 456, 42, primary, primary);
+            drawStar(ctx, 190, 540, 36, 15, 5, '#facc15');
+            drawStar(ctx, 890, 750, 42, 18, 5, '#f97316');
+            drawCenteredText(ctx, name, width / 2, 1032, 850, '800 68px Arial', primary);
+            drawCenteredText(ctx, `Class ${classText}  |  Birthday: ${birthday}`, width / 2, 1098, 850, '600 35px Arial', ink);
+            drawCenteredText(ctx, 'A bright wish for a bright student.', width / 2, 1192, 800, '600 39px Arial', ink);
+            drawCenteredText(ctx, 'With warm wishes from Skyview Public School', width / 2, 1292, 840, '700 31px Arial', primary);
+        }
+
+        function drawBirthdayCard(student, template = 'classicBlue') {
+            const canvas = document.getElementById('birthdayCardCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const name = student?.name || 'Dear Student';
+            const classText = `${student?.class || '-'} - ${student?.section || '-'}`;
+            const birthday = formatBirthday(student?.dob);
+            const schoolName = birthdaySchoolProfile?.name || birthdaySchoolProfile?.schoolName || 'Skyview Public School';
+
+            const bg = '#f4f8ff';
+            const primary = '#0d47a1';
+            const ink = '#10233f';
+            const soft = '#dbeafe';
+            const accent = '#31a2ff';
+
+            if (template.startsWith('pro')) {
+                drawProBirthdayTemplate(ctx, student, width, height, primary, ink, soft, accent, schoolName, birthday, classText, template);
+                return;
+            }
+
+            if (template.startsWith('photoCollage')) {
+                drawPhotoCollageTemplate(ctx, student, width, height, primary, ink, soft, accent, schoolName, birthday, classText, template);
+                return;
+            }
+
+            ctx.clearRect(0, 0, width, height);
+            drawBirthdayBackground(ctx, width, height, bg);
+            drawBluePattern(ctx, template, width, height, primary, soft, accent);
+
+            ctx.save();
+            drawRoundedRect(ctx, 80, 90, width - 160, height - 180, 42);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = primary;
+            ctx.stroke();
+            ctx.restore();
+            drawCelebrationDecor(ctx, template, width, height);
+
+            drawLogo(ctx, width / 2 - 52, 130, 104);
+            drawCenteredText(ctx, schoolName, width / 2, 285, 850, '700 48px Arial', primary);
+            drawCenteredText(ctx, 'Happy Birthday', width / 2, 430, 850, '800 92px Arial', ink);
+
+            ctx.fillStyle = primary;
+            ctx.beginPath();
+            ctx.arc(width / 2, 600, 138, 0, Math.PI * 2);
+            ctx.fill();
+            if (selectedBirthdayPhoto) {
+                drawImageCover(ctx, selectedBirthdayPhoto, width / 2 - 126, 474, 252);
+            } else {
+                ctx.fillStyle = '#fff';
+                ctx.font = '800 96px Arial';
+                ctx.textAlign = 'center';
+                const initials = name.split(' ').filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SV';
+                ctx.fillText(initials, width / 2, 635);
+            }
+
+            drawCenteredText(ctx, name, width / 2, 820, 820, '800 66px Arial', primary);
+            drawCenteredText(ctx, `Class ${classText}`, width / 2, 900, 820, '500 38px Arial', ink);
+            drawCenteredText(ctx, `Birthday: ${birthday}`, width / 2, 960, 820, '600 38px Arial', ink);
+
+            ctx.fillStyle = ink;
+            ctx.font = '500 40px Arial';
+            ctx.textAlign = 'center';
+            wrapText(ctx, 'Wishing you joy, success, good health, and a bright year ahead.', width / 2, 1070, 760, 52);
+
+            drawCenteredText(ctx, 'With warm wishes from Skyview Public School', width / 2, 1210, 820, '600 34px Arial', primary);
+        }
+
+        async function openBirthdayCard(student) {
+            selectedBirthdayStudent = student;
+            selectedBirthdayPhoto = null;
+            selectedBirthdayCollagePhotos = [];
+            selectedBirthdayBackgroundImage = null;
+            document.getElementById('birthdayTemplateSelect').value = 'classicBlue';
+            document.getElementById('birthdayPhotoInput').value = '';
+            document.getElementById('birthdayCollageInput').value = '';
+            document.getElementById('birthdayBackgroundInput').value = '';
+            document.getElementById('birthdayCardStudentMeta').innerHTML = `
+                <div><strong>${student.name || '-'}</strong></div>
+                <div>${student.class || '-'} - ${student.section || '-'}</div>
+                <div>Birthday: ${formatBirthday(student.dob)}</div>
+            `;
+            await loadSchoolLogo();
+            drawBirthdayCard(student, 'classicBlue');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('birthdayCardModal')).show();
+        }
+
+        function downloadBirthdayCard() {
+            if (!selectedBirthdayStudent) return;
+            const canvas = document.getElementById('birthdayCardCanvas');
+            const link = document.createElement('a');
+            const safeName = String(selectedBirthdayStudent.name || 'birthday-card').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+            link.download = `${safeName || 'birthday-card'}-birthday-card.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        async function shareBirthdayCard() {
+            if (!selectedBirthdayStudent) return;
+            const canvas = document.getElementById('birthdayCardCanvas');
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], 'birthday-card.png', { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'Birthday Card',
+                        text: `Birthday card for ${selectedBirthdayStudent.name || 'student'}`,
+                        files: [file]
+                    });
+                } else {
+                    downloadBirthdayCard();
+                }
+            }, 'image/png');
         }
 
         async function loadSessions() {
@@ -353,6 +1164,69 @@
 
             document.getElementById('sessionFilter').addEventListener('change', loadBirthdays);
             document.getElementById('rangeFilter').addEventListener('change', loadBirthdays);
+            document.getElementById('birthdayTemplateSelect').addEventListener('change', event => {
+                if (selectedBirthdayStudent) drawBirthdayCard(selectedBirthdayStudent, event.target.value);
+            });
+            document.getElementById('birthdayPhotoInput').addEventListener('change', event => {
+                const file = event.target.files?.[0];
+                if (!file || !selectedBirthdayStudent) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const image = new Image();
+                    image.onload = () => {
+                        selectedBirthdayPhoto = image;
+                        drawBirthdayCard(selectedBirthdayStudent, document.getElementById('birthdayTemplateSelect').value);
+                    };
+                    image.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            document.getElementById('birthdayBackgroundInput').addEventListener('change', event => {
+                const file = event.target.files?.[0];
+                if (!file || !selectedBirthdayStudent) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const image = new Image();
+                    image.onload = () => {
+                        selectedBirthdayBackgroundImage = image;
+                        drawBirthdayCard(selectedBirthdayStudent, document.getElementById('birthdayTemplateSelect').value);
+                    };
+                    image.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            document.getElementById('birthdayCollageInput').addEventListener('change', event => {
+                const files = [...(event.target.files || [])].slice(0, 5);
+                if (!files.length || !selectedBirthdayStudent) return;
+                Promise.all(files.map(file => new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const image = new Image();
+                        image.onload = () => resolve(image);
+                        image.onerror = () => resolve(null);
+                        image.src = reader.result;
+                    };
+                    reader.onerror = () => resolve(null);
+                    reader.readAsDataURL(file);
+                }))).then(images => {
+                    selectedBirthdayCollagePhotos = images.filter(Boolean);
+                    document.getElementById('birthdayTemplateSelect').value = 'photoCollage';
+                    drawBirthdayCard(selectedBirthdayStudent, 'photoCollage');
+                });
+            });
+            document.getElementById('clearBirthdayPhotoBtn').addEventListener('click', () => {
+                selectedBirthdayPhoto = null;
+                selectedBirthdayCollagePhotos = [];
+                selectedBirthdayBackgroundImage = null;
+                document.getElementById('birthdayPhotoInput').value = '';
+                document.getElementById('birthdayCollageInput').value = '';
+                document.getElementById('birthdayBackgroundInput').value = '';
+                if (selectedBirthdayStudent) {
+                    drawBirthdayCard(selectedBirthdayStudent, document.getElementById('birthdayTemplateSelect').value);
+                }
+            });
+            document.getElementById('downloadBirthdayCardBtn').addEventListener('click', downloadBirthdayCard);
+            document.getElementById('shareBirthdayCardBtn').addEventListener('click', shareBirthdayCard);
         });
     </script>
     <script src='../js/page-shell.js'></script>

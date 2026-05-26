@@ -53,6 +53,7 @@
                                     <option value="teacher">Teacher</option>
                                     <option value="staff">Staff</option>
                                     <option value="accountant">Accountant</option>
+                                    <option value="admin" id="adminRoleOption">Admin</option>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">
@@ -72,6 +73,23 @@
     <script src="../js/config.js"></script>
     <script src="../js/auth.js"></script>
 <script>
+async function updateAdminRoleAvailability() {
+    const adminOption = document.getElementById('adminRoleOption');
+    if (!adminOption) return;
+
+    try {
+        const response = await fetch(`${CONFIG.API_URL}/auth/admin-status`);
+        const data = await response.json();
+        if (data.success && data.adminExists) {
+            adminOption.remove();
+        }
+    } catch (error) {
+        console.error('Admin status check error:', error);
+    }
+}
+
+updateAdminRoleAvailability();
+
 document.getElementById('signupForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -121,7 +139,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         }
 
         if (response.ok && data.success) {
-            alert('Account created successfully!');
+            alert(data.message || 'Account created successfully. Please wait for admin approval before login.');
             window.location.href = 'login.html';
         } else {
             alert(data.message || 'Signup failed');

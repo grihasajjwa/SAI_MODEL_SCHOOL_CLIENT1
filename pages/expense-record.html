@@ -127,6 +127,82 @@
                                 </div>
                             </div>
 
+                            <div class="card border-warning bg-warning-subtle mt-4 d-none" id="fuelDetailsCard">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                        <div>
+                                            <h5 class="mb-1"><i class="fas fa-gas-pump text-warning me-2"></i>Fuel Ledger Details</h5>
+                                            <small class="text-muted">Select the fuel centre to maintain the ledger by name.</small>
+                                        </div>
+                                        <a href="fuel-ledger.html" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-book me-2"></i>Open Fuel Ledger
+                                        </a>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label" for="fuelCentreName">Fuel Centre Name</label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="fuelCentreName">
+                                                    <option value="">Select Fuel Centre</option>
+                                                </select>
+                                                <button type="button" class="btn btn-outline-primary" id="addFuelCentreBtn" title="Add fuel centre">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border-info bg-info-subtle mt-4 d-none" id="supplierDetailsCard">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                        <div>
+                                            <h5 class="mb-1"><i class="fas fa-truck text-info me-2"></i>Supplier Ledger Payment</h5>
+                                            <small class="text-muted">Select supplier name to show this expense as Payment in supplier ledger.</small>
+                                        </div>
+                                        <a href="supplier-ledger.html" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-book me-2"></i>Open Supplier Ledger
+                                        </a>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label" for="supplierName">Supplier Name</label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="supplierName">
+                                                    <option value="">Select Supplier</option>
+                                                </select>
+                                                <button type="button" class="btn btn-outline-primary" id="addSupplierBtn" title="Add supplier">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border-primary bg-primary-subtle mt-4 d-none" id="salaryDueDetailsCard">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                        <div>
+                                            <h5 class="mb-1"><i class="fas fa-user-tie text-primary me-2"></i>Salary Due Person</h5>
+                                            <small class="text-muted">Select an active teacher or staff member from salary records.</small>
+                                        </div>
+                                        <a href="salary-sheet.html" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-file-invoice-dollar me-2"></i>Open Salary Sheet
+                                        </a>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label" for="salaryDuePerson">Teacher / Staff Name</label>
+                                            <select class="form-select" id="salaryDuePerson">
+                                                <option value="">Select Teacher / Staff</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="card border-secondary bg-light-subtle mt-4">
                                 <div class="card-body">
                                     <div class="row g-3">

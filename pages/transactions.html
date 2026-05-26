@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Transactions - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: #f5f8fc;
+        }
+
+        .report-card {
+            border: 1px solid #dce6f2;
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(34, 73, 129, 0.06);
+        }
+
+        .daily-summary-wrap {
+            overflow-x: auto;
+            border: 1px solid #dce6f2;
+            background: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .daily-summary-table {
+            margin-bottom: 0;
+            min-width: 980px;
+        }
+
+        .daily-summary-table th,
+        .daily-summary-table td {
+            border-color: #dce6f2;
+            color: #000000;
+            vertical-align: middle;
+        }
+
+        .daily-summary-table th {
+            background: #eef4fb;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .daily-summary-table td {
+            font-size: 1rem;
+            font-weight: 800;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .summary-opening-cash {
+            background: #fff7e6;
+        }
+
+        .summary-opening-online {
+            background: #eef2ff;
+        }
+
+        .summary-billed {
+            background: #fefce8;
+        }
+
+        .summary-income-cash {
+            background: #eafaf0;
+        }
+
+        .summary-income-online {
+            background: #ecfeff;
+        }
+
+        .summary-expense-cash {
+            background: #fff0f0;
+        }
+
+        .summary-expense-online {
+            background: #fff1f2;
+        }
+
+        .summary-current-cash {
+            background: #eaf3ff;
+        }
+
+        .summary-current-online {
+            background: #f0fdf4;
+        }
+
+        .transaction-credit {
+            background: #f0fff4;
+        }
+
+        .transaction-debit {
+            background: #fff5f5;
+        }
+
+        .daily-actions .btn,
+        .daily-nav-links .btn {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .daily-nav-links {
+            background: #ffffff;
+            border: 1px solid #dce6f2;
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .table thead th,
+        .table tfoot th {
+            white-space: nowrap;
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+        .daily-print-header {
+            display: none;
+        }
+
+        @media print {
+            @page {
+                size: landscape;
+                margin: 8mm;
+            }
+
+            #navbar-container,
+            .daily-filter-card,
+            .daily-actions,
+            .daily-nav-links {
+                display: none !important;
+            }
+
+            body {
+                background: #ffffff !important;
+                color: #111111 !important;
+                font-family: "Arial", "Helvetica", sans-serif;
+                font-size: 9px;
+            }
+
+            .daily-print-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 10px;
+                border-bottom: 2px solid #111;
+                padding-bottom: 8px;
+            }
+
+            .container-fluid {
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+
+            .card-header,
+            .card-body {
+                padding: 4px !important;
+            }
+
+            .report-card {
+                border: 1px solid #111 !important;
+                box-shadow: none !important;
+            }
+
+            .daily-summary-wrap {
+                border-color: #111 !important;
+                margin-bottom: 6px !important;
+                overflow: visible !important;
+            }
+
+            .daily-summary-table {
+                min-width: 0 !important;
+            }
+
+            .table-responsive {
+                overflow: visible !important;
+            }
+
+            table {
+                width: 100% !important;
+                table-layout: fixed;
+                font-size: 8.5px !important;
+            }
+
+            .table > :not(caption) > * > * {
+                padding: 2px 3px !important;
+                border-color: #111 !important;
+                color: #111 !important;
+                background: #ffffff !important;
+            }
+
+            th:nth-child(1),
+            td:nth-child(1) {
+                width: 8%;
+            }
+
+            th:nth-child(2),
+            td:nth-child(2) {
+                width: 6%;
+            }
+
+            th:nth-child(3),
+            td:nth-child(3) {
+                width: 19%;
+            }
+
+            th:nth-child(4),
+            td:nth-child(4),
+            th:nth-child(5),
+            td:nth-child(5),
+            th:nth-child(6),
+            td:nth-child(6),
+            th:nth-child(7),
+            td:nth-child(7),
+            th:nth-child(8),
+            td:nth-child(8),
+            th:nth-child(9),
+            td:nth-child(9) {
+                width: 8%;
+            }
+
+            th:nth-child(10),
+            td:nth-child(10) {
+                width: 19%;
+                display: table-cell !important;
+            }
+
+            td:nth-child(3),
+            td:nth-child(10) {
+                white-space: normal !important;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .small {
+                font-size: 7.5px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container-fluid py-3" style="max-width: 1600px;">
+        <div class="daily-print-header">
+            <h2>Skyview Public School - Daily Transactions</h2>
+            <div id="dailyPrintRange">Date: -</div>
+        </div>
+
+        <div class="card report-card daily-filter-card mb-2">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Daily Transactions</h5>
+                <span class="small">Collections, expenses and current balance</span>
+            </div>
+            <div class="card-body">
+                <form id="dailyTransactionForm" class="row g-2 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label" for="dailyStartDate">From Date</label>
+                        <input type="date" class="form-control" id="dailyStartDate" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="dailyEndDate">To Date</label>
+                        <input type="date" class="form-control" id="dailyEndDate" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="dailyTypeFilter">Type</label>
+                        <select class="form-select" id="dailyTypeFilter">
+                            <option value="">All</option>
+                            <option value="Credit">Credit</option>
+                            <option value="Debit">Debit</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="dailySearchInput">Search</label>
+                        <input type="search" class="form-control" id="dailySearchInput" placeholder="Name, receipt, voucher, notes">
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1" id="loadDailyTransactionsBtn">
+                            <i class="fas fa-table-list me-2"></i>Load Report
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="resetDailyTransactionsBtn">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="daily-actions d-flex flex-wrap gap-2 mb-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="dailyTodayBtn">
+                <i class="fas fa-calendar-day me-1"></i>Today
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="dailyMonthBtn">
+                <i class="fas fa-calendar-alt me-1"></i>This Month
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success" id="dailyRefreshBtn">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark" id="dailyPrintBtn">
+                <i class="fas fa-print me-1"></i>Print
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="dailyCsvBtn">
+                <i class="fas fa-file-csv me-1"></i>Export CSV
+            </button>
+        </div>
+
+        <div class="daily-summary-wrap">
+            <table class="table table-bordered daily-summary-table">
+                <thead>
+                    <tr>
+                        <th>Opening Cash</th>
+                        <th>Opening Online</th>
+                        <th>Billed Amount</th>
+                        <th>Collection Cash</th>
+                        <th>Collection Online</th>
+                        <th>Expense Cash</th>
+                        <th>Expense Online</th>
+                        <th>Current Cash</th>
+                        <th>Current Online</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="summary-opening-cash"><span id="dailyOpeningCashBalance">0.00</span></td>
+                        <td class="summary-opening-online"><span id="dailyOpeningOnlineBalance">0.00</span></td>
+                        <td class="summary-billed"><span id="dailyBilledTotal">0.00</span></td>
+                        <td class="summary-income-cash"><span id="dailyCashReceivedTotal">0.00</span></td>
+                        <td class="summary-income-online"><span id="dailyOnlineReceivedTotal">0.00</span></td>
+                        <td class="summary-expense-cash"><span id="dailyExpenseCashTotal">0.00</span></td>
+                        <td class="summary-expense-online"><span id="dailyExpenseOnlineTotal">0.00</span></td>
+                        <td class="summary-current-cash"><span id="dailyCurrentCashBalance">0.00</span></td>
+                        <td class="summary-current-online"><span id="dailyCurrentOnlineBalance">0.00</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card report-card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Transaction Register</h6>
+                <span class="small text-muted" id="dailyRowCount">0 rows</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Particulars</th>
+                                <th class="text-end">Billed Amount</th>
+                                <th class="text-end">Cash Received</th>
+                                <th class="text-end">Online Received</th>
+                                <th class="text-end">Expense Cash</th>
+                                <th class="text-end">Expense Online</th>
+                                <th class="text-end">Current Balance</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyTransactionsBody">
+                            <tr>
+                                <td colspan="10" class="text-center text-muted py-4">Loading transactions...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3">Total</th>
+                                <th class="text-end">Rs. <span id="dailyFooterBilled">0.00</span></th>
+                                <th class="text-end">Rs. <span id="dailyFooterCashReceived">0.00</span></th>
+                                <th class="text-end">Rs. <span id="dailyFooterOnlineReceived">0.00</span></th>
+                                <th class="text-end">Rs. <span id="dailyFooterExpenseCash">0.00</span></th>
+                                <th class="text-end">Rs. <span id="dailyFooterExpenseOnline">0.00</span></th>
+                                <th class="text-end">Rs. <span id="dailyFooterBalance">0.00</span></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js?v=20260523"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js?v=20260523"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/daily-transactions.js?v=20260523"></script>
+    <script src="../js/page-shell.js"></script>
+</body>
+</html>

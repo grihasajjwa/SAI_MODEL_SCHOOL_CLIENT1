@@ -83,6 +83,61 @@
                     </div>
                 </div>
 
+                <ul class="nav nav-tabs mb-3" id="expenseHistoryTabs">
+                    <li class="nav-item">
+                        <button type="button" class="nav-link active" data-expense-tab="all">All</button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="nav-link" data-expense-tab="due-list">Due List</button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="nav-link" data-expense-tab="due-payment">Due Payment</button>
+                    </li>
+                </ul>
+
+                <div class="card border-primary bg-light-subtle mb-3 d-none" id="duePaymentFormCard">
+                    <div class="card-body">
+                        <form id="duePaymentForm" class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label" for="duePaymentReceivedFrom">Received From</label>
+                                <select class="form-select" id="duePaymentReceivedFrom" required>
+                                    <option value="">Select Person</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="duePaymentCurrentDue">Current Due</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rs.</span>
+                                    <input type="text" class="form-control text-end bg-white" id="duePaymentCurrentDue" value="0.00" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="duePaymentMode">Received Mode</label>
+                                <select class="form-select" id="duePaymentMode" required>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Online">Online</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="duePaymentAmount">Received Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rs.</span>
+                                    <input type="number" class="form-control text-end" id="duePaymentAmount" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="duePaymentNotes">Notes</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="duePaymentNotes" placeholder="Optional">
+                                    <button type="submit" class="btn btn-success" id="saveDuePaymentBtn">
+                                        <i class="fas fa-save me-2"></i>Save
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped align-middle">
                         <thead class="table-light">

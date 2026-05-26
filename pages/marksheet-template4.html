@@ -9,8 +9,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: url('https://svps.skyviewpublicschool.in/assets/images/watermark3a.png') no-repeat center center;
-             background-size: cover; 
             background-color: #f5f5f5;
             font-size: 15px;
             font-family: 'Times New Roman', Times, serif;
@@ -44,41 +42,18 @@
         }
 
         .watermark {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            font-size: 72px;
-            color: rgba(128, 128, 128, 0.1);
+            position: absolute;
+            inset: 0;
+            display: block;
+            background: url('../assets/images/watermark3a.png') repeat;
+            background-size: 100% 100%;
+            opacity: 0.16;
             pointer-events: none;
-            z-index: -1;
-            -webkit-transform: translate(-50%, -50%) rotate(-45deg);
-            -moz-transform: translate(-50%, -50%) rotate(-45deg);
-            -ms-transform: translate(-50%, -50%) rotate(-45deg);
-            transform: translate(-50%, -50%) rotate(-45deg);
-            -webkit-transform-origin: center;
-            -moz-transform-origin: center;
-            -ms-transform-origin: center;
-            transform-origin: center;
+            z-index: 0;
+            print-color-adjust: exact !important;
+            -webkit-print-color-adjust: exact !important;
         }
 
-         /* Watermark text */
-            .watermark {
-                display: block;
-                content: "";
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: url('../assets/images/watermark3a.png') no-repeat center center;
-                background-size: 100% 100%;
-                opacity: 0.1;
-                z-index: -1;
-                print-color-adjust: exact !important;
-                -webkit-print-color-adjust: exact !important;
-                transform: rotate(0deg);
-            }
-       
         .school-header {
             text-align: center;
             margin-bottom: 15px;
@@ -487,27 +462,16 @@ body.hide-pt2-final .pt2-cols,
                 page-break-inside: avoid;
             }
 
-            /* Remove flag icon */
-            .watermark img {
-                display: none !important;
-            }
-
-            /* Watermark text */
             .watermark {
                 display: block;
-                content: "";
                 position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: url('../assets/images/watermark3a.png') no-repeat center center;
-                background-size: 100% 100%;
-                opacity: 0.1;
-                z-index: 999;
+                inset: 0;
+                background: url('../assets/images/watermark3a.png') repeat !important;
+                background-size: 100% 100% !important;
+                opacity: 0.2;
+                z-index: 0;
                 print-color-adjust: exact !important;
                 -webkit-print-color-adjust: exact !important;
-                transform: rotate(0deg);
             }
             /* Hide all buttons and controls */
             .no-print,
@@ -1670,6 +1634,7 @@ window.addEventListener('afterprint', function() {
 <script src="../js/config.js"></script>
 <script src="../js/school-profile.js"></script>
     <script src='../js/auth.js'></script>
+    <script src="../js/exam-name-labels.js"></script>
     <script src='../js/page-shell.js'></script>
 </body>
 </html>

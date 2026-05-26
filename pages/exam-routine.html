@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Routine - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body { background: #f6f8fb; }
+        .routine-card {
+            border: 1px solid #dce5f0;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(31, 53, 89, 0.06);
+        }
+        .routine-table input,
+        .routine-table textarea {
+            min-width: 150px;
+        }
+        .routine-preview {
+            background: #fff;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .classwise-filter-bar {
+            background: #f8fafc;
+            border-bottom: 1px solid #dce5f0;
+            padding: 12px;
+        }
+        .classwise-preview {
+            padding: 12px;
+        }
+        .routine-tab-switcher {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid #dce5f0;
+            margin-bottom: 12px;
+        }
+        .routine-tab-btn {
+            border: 0;
+            background: transparent;
+            color: #475569;
+            font-weight: 600;
+            padding: 10px 14px;
+            border-bottom: 3px solid transparent;
+        }
+        .routine-tab-btn.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+        }
+        .routine-panel.d-none {
+            display: none !important;
+        }
+        .print-only {
+            display: none;
+        }
+        .datesheet {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 13px;
+        }
+        .datesheet th,
+        .datesheet td {
+            border: 1px solid #000;
+            text-align: center;
+            vertical-align: middle;
+            padding: 6px 4px;
+            white-space: pre-line;
+            word-break: break-word;
+        }
+        .datesheet th {
+            font-weight: 700;
+        }
+        .datesheet .routine-empty-cell {
+            background: #bfbfbf;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .datesheet-title {
+            border: 1px solid #000;
+            border-bottom: 0;
+            text-align: center;
+            font-weight: 800;
+            font-size: 22px;
+            padding: 4px;
+        }
+        .datesheet-subtitle {
+            border: 1px solid #000;
+            border-bottom: 0;
+            text-align: center;
+            font-weight: 800;
+            font-size: 18px;
+            padding: 6px;
+        }
+        .datesheet-note {
+            border: 1px solid #000;
+            border-top: 0;
+            text-align: center;
+            font-weight: 700;
+            font-size: 18px;
+            padding: 6px;
+        }
+        @media print {
+            #navbar-container,
+            .editor-pane,
+            .no-print,
+            .screen-only {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: #fff;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .container-fluid {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+            .routine-card {
+                border: 0;
+                box-shadow: none;
+            }
+            .routine-preview {
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4 no-print">
+            <div>
+                <h3 class="mb-1">Exam Routine</h3>
+                <p class="text-muted mb-0">Create and print dynamic datesheets by class and date.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" id="newRoutineBtn">
+                    <i class="fas fa-file-circle-plus me-2"></i>New
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="printRoutineBtn">
+                    <i class="fas fa-print me-2"></i>Print
+                </button>
+            </div>
+        </div>
+
+        <div class="routine-tab-switcher no-print" id="examRoutineTabs">
+            <button class="routine-tab-btn active" id="routine-builder-tab" type="button" data-panel="routineBuilderPane">
+                Exam Routine
+            </button>
+            <button class="routine-tab-btn" id="classwise-routine-tab" type="button" data-panel="classwiseRoutinePane">
+                Classwise Routine
+            </button>
+        </div>
+
+        <div>
+            <div class="routine-panel d-grid gap-4" id="routineBuilderPane">
+            <div class="row g-4">
+                <div class="col-lg-6 editor-pane">
+                    <div class="card routine-card h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0" id="routineFormTitle">Create Exam Routine</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="routineMessage" class="alert alert-danger d-none"></div>
+                            <form id="examRoutineForm">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="routineTitle">School Title</label>
+                                        <input type="text" class="form-control" id="routineTitle" value="Skyview Public School" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="routineAcademicYear">Academic Year</label>
+                                        <select class="form-select" id="routineAcademicYear" required>
+                                            <option value="">Select Session</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="routineExamName">Exam Name</label>
+                                        <select class="form-select" id="routineExamName" required>
+                                            <option value="">Select Exam</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="routineTimeText">Time Text</label>
+                                        <input type="text" class="form-control" id="routineTimeText" value="Time 10:30 am to 12:00 pm.">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="routineSchoolOverText">School Over Text</label>
+                                        <input type="text" class="form-control" id="routineSchoolOverText" value="School will get over at 1.00 pm for all the classes.">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="routineNotes">Notes</label>
+                                        <textarea class="form-control" id="routineNotes" rows="2">No alternative or re-examination will be conducted under any circumstances if a student remains absent during the examination.</textarea>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 editor-pane">
+                    <div class="card routine-card h-100">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h5 class="mb-0">Class Columns</h5>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="loadRoutineClassesBtn">
+                                        <i class="fas fa-download me-1"></i>Load Classes
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="addRoutineClassBtn">
+                                        <i class="fas fa-plus me-1"></i>Add Class
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="routineClassesContainer" class="row g-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="screen-only">
+                <div class="card routine-card">
+                    <div class="card-header bg-light no-print">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <h5 class="mb-0">Date Rows</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addRoutineDateBtn">
+                                <i class="fas fa-plus me-1"></i>Add Date
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered align-middle routine-table">
+                                <thead id="routineEditorHead"></thead>
+                                <tbody id="routineEditorBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card routine-card">
+                    <div class="card-header bg-light no-print">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <h5 class="mb-0">Print Preview</h5>
+                        </div>
+                    </div>
+                    <div class="card-body routine-preview" id="routinePreview"></div>
+                </div>
+            </div>
+
+            </div>
+
+            <div class="routine-panel d-none" id="classwiseRoutinePane">
+                <div class="card routine-card">
+                    <div class="card-header bg-primary text-white no-print">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <h5 class="mb-0">Classwise Routine</h5>
+                            <button type="button" class="btn btn-light btn-sm" id="printClasswiseRoutineBtn">
+                                <i class="fas fa-print me-1"></i>Print
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="classwise-filter-bar no-print">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label mb-1" for="classwiseSessionSelect">Session</label>
+                                    <select class="form-select" id="classwiseSessionSelect">
+                                        <option value="">Select Session</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label mb-1" for="classwiseClassSelect">Class</label>
+                                    <select class="form-select" id="classwiseClassSelect">
+                                        <option value="">Select Class</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label mb-1" for="classwiseExamSelect">Exam Name</label>
+                                    <select class="form-select" id="classwiseExamSelect">
+                                        <option value="">Select Exam</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="routine-preview classwise-preview" id="classwiseRoutinePreview"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal fade" id="examAddClassModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Class</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="examClassForm">
+                        <div class="mb-3">
+                            <label for="examClassAcademicYear" class="form-label">Academic Year</label>
+                            <select class="form-select" id="examClassAcademicYear" required>
+                                <option value="">Select Session</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="examClassName" class="form-label">Class Name</label>
+                            <input type="text" class="form-control" id="examClassName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="examClassSection" class="form-label">Section</label>
+                            <input type="text" class="form-control" id="examClassSection" placeholder="A" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="examClassTeacher" class="form-label">Class Teacher</label>
+                            <input type="text" class="form-control" id="examClassTeacher" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveExamClassBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/exam-routine.js"></script>
+    <script src="../js/page-shell.js"></script>
+</body>
+</html>

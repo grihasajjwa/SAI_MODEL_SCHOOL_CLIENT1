@@ -6,6 +6,41 @@ function formatTodayMoney(value) {
     });
 }
 
+function toTodayDateInputValue(date) {
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0')
+    ].join('-');
+}
+
+function parseTodayDateInput(dateString) {
+    if (!dateString) return new Date();
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) return new Date();
+    return new Date(year, month - 1, day);
+}
+
+function moveTodayDate(days) {
+    const dateInput = document.getElementById('todayFinanceDate');
+    const date = parseTodayDateInput(dateInput.value);
+    date.setDate(date.getDate() + days);
+    dateInput.value = toTodayDateInputValue(date);
+    return dateInput.value;
+}
+
+function setTodayFinanceLoading(isLoading) {
+    const loader = document.getElementById('todayFinanceLoading');
+    const dateInput = document.getElementById('todayFinanceDate');
+    const prevButton = document.getElementById('todayPrevDate');
+    const nextButton = document.getElementById('todayNextDate');
+
+    loader?.classList.toggle('show', isLoading);
+    if (dateInput) dateInput.disabled = isLoading;
+    if (prevButton) prevButton.disabled = isLoading;
+    if (nextButton) nextButton.disabled = isLoading;
+}
+
 function formatTodayPaymentMode(receipt = {}) {
     if (Array.isArray(receipt.paymentBreakdown) && receipt.paymentBreakdown.length) {
         return receipt.paymentBreakdown
@@ -26,11 +61,25 @@ function formatTodayExpensePaymentMode(expense = {}) {
     return expense.paymentMode || '-';
 }
 
-function renderTodaySummary(summary = {}, dateValue) {
-    document.getElementById('todayDateLabel').textContent = dateValue
-        ? new Date(dateValue).toLocaleDateString('en-IN')
-        : new Date().toLocaleDateString('en-IN');
+function getTodayBilledAmount(receipt = {}) {
+    const lineItems = Array.isArray(receipt.lineItems) ? receipt.lineItems : [];
+    return Number(receipt.currentChargesTotal)
+        || lineItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+        || Number(receipt.paidAmount)
+        || 0;
+}
 
+function renderTodaySummary(summary = {}, dateValue) {
+    const date = dateValue ? new Date(dateValue) : new Date();
+    const dateInput = document.getElementById('todayFinanceDate');
+
+    document.getElementById('todayDateLabel').textContent = date.toLocaleDateString('en-IN');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = toTodayDateInputValue(date);
+    }
+
+    document.getElementById('todayOpeningCash').textContent = formatTodayMoney(summary.openingCash || 0);
+    document.getElementById('todayOpeningOnline').textContent = formatTodayMoney(summary.openingOnline || 0);
     document.getElementById('todayFeeCash').textContent = formatTodayMoney(summary.feeCash || 0);
     document.getElementById('todayFeeOnline').textContent = formatTodayMoney(summary.feeOnline || 0);
     document.getElementById('todayExpenseCash').textContent = formatTodayMoney(summary.expenseCash || 0);
@@ -52,12 +101,12 @@ function renderTodayReceipts(receipts = []) {
 
     tbody.innerHTML = receipts.map((receipt) => `
         <tr>
-            <td>${new Date(receipt.receiptDate || receipt.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
             <td>${receipt.admissionNo || '-'}</td>
             <td>${receipt.studentName || '-'}</td>
             <td>${(receipt.lineItems || []).map((item) => item.particular).join(', ') || '-'}</td>
-            <td>Rs. ${formatTodayMoney(receipt.paidAmount || 0)}</td>
-            <td>Rs. ${formatTodayMoney(receipt.dueAmount || 0)}</td>
+            <td>${formatTodayMoney(getTodayBilledAmount(receipt))}</td>
+            <td>${formatTodayMoney(receipt.paidAmount || 0)}</td>
+            <td>${formatTodayMoney(receipt.dueAmount || 0)}</td>
             <td>${formatTodayPaymentMode(receipt)}</td>
             <td><a href="fee-receipt.html?id=${receipt._id}" target="_blank" class="btn btn-sm btn-outline-primary">Receipt</a></td>
         </tr>
@@ -78,15 +127,16 @@ function renderTodayExpenses(expenses = []) {
             <td>${expense.headOfAccount || '-'}</td>
             <td>${expense.paidTo || '-'}</td>
             <td>${expense.paidFor || '-'}</td>
-            <td>Rs. ${formatTodayMoney(expense.amount || 0)}</td>
+            <td>${formatTodayMoney(expense.amount || 0)}</td>
             <td>${formatTodayExpensePaymentMode(expense)}</td>
             <td>${expense.notes || '-'}</td>
         </tr>
     `).join('');
 }
 
-async function loadTodayFinance() {
-    const result = await API.fees.getTodayTransactions();
+async function loadTodayFinance(dateValue = '') {
+    const selectedDate = dateValue || document.getElementById('todayFinanceDate')?.value || toTodayDateInputValue(new Date());
+    const result = await API.fees.getTodayTransactions(selectedDate);
 
     if (!result || !result.success) {
         throw new Error(result?.message || 'Unable to fetch today transactions');
@@ -97,16 +147,64 @@ async function loadTodayFinance() {
     renderTodayExpenses(result.expenses || []);
 }
 
+async function refreshTodayFinance(dateValue) {
+    setTodayFinanceLoading(true);
+
+    try {
+        await loadTodayFinance(dateValue);
+    } catch (error) {
+        console.error(error);
+        alert(error.message || 'Unable to load finance report');
+    } finally {
+        setTodayFinanceLoading(false);
+    }
+}
+
+function initializeTodayDateControls() {
+    const dateInput = document.getElementById('todayFinanceDate');
+    const prevButton = document.getElementById('todayPrevDate');
+    const nextButton = document.getElementById('todayNextDate');
+    const printButton = document.getElementById('todayPrintBtn');
+
+    if (!dateInput) return;
+
+    dateInput.value = toTodayDateInputValue(new Date());
+
+    dateInput.addEventListener('change', () => {
+        refreshTodayFinance(dateInput.value);
+    });
+
+    dateInput.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            refreshTodayFinance(moveTodayDate(-1));
+        }
+
+        if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            refreshTodayFinance(moveTodayDate(1));
+        }
+    });
+
+    prevButton?.addEventListener('click', () => {
+        refreshTodayFinance(moveTodayDate(-1));
+    });
+
+    nextButton?.addEventListener('click', () => {
+        refreshTodayFinance(moveTodayDate(1));
+    });
+
+    printButton?.addEventListener('click', () => {
+        window.print();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     if (!Auth.isAuthenticated()) {
         window.location.href = '../pages/login.html';
         return;
     }
 
-    try {
-        await loadTodayFinance();
-    } catch (error) {
-        console.error(error);
-        alert(error.message || 'Unable to load today finance report');
-    }
+    initializeTodayDateControls();
+    await refreshTodayFinance();
 });

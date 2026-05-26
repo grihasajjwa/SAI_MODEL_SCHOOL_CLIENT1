@@ -16,47 +16,172 @@
         .cashbook-card,
         .summary-card {
             border: none;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(34, 73, 129, 0.08);
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(34, 73, 129, 0.08);
+        }
+
+        .cashbook-card .card-header,
+        .summary-card .card-header {
+            padding: 0.5rem 0.85rem;
+        }
+
+        .cashbook-card .card-body,
+        .summary-card .card-body {
+            padding: 0.75rem;
         }
 
         .metric-box {
-            border-radius: 16px;
-            background: linear-gradient(135deg, #f7fbff, #eef5ff);
+            border-radius: 10px;
             border: 1px solid #dce9ff;
-            padding: 18px;
-            height: 100%;
+            padding: 8px 10px;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .metric-opening {
+            background: #fff7e6;
+            border-color: #ffd58a;
+        }
+
+        .metric-collection {
+            background: #eafaf0;
+            border-color: #a8e6bd;
+        }
+
+        .metric-expense {
+            background: #fff0f0;
+            border-color: #f5b8b8;
+        }
+
+        .metric-closing {
+            background: #eaf3ff;
+            border-color: #9fc8ff;
         }
 
         .metric-box span {
-            display: block;
-            font-size: 0.85rem;
-            color: #6c757d;
+            display: inline;
+            font-size: 0.95rem;
+            line-height: 1.2;
+            color: #2f3b52;
+            font-weight: 700;
+            white-space: nowrap;
         }
 
         .metric-box strong {
-            display: block;
-            margin-top: 8px;
-            font-size: 1.45rem;
+            display: inline;
+            margin-top: 0;
+            font-size: 0.95rem;
+            line-height: 1.2;
             color: #133f79;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .cashbook-card .form-label {
+            margin-bottom: 0.25rem;
+            font-size: 0.82rem;
         }
 
         .table thead th {
             white-space: nowrap;
+        }
+
+        .cashbook-actions .btn {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .cashbook-nav-links {
+            background: #ffffff;
+            border: 1px solid #dce9ff;
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 6px 18px rgba(34, 73, 129, 0.06);
+        }
+
+        .cashbook-nav-links .btn {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .cashbook-detail-income th {
+            background: #eafaf0 !important;
+            color: #14532d;
+        }
+
+        .cashbook-detail-expense th {
+            background: #fff0f0 !important;
+            color: #7f1d1d;
+        }
+
+        .cashbook-print-header {
+            display: none;
+        }
+
+        @media print {
+            #navbar-container,
+            .cashbook-filter-card,
+            .cashbook-actions,
+            .cashbook-nav-links {
+                display: none !important;
+            }
+
+            .cashbook-print-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #111;
+            }
+
+            .cashbook-print-header h2 {
+                margin: 0;
+                font-size: 20px;
+                font-weight: 800;
+            }
+
+            .cashbook-print-header div {
+                margin-top: 4px;
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            body {
+                background: #ffffff !important;
+            }
+
+            .container-fluid {
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+
+            .cashbook-card,
+            .summary-card {
+                box-shadow: none !important;
+                border: 1px solid #111 !important;
+            }
         }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
 
-    <div class="container-fluid py-4" style="max-width: 1500px;">
-        <div class="card cashbook-card mb-4">
+    <div class="container-fluid py-3" style="max-width: 1500px;">
+        <div class="cashbook-print-header">
+            <h2>Skyview Public School - Cashbook</h2>
+            <div id="cashbookPrintDateRange">Date: -</div>
+        </div>
+
+        <div class="card cashbook-card cashbook-filter-card mb-2">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Cashbook</h4>
+                <h5 class="mb-0">Cashbook</h5>
                 <div class="small">Collection and Expense Summary</div>
             </div>
             <div class="card-body">
-                <form id="cashbookFilterForm" class="row g-3 align-items-end">
+                <form id="cashbookFilterForm" class="row g-2 align-items-end">
                     <div class="col-md-2">
                         <label class="form-label" for="cashbookStartDate">From Date</label>
                         <input type="date" class="form-control" id="cashbookStartDate">
@@ -69,14 +194,14 @@
                         <label class="form-label" for="openingCashBalance">Opening Cash Balance</label>
                         <div class="input-group">
                             <span class="input-group-text">Rs.</span>
-                            <input type="number" class="form-control" id="openingCashBalance" step="0.01" value="0">
+                            <input type="number" class="form-control" id="openingCashBalance" step="0.01" value="0" readonly>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label" for="openingOnlineBalance">Opening Online Balance</label>
                         <div class="input-group">
                             <span class="input-group-text">Rs.</span>
-                            <input type="number" class="form-control" id="openingOnlineBalance" step="0.01" value="0">
+                            <input type="number" class="form-control" id="openingOnlineBalance" step="0.01" value="0" readonly>
                         </div>
                     </div>
                     <div class="col-md-4 d-flex gap-2">
@@ -89,53 +214,110 @@
             </div>
         </div>
 
-        <div class="card summary-card mb-4">
+        <div class="cashbook-actions d-flex flex-wrap gap-2 mb-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="cashbookTodayBtn">
+                <i class="fas fa-calendar-day me-1"></i>Today
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="cashbookMonthBtn">
+                <i class="fas fa-calendar-alt me-1"></i>This Month
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success" id="cashbookRefreshBtn">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark" id="cashbookPrintBtn">
+                <i class="fas fa-print me-1"></i>Print
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="cashbookCsvBtn">
+                <i class="fas fa-file-csv me-1"></i>Export CSV
+            </button>
+        </div>
+
+        <div class="cashbook-nav-links d-flex flex-wrap gap-2 mb-2">
+            <a href="cashbook.html" class="btn btn-sm btn-primary">
+                <i class="fas fa-book me-1"></i>Cashbook
+            </a>
+            <a href="daily-transactions.html" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-table-list me-1"></i>Daily Transactions
+            </a>
+            <a href="fee-collection.html" class="btn btn-sm btn-outline-success">
+                <i class="fas fa-receipt me-1"></i>Fee Collection
+            </a>
+            <a href="fee-transactions.html" class="btn btn-sm btn-outline-success">
+                <i class="fas fa-list me-1"></i>Fee History
+            </a>
+            <a href="expense-record.html" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-plus-circle me-1"></i>Make Expense
+            </a>
+            <a href="expense-transactions.html" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-file-invoice me-1"></i>Expense History
+            </a>
+            <a href="expense-transactions.html#due-list" class="btn btn-sm btn-outline-warning">
+                <i class="fas fa-hourglass-half me-1"></i>Due List
+            </a>
+            <a href="expense-transactions.html#due-payment" class="btn btn-sm btn-outline-warning">
+                <i class="fas fa-hand-holding-dollar me-1"></i>Due Payment
+            </a>
+            <a href="fuel-ledger.html" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-gas-pump me-1"></i>Fuel Ledger
+            </a>
+            <a href="supplier-ledger.html" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-truck me-1"></i>Supplier Ledger
+            </a>
+            <a href="today-finance.html" class="btn btn-sm btn-outline-dark">
+                <i class="fas fa-chart-line me-1"></i>Today Finance
+            </a>
+            <a href="transaction-audit.html" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-clock-rotate-left me-1"></i>Audit
+            </a>
+        </div>
+
+        <div class="card summary-card mb-2">
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-3">
-                        <div class="metric-box">
+                        <div class="metric-box metric-opening">
                             <span>Opening Cash</span>
                             <strong>Rs. <span id="cashbookOpeningCashView">0.00</span></strong>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="metric-box">
+                        <div class="metric-box metric-opening">
                             <span>Opening Online</span>
                             <strong>Rs. <span id="cashbookOpeningOnlineView">0.00</span></strong>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="metric-box">
+                        <div class="metric-box metric-collection">
                             <span>Collection Cash</span>
                             <strong>Rs. <span id="cashbookCollectionCashView">0.00</span></strong>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="metric-box">
+                        <div class="metric-box metric-collection">
                             <span>Collection Online</span>
                             <strong>Rs. <span id="cashbookCollectionOnlineView">0.00</span></strong>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="metric-box">
+                        <div class="metric-box metric-expense">
                             <span>Expense Cash</span>
                             <strong>Rs. <span id="cashbookExpenseCashView">0.00</span></strong>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="metric-box">
+                        <div class="metric-box metric-expense">
                             <span>Expense Online</span>
                             <strong>Rs. <span id="cashbookExpenseOnlineView">0.00</span></strong>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="metric-box">
+                        <div class="metric-box metric-closing">
                             <span>Closing Cash</span>
                             <strong>Rs. <span id="cashbookClosingCashView">0.00</span></strong>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="metric-box">
+                        <div class="metric-box metric-closing">
                             <span>Closing Online</span>
                             <strong>Rs. <span id="cashbookClosingOnlineView">0.00</span></strong>
                         </div>
@@ -144,11 +326,11 @@
             </div>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-3">
             <div class="col-lg-6">
                 <div class="card cashbook-card h-100">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0">Cash Summary by Particular</h5>
+                        <h6 class="mb-0">Cash Summary by Particular</h6>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -183,7 +365,7 @@
             <div class="col-lg-6">
                 <div class="card cashbook-card h-100">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0">Expense Head Wise Summary</h5>
+                        <h6 class="mb-0">Expense Head Wise Summary</h6>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -216,17 +398,17 @@
             </div>
         </div>
 
-        <div class="card summary-card mt-4">
+        <div class="card summary-card mt-2">
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-6">
-                        <div class="metric-box">
+                        <div class="metric-box metric-closing">
                             <span>Closing Balance - Cash</span>
                             <strong>Rs. <span id="cashbookClosingCashFooter">0.00</span></strong>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="metric-box">
+                        <div class="metric-box metric-closing">
                             <span>Closing Balance - Online</span>
                             <strong>Rs. <span id="cashbookClosingOnlineFooter">0.00</span></strong>
                         </div>

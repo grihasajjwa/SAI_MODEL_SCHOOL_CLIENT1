@@ -6,6 +6,15 @@ function formatDueMoney(value) {
     });
 }
 
+function escapeDueHtml(value = '') {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function renderDashboardSummary(summary = {}) {
     document.getElementById('dueSummaryOutstanding').textContent = formatDueMoney(summary.totalOutstanding || 0);
     document.getElementById('dueSummaryStudents').textContent = summary.dueStudentCount || 0;
@@ -27,25 +36,28 @@ function renderDueTable(dues = [], totals = {}) {
         return;
     }
 
-    tbody.innerHTML = dues.map((item) => `
-        <tr>
-            <td>${item.admissionNo || '-'}</td>
-            <td>${item.studentName || '-'}</td>
-            <td>${item.fatherName || '-'}</td>
-            <td>${item.className || '-'}${item.section ? ` - ${item.section}` : ''}</td>
-            <td>${item.rollNo || '-'}</td>
-            <td>${item.lastReceiptDate ? new Date(item.lastReceiptDate).toLocaleDateString('en-IN') : '-'}</td>
-            <td>Rs. ${formatDueMoney(item.chargesTotal || 0)}</td>
-            <td>Rs. ${formatDueMoney(item.paidAmount || 0)}</td>
-            <td class="fw-bold text-danger">Rs. ${formatDueMoney(item.dueAmount || 0)}</td>
-            <td class="fw-bold text-success">Rs. ${formatDueMoney(item.excessPayment || 0)}</td>
-            <td>
-                <a href="fee-collection.html?admissionNo=${encodeURIComponent(item.admissionNo || '')}" class="btn btn-sm btn-primary">
-                    Collect
-                </a>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = dues.map((item) => {
+        const dueAmount = Number(item.dueAmount) || 0;
+        const actionHtml = dueAmount > 0
+            ? `<a href="fee-collection.html?admissionNo=${encodeURIComponent(item.admissionNo || '')}&collectDue=1" class="btn btn-sm btn-primary">Collect Due</a>`
+            : '<span class="badge bg-success-subtle text-success">No Due</span>';
+
+        return `
+            <tr>
+                <td>${escapeDueHtml(item.admissionNo || '-')}</td>
+                <td>${escapeDueHtml(item.studentName || '-')}</td>
+                <td>${escapeDueHtml(item.fatherName || '-')}</td>
+                <td>${escapeDueHtml(item.className || '-')}${item.section ? ` - ${escapeDueHtml(item.section)}` : ''}</td>
+                <td>${escapeDueHtml(item.rollNo || '-')}</td>
+                <td>${item.lastReceiptDate ? new Date(item.lastReceiptDate).toLocaleDateString('en-IN') : '-'}</td>
+                <td>Rs. ${formatDueMoney(item.chargesTotal || 0)}</td>
+                <td>Rs. ${formatDueMoney(item.paidAmount || 0)}</td>
+                <td class="fw-bold text-danger">Rs. ${formatDueMoney(dueAmount)}</td>
+                <td class="fw-bold text-success">Rs. ${formatDueMoney(item.excessPayment || 0)}</td>
+                <td>${actionHtml}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 async function loadDashboardSummary() {

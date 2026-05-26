@@ -1,51 +1,59 @@
+const SKYVIEW_DEFAULT_API_URL = 'https://skyview-server-8-0.vercel.app/api';
+
 function resolveApiUrl() {
-    const override =
-        window.__SKYVIEW_API_URL__ ||
-        localStorage.getItem('skyview_api_url_override');
+    // 1. Optional manual override.
+    // Use this only when you want to test another server without changing code:
+    // localStorage.setItem('skyview_api_url_override', 'https://your-server.com/api')
+    const override = window.__SKYVIEW_API_URL__ || localStorage.getItem('skyview_api_url_override');
 
     if (override) {
-        return override.replace(/\/+$/, '');
+        const cleanOverride = String(override).trim().replace(/\/+$/, '');
+
+        // Old server URL should not be used anymore.
+        // If it is saved in the browser, remove it and continue with the normal settings below.
+        if (cleanOverride.includes('skyview-server-7-0.vercel.app')) {
+            localStorage.removeItem('skyview_api_url_override');
+        } else {
+            return cleanOverride;
+        }
     }
 
     const { protocol, hostname, port, origin } = window.location;
-    const isLocalhost = ['localhost', '127.0.0.1'].includes(hostname);
-    const isFileProtocol = protocol === 'file:';
+    const isLocalComputer = hostname === 'localhost' || hostname === '127.0.0.1';
 
-    if (isFileProtocol) {
+    // 2. If you open HTML directly from your computer, connect to local server.
+    if (protocol === 'file:') {
         return 'http://127.0.0.1:5000/api';
     }
 
-    if (isLocalhost) {
-        if (port && port !== '5000') {
-            return `${protocol}//${hostname}:5000/api`;
-        }
+    // 3. If frontend is running locally, always connect to backend port 5000.
+    // Example: frontend http://localhost:8080 -> backend http://localhost:5000/api
+    if (isLocalComputer && port !== '5000') {
+        return `${protocol}//${hostname}:5000/api`;
+    }
+
+    // 4. If frontend and backend are on the same local server, use same origin.
+    // Example: http://localhost:5000 -> http://localhost:5000/api
+    if (isLocalComputer) {
         return `${origin.replace(/\/+$/, '')}/api`;
     }
 
-    return 'https://sai-model-school-server-1.vercel.app/api';
+    // 5. For the live website, use the deployed server.
+    return SKYVIEW_DEFAULT_API_URL;
 }
 
-var CONFIG = {
+// Main app configuration.
+// All pages should use CONFIG.API_URL instead of writing server links directly.
+window.CONFIG = {
     API_URL: resolveApiUrl(),
-    CLASSES: [
-        'Nursery-A', 'Nursery-B',
-        'LKG-A', 'LKG-B',
-        'UKG-A', 'UKG-B',
-        'Class-I(A)', 'Class-I(B)',
-        'Class-II(A)', 'Class-II(B)'
-    ],
-    SUBJECTS: {
-        primary: ['English', 'Math', 'Bengali', 'Drawing'],
-        middle: ['English Lit.', 'English Lang.', 'Bengali/Hindi', 'Math', 'Science', 'Social Science', 'Computer']
-    },
-    EXAM_TYPES: ['Term-I', 'Term-II', 'Half Yearly', 'Annual'],
     CURRENT_SESSION: 'Default',
-    DEFAULT_ERROR_MESSAGE: 'An error occurred. Please try again.',
     STORAGE_KEYS: {
         TOKEN: 'skyview_token',
         USER: 'skyview_user',
-        REMEMBER_ME: 'skyview_remember_me'
+        REMEMBER_ME: 'skyview_remember_me',
+        CLASS_DATA: 'classData',
+        SUBJECT_DATA: 'subjectData'
     }
 };
 
-console.log('CONFIG.API_URL loaded:', CONFIG.API_URL);
+var CONFIG = window.CONFIG;

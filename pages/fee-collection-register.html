@@ -53,9 +53,60 @@
             color: #fff;
         }
 
+        #feeRegisterTabs {
+            gap: 10px;
+            border-bottom: 0;
+        }
+
+        #feeRegisterTabs .nav-link {
+            border: 1px solid transparent;
+            border-radius: 10px;
+            font-weight: 700;
+            color: #0f172a;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+        }
+
+        #feeRegisterTabs .nav-link[data-main-tab="register"] {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #166534;
+        }
+
+        #feeRegisterTabs .nav-link[data-main-tab="ledger"] {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1d4ed8;
+        }
+
+        #feeRegisterTabs .nav-link[data-main-tab="ledger-detail"] {
+            background: #fef3c7;
+            border-color: #fbbf24;
+            color: #92400e;
+        }
+
+        #feeRegisterTabs .nav-link.active {
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        #feeRegisterTabs .nav-link[data-main-tab="register"].active {
+            background: #16a34a;
+            border-color: #15803d;
+        }
+
+        #feeRegisterTabs .nav-link[data-main-tab="ledger"].active {
+            background: #2563eb;
+            border-color: #1d4ed8;
+        }
+
+        #feeRegisterTabs .nav-link[data-main-tab="ledger-detail"].active {
+            background: #f59e0b;
+            border-color: #d97706;
+        }
+
         .register-table-wrap {
-            max-height: 70vh;
-            overflow: auto;
+            overflow-x: auto;
+            overflow-y: visible;
             border-radius: 14px;
         }
 
@@ -130,6 +181,10 @@
             border-radius: 16px;
             background: rgba(255, 255, 255, 0.72);
         }
+
+        .ledger-session-start > td {
+            border-top: 3px solid #0f766e !important;
+        }
     </style>
 </head>
 <body>
@@ -173,6 +228,25 @@
                 </div>
             </section>
 
+            <ul class="nav nav-tabs mb-3" id="feeRegisterTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" type="button" data-main-tab="register">
+                        Tuition / Transport Register
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" type="button" data-main-tab="ledger">
+                        Individual Student Ledger
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" type="button" data-main-tab="ledger-detail">
+                        Student Ledger Details
+                    </button>
+                </li>
+            </ul>
+
+            <div id="collectionRegisterPanel">
             <section class="card filters-card mb-4">
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
@@ -195,8 +269,8 @@
                         <div class="col-md-4">
                             <label class="form-label d-block">Register Type</label>
                             <div class="btn-group register-switch w-100" role="group">
-                                <button type="button" class="btn btn-outline-success active" data-register-type="tuition">Tuition Fees Collection Register</button>
-                                <button type="button" class="btn btn-outline-success" data-register-type="transport">Transport Fees Collection Register</button>
+                                <button type="button" class="btn btn-outline-success active" data-register-type="tuition">Tuition Register</button>
+                                <button type="button" class="btn btn-outline-success" data-register-type="transport">Transport Register</button>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -220,8 +294,164 @@
                     </div>
                 </div>
             </section>
+            </div>
 
-            <section class="card register-card">
+            <div id="studentLedgerPanel" class="d-none">
+                <section class="card filters-card mb-4">
+                    <div class="card-body p-4">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label" for="ledgerLookupSession">Search Student In Session</label>
+                                <select class="form-select" id="ledgerLookupSession"></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="ledgerStudentSearch">Student Name</label>
+                                <input class="form-control" id="ledgerStudentSearch" list="ledgerStudentOptions" placeholder="Type student name">
+                                <datalist id="ledgerStudentOptions"></datalist>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="ledgerAdmissionNo">Admission No.</label>
+                                <input class="form-control text-uppercase" id="ledgerAdmissionNo" placeholder="Enter admission no">
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary w-100" id="loadLedgerBtn" type="button">
+                                    <i class="fas fa-book-open me-2"></i>Load Ledger
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card register-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h2 class="h4 mb-1" id="ledgerTitle">Individual Student Ledger</h2>
+                                <p class="text-muted mb-0" id="ledgerSubtitle">Select a student to view session-wise particulars.</p>
+                            </div>
+                            <span class="badge bg-light text-dark border" id="ledgerRowCountBadge">0 rows</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="summary-chip"><i class="fas fa-user"></i>Student: <span id="ledgerStudentName">-</span></span>
+                            <span class="summary-chip"><i class="fas fa-id-card"></i>Admission No.: <span id="ledgerAdmNo">-</span></span>
+                            <span class="summary-chip"><i class="fas fa-indian-rupee-sign"></i>Total: <span id="ledgerGrandTotal">0.00</span></span>
+                        </div>
+                        <div id="ledgerEmpty" class="empty-state">
+                            <div>
+                                <i class="fas fa-book-open fa-2x mb-3"></i>
+                                <p class="mb-1 fw-semibold">No student ledger loaded yet.</p>
+                                <p class="mb-0">Search by student name or enter Admission No.</p>
+                            </div>
+                        </div>
+                        <div class="register-table-wrap d-none" id="ledgerTableWrap">
+                            <table class="table table-bordered table-striped align-middle register-table">
+                                <thead id="ledgerTableHead"></thead>
+                                <tbody id="ledgerTableBody"></tbody>
+                                <tfoot id="ledgerTableFoot"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="studentLedgerDetailPanel" class="d-none">
+                <section class="card filters-card mb-4">
+                    <div class="card-body p-4">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label" for="detailLedgerSession">Session</label>
+                                <select class="form-select" id="detailLedgerSession"></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="detailLedgerStudentSearch">Search Student</label>
+                                <input class="form-control" id="detailLedgerStudentSearch" list="detailLedgerStudentOptions" placeholder="Type student name">
+                                <datalist id="detailLedgerStudentOptions"></datalist>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="detailLedgerAdmissionNo">Admission No.</label>
+                                <input class="form-control text-uppercase" id="detailLedgerAdmissionNo" placeholder="Enter admission no">
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary w-100" id="loadDetailLedgerBtn" type="button">
+                                    <i class="fas fa-receipt me-2"></i>Load
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card register-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h2 class="h4 mb-1">Student Ledger Details</h2>
+                                <p class="text-muted mb-0" id="detailLedgerSubtitle">Select a student to view receipt-wise ledger.</p>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                                <span class="badge bg-light text-dark border align-self-center" id="detailLedgerRowCountBadge">0 receipts</span>
+                                <button class="btn btn-outline-secondary btn-sm" id="printDetailLedgerBtn" type="button" disabled>
+                                    <i class="fas fa-print me-2"></i>Print
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" id="pdfDetailLedgerBtn" type="button" disabled>
+                                    <i class="fas fa-file-pdf me-2"></i>PDF
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" id="excelDetailLedgerBtn" type="button" disabled>
+                                    <i class="fas fa-file-excel me-2"></i>Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="summary-chip"><i class="fas fa-user"></i>Student: <span id="detailLedgerStudentName">-</span></span>
+                            <span class="summary-chip"><i class="fas fa-id-card"></i>Admission No.: <span id="detailLedgerAdmNo">-</span></span>
+                            <span class="summary-chip"><i class="fas fa-file-invoice"></i>Billed: <span id="detailLedgerBilled">0.00</span></span>
+                            <span class="summary-chip"><i class="fas fa-money-bill-wave"></i>Cash: <span id="detailLedgerCash">0.00</span></span>
+                            <span class="summary-chip"><i class="fas fa-mobile-screen"></i>Online: <span id="detailLedgerOnline">0.00</span></span>
+                            <span class="summary-chip"><i class="fas fa-scale-balanced"></i>Due: <span id="detailLedgerDue">0.00</span></span>
+                        </div>
+                        <div id="detailLedgerEmpty" class="empty-state">
+                            <div>
+                                <i class="fas fa-receipt fa-2x mb-3"></i>
+                                <p class="mb-1 fw-semibold">No detailed ledger loaded yet.</p>
+                                <p class="mb-0">Search by student name or enter Admission No.</p>
+                            </div>
+                        </div>
+                        <div class="register-table-wrap d-none mb-4" id="detailLedgerStatusWrap">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h3 class="h6 mb-0">Monthly Fee Status</h3>
+                                <span class="badge bg-light text-dark border">Selected Session</span>
+                            </div>
+                            <table class="table table-bordered table-striped align-middle register-table mb-0">
+                                <thead id="detailLedgerStatusHead"></thead>
+                                <tbody id="detailLedgerStatusBody"></tbody>
+                                <tfoot id="detailLedgerStatusFoot"></tfoot>
+                            </table>
+                        </div>
+                        <div class="register-table-wrap d-none" id="detailLedgerTableWrap">
+                            <table class="table table-bordered table-striped align-middle register-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 58px;">Sl No.</th>
+                                        <th>Date</th>
+                                        <th>Session</th>
+                                        <th>Receipt</th>
+                                        <th>Particulars</th>
+                                        <th>Month</th>
+                                        <th>Billed</th>
+                                        <th>Cash</th>
+                                        <th>Online</th>
+                                        <th>Due</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailLedgerTableBody"></tbody>
+                                <tfoot id="detailLedgerTableFoot"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="card register-card" id="collectionRegisterTableSection">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
@@ -283,6 +513,15 @@
         let currentGrandTotals = {};
         let currentTransactions = [];
         let currentSchoolProfile = null;
+        let currentParticularColumns = [];
+        let allSessionNames = [];
+        let allFeeParticulars = [];
+        let ledgerStudents = [];
+        let ledgerRows = [];
+        let detailLedgerStudents = [];
+        let currentDetailLedgerTransactions = [];
+        let currentDetailLedgerAdmissionNo = '';
+        let currentDetailLedgerSession = '';
 
         document.addEventListener('DOMContentLoaded', async () => {
             if (!Auth.isAuthenticated()) {
@@ -294,13 +533,26 @@
         });
 
         function bindEvents() {
+            document.querySelectorAll('[data-main-tab]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const target = button.dataset.mainTab;
+                    document.querySelectorAll('[data-main-tab]').forEach((candidate) => {
+                        candidate.classList.toggle('active', candidate === button);
+                    });
+                    document.getElementById('collectionRegisterPanel').classList.toggle('d-none', target !== 'register');
+                    document.getElementById('collectionRegisterTableSection').classList.toggle('d-none', target !== 'register');
+                    document.getElementById('studentLedgerPanel').classList.toggle('d-none', target !== 'ledger');
+                    document.getElementById('studentLedgerDetailPanel').classList.toggle('d-none', target !== 'ledger-detail');
+                });
+            });
+
             document.querySelectorAll('[data-register-type]').forEach((button) => {
                 button.addEventListener('click', () => {
                     registerType = button.dataset.registerType;
                     document.querySelectorAll('[data-register-type]').forEach((candidate) => {
                         candidate.classList.toggle('active', candidate === button);
                     });
-                    summaryRegisterType.textContent = registerType === 'tuition' ? 'Tuition' : 'Transport';
+                    summaryRegisterType.textContent = getRegisterLabel();
                     updateTableLabels();
                 });
             });
@@ -310,6 +562,15 @@
             loadRegisterBtn.addEventListener('click', loadRegister);
             exportExcelBtn.addEventListener('click', exportRegisterToExcel);
             printBtn.addEventListener('click', handlePrint);
+            document.getElementById('ledgerLookupSession').addEventListener('change', loadLedgerStudentOptions);
+            document.getElementById('ledgerStudentSearch').addEventListener('change', fillLedgerAdmissionFromSearch);
+            document.getElementById('loadLedgerBtn').addEventListener('click', loadStudentLedger);
+            document.getElementById('detailLedgerSession').addEventListener('change', loadDetailLedgerStudentOptions);
+            document.getElementById('detailLedgerStudentSearch').addEventListener('change', fillDetailLedgerAdmissionFromSearch);
+            document.getElementById('loadDetailLedgerBtn').addEventListener('click', loadStudentLedgerDetail);
+            document.getElementById('printDetailLedgerBtn').addEventListener('click', () => printStudentLedgerDetail('print'));
+            document.getElementById('pdfDetailLedgerBtn').addEventListener('click', () => printStudentLedgerDetail('pdf'));
+            document.getElementById('excelDetailLedgerBtn').addEventListener('click', exportStudentLedgerDetailToExcel);
         }
 
         async function initializePage() {
@@ -327,6 +588,7 @@
                 const sessions = Array.isArray(sessionsPayload.sessions) && sessionsPayload.sessions.length
                     ? sessionsPayload.sessions
                     : [{ name: 'Default', active: true, isCurrent: true }];
+                allSessionNames = sessions.map((session) => session.name).filter(Boolean);
 
                 const preferred = currentPayload?.session?.name
                     || sessions.find((entry) => entry.isCurrent)?.name
@@ -338,12 +600,42 @@
                     .map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`)
                     .join('');
                 sessionSelect.value = preferred;
+                document.getElementById('ledgerLookupSession').innerHTML = '<option value="__all__">All Sessions</option>' + sessions
+                    .map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`)
+                    .join('');
+                document.getElementById('ledgerLookupSession').value = preferred;
+                document.getElementById('detailLedgerSession').innerHTML = '<option value="__all__">All Sessions</option>' + sessions
+                    .map((session) => `<option value="${escapeHtml(session.name)}">${escapeHtml(session.name)}</option>`)
+                    .join('');
+                document.getElementById('detailLedgerSession').value = preferred;
 
                 await loadClassesForSession();
+                await loadAllFeeParticulars();
+                await loadLedgerStudentOptions();
+                await loadDetailLedgerStudentOptions();
                 updateTableLabels();
             } catch (error) {
                 console.error('Failed to initialize fee register page:', error);
                 registerStatus.textContent = 'Unable to load session data right now';
+            }
+        }
+
+        async function loadAllFeeParticulars() {
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/fees/particulars`, {
+                    headers: authHeaders()
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch fee particulars');
+                }
+
+                const payload = await response.json();
+                allFeeParticulars = dedupeParticularNames((payload.particulars || [])
+                    .map((particular) => particular.name || particular)
+                    .filter(Boolean));
+            } catch (error) {
+                console.error('Failed to load fee particulars:', error);
+                allFeeParticulars = [];
             }
         }
 
@@ -407,6 +699,735 @@
             sectionSelect.innerHTML = '<option value="">All sections</option>' + options;
         }
 
+        async function loadLedgerStudentOptions() {
+            const session = document.getElementById('ledgerLookupSession').value;
+            const datalist = document.getElementById('ledgerStudentOptions');
+            datalist.innerHTML = '';
+            ledgerStudents = [];
+
+            if (!session) return;
+
+            try {
+                if (session === '__all__') {
+                    const allStudents = await Promise.all(allSessionNames.map((sessionName) => fetchStudents(sessionName, '', '').catch(() => [])));
+                    const byAdmission = new Map();
+                    allStudents.flat().forEach((student) => {
+                        const admissionNo = student.studentId || '';
+                        if (admissionNo && !byAdmission.has(admissionNo)) {
+                            byAdmission.set(admissionNo, student);
+                        }
+                    });
+                    ledgerStudents = Array.from(byAdmission.values()).sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+                } else {
+                    ledgerStudents = await fetchStudents(session, '', '');
+                }
+                datalist.innerHTML = ledgerStudents
+                    .map((student) => {
+                        const admissionNo = student.studentId || '';
+                        const label = `${student.name || 'Unknown Student'} | ${admissionNo}`;
+                        return `<option value="${escapeHtml(label)}"></option>`;
+                    })
+                    .join('');
+            } catch (error) {
+                console.error('Failed to load ledger students:', error);
+            }
+        }
+
+        function fillLedgerAdmissionFromSearch() {
+            const value = document.getElementById('ledgerStudentSearch').value;
+            const admissionNo = String(value).split('|').pop()?.trim() || '';
+            if (admissionNo) {
+                document.getElementById('ledgerAdmissionNo').value = admissionNo;
+            }
+        }
+
+        async function loadStudentLedger() {
+            fillLedgerAdmissionFromSearch();
+            const selectedSession = document.getElementById('ledgerLookupSession').value;
+            const admissionNo = document.getElementById('ledgerAdmissionNo').value.trim();
+            if (!selectedSession) {
+                alert('Please select a session first.');
+                return;
+            }
+
+            if (!admissionNo) {
+                alert('Please select a student or enter Admission No.');
+                return;
+            }
+
+            const button = document.getElementById('loadLedgerBtn');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+
+            try {
+                const sessionsToLoad = selectedSession === '__all__' ? allSessionNames : [selectedSession];
+                const sessionTransactions = await Promise.all(sessionsToLoad.map(async (sessionName) => {
+                    const params = new URLSearchParams({ session: sessionName, admissionNo, limit: '1000' });
+                    const response = await fetch(`${CONFIG.API_URL}/fees/transactions?${params.toString()}`, {
+                        headers: authHeaders()
+                    });
+                    if (!response.ok) return { session: sessionName, transactions: [] };
+                    const payload = await response.json();
+                    return {
+                        session: sessionName,
+                        transactions: payload.transactions || []
+                    };
+                }));
+
+                ledgerRows = buildStudentLedgerRows(sessionTransactions);
+                renderStudentLedger(ledgerRows, admissionNo);
+            } catch (error) {
+                console.error('Failed to load student ledger:', error);
+                alert('Unable to load student ledger');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-book-open me-2"></i>Load Ledger';
+            }
+        }
+
+        function buildStudentLedgerRows(sessionTransactions) {
+            const rows = [];
+
+            sessionTransactions.forEach(({ session, transactions }) => {
+                const byParticular = new Map();
+                const particularMap = new Map();
+                allFeeParticulars.forEach((particular) => {
+                    particularMap.set(normalizeParticularKey(particular), particular);
+                });
+
+                transactions.forEach((transaction) => {
+                    (transaction.lineItems || []).forEach((item) => {
+                        const particular = String(item.particular || '').trim();
+                        if (particular) {
+                            const key = normalizeParticularKey(particular);
+                            if (!particularMap.has(key)) particularMap.set(key, particular);
+                        }
+                    });
+                });
+
+                Array.from(particularMap.values())
+                    .sort((a, b) => a.localeCompare(b))
+                    .forEach((particular) => {
+                        byParticular.set(normalizeParticularKey(particular), {
+                            session,
+                            particular,
+                            months: createMonthBuckets(),
+                            total: 0,
+                            studentName: ''
+                        });
+                    });
+
+                transactions.forEach((transaction) => {
+                    (transaction.lineItems || []).forEach((item) => {
+                        const particular = String(item.particular || '').trim();
+                        if (!particular) return;
+                        const particularKey = normalizeParticularKey(particular);
+                        const canonicalParticular = particularMap.get(particularKey) || particular;
+
+                        const row = byParticular.get(particularKey);
+                        row.studentName = row.studentName || transaction.studentName || '';
+                        const month = normalizeMonthName(transaction.month) || normalizeMonthNameFromDate(transaction.receiptDate || transaction.createdAt);
+                        const amount = Number(item.amount || 0);
+                        if (month && row.months.hasOwnProperty(month)) {
+                            row.months[month] += amount;
+                        }
+                        row.total += amount;
+                    });
+                });
+
+                rows.push(...Array.from(byParticular.values()));
+            });
+
+            return rows.sort((a, b) => {
+                const sessionCompare = String(a.session).localeCompare(String(b.session));
+                if (sessionCompare !== 0) return sessionCompare;
+                const rankCompare = getLedgerParticularRank(a) - getLedgerParticularRank(b);
+                if (rankCompare !== 0) return rankCompare;
+                if (getLedgerParticularRank(a) === 3) {
+                    const totalCompare = Number(b.total || 0) - Number(a.total || 0);
+                    if (totalCompare !== 0) return totalCompare;
+                }
+                return String(a.particular).localeCompare(String(b.particular));
+            });
+        }
+
+        function getLedgerParticularRank(row) {
+            const particular = normalizeParticularKey(row.particular);
+            if (particular === 'tuition fee') return 1;
+            if (particular === 'transport fee') return 2;
+            if (Number(row.total || 0) > 0) return 3;
+            return 4;
+        }
+
+        function renderStudentLedger(rows, admissionNo) {
+            const empty = document.getElementById('ledgerEmpty');
+            const wrap = document.getElementById('ledgerTableWrap');
+            const head = document.getElementById('ledgerTableHead');
+            const body = document.getElementById('ledgerTableBody');
+            const foot = document.getElementById('ledgerTableFoot');
+            const studentName = rows.find((row) => row.studentName)?.studentName || document.getElementById('ledgerStudentSearch').value.split('|')[0]?.trim() || '-';
+            const grandTotal = rows.reduce((sum, row) => sum + Number(row.total || 0), 0);
+
+            document.getElementById('ledgerStudentName').textContent = studentName;
+            document.getElementById('ledgerAdmNo').textContent = admissionNo.toUpperCase();
+            document.getElementById('ledgerGrandTotal').textContent = formatCurrency(grandTotal);
+            document.getElementById('ledgerRowCountBadge').textContent = `${rows.length} rows`;
+            document.getElementById('ledgerSubtitle').textContent = `${admissionNo.toUpperCase()} | Session-wise fee ledger`;
+
+            if (!rows.length) {
+                wrap.classList.add('d-none');
+                empty.classList.remove('d-none');
+                empty.querySelector('p.fw-semibold').textContent = 'No ledger found for this student.';
+                empty.querySelector('p.mb-0').textContent = 'Check Admission No. or collect fees first.';
+                return;
+            }
+
+            empty.classList.add('d-none');
+            wrap.classList.remove('d-none');
+            head.innerHTML = `
+                <tr>
+                    <th>Session</th>
+                    <th>Particulars</th>
+                    ${SESSION_MONTHS.map((month) => `<th>${escapeHtml(month.slice(0, 3))}</th>`).join('')}
+                    <th>Total</th>
+                </tr>
+            `;
+            const sessionRowCounts = rows.reduce((counts, row) => {
+                counts[row.session] = (counts[row.session] || 0) + 1;
+                return counts;
+            }, {});
+            const printedSessions = new Set();
+
+            body.innerHTML = rows.map((row) => {
+                const showSessionCell = !printedSessions.has(row.session);
+                if (showSessionCell) printedSessions.add(row.session);
+
+                return `
+                    <tr class="${showSessionCell ? 'ledger-session-start' : ''}">
+                        ${showSessionCell ? `<td class="fw-semibold align-middle" rowspan="${sessionRowCounts[row.session]}">${escapeHtml(row.session)}</td>` : ''}
+                        <td>${escapeHtml(row.particular)}</td>
+                        ${SESSION_MONTHS.map((month) => renderAmountCell(row.months[month])).join('')}
+                        <td class="row-total">${formatCurrency(row.total)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const monthTotals = createMonthBuckets();
+            rows.forEach((row) => {
+                SESSION_MONTHS.forEach((month) => {
+                    monthTotals[month] += Number(row.months[month] || 0);
+                });
+            });
+            foot.innerHTML = `
+                <tr class="table-light fw-semibold">
+                    <td colspan="2">Grand Total</td>
+                    ${SESSION_MONTHS.map((month) => `<td>${formatCurrency(monthTotals[month] || 0)}</td>`).join('')}
+                    <td class="row-total">${formatCurrency(grandTotal)}</td>
+                </tr>
+            `;
+        }
+
+        async function loadDetailLedgerStudentOptions() {
+            const session = document.getElementById('detailLedgerSession').value;
+            const datalist = document.getElementById('detailLedgerStudentOptions');
+            datalist.innerHTML = '';
+            detailLedgerStudents = [];
+
+            if (!session) return;
+
+            try {
+                if (session === '__all__') {
+                    const allStudents = await Promise.all(allSessionNames.map((sessionName) => fetchStudents(sessionName, '', '').catch(() => [])));
+                    const byAdmission = new Map();
+                    allStudents.flat().forEach((student) => {
+                        const admissionNo = student.studentId || '';
+                        if (admissionNo && !byAdmission.has(admissionNo)) {
+                            byAdmission.set(admissionNo, student);
+                        }
+                    });
+                    detailLedgerStudents = Array.from(byAdmission.values()).sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+                } else {
+                    detailLedgerStudents = await fetchStudents(session, '', '');
+                }
+
+                datalist.innerHTML = detailLedgerStudents
+                    .map((student) => {
+                        const admissionNo = student.studentId || '';
+                        const label = `${student.name || 'Unknown Student'} | ${admissionNo}`;
+                        return `<option value="${escapeHtml(label)}"></option>`;
+                    })
+                    .join('');
+            } catch (error) {
+                console.error('Failed to load detail ledger students:', error);
+            }
+        }
+
+        function fillDetailLedgerAdmissionFromSearch() {
+            const value = document.getElementById('detailLedgerStudentSearch').value;
+            const admissionNo = String(value).split('|').pop()?.trim() || '';
+            if (admissionNo) {
+                document.getElementById('detailLedgerAdmissionNo').value = admissionNo.toUpperCase();
+            }
+        }
+
+        async function loadStudentLedgerDetail() {
+            fillDetailLedgerAdmissionFromSearch();
+            const selectedSession = document.getElementById('detailLedgerSession').value;
+            const admissionNo = document.getElementById('detailLedgerAdmissionNo').value.trim().toUpperCase();
+
+            if (!selectedSession) {
+                alert('Please select a session first.');
+                return;
+            }
+
+            if (!admissionNo) {
+                alert('Please select a student or enter Admission No.');
+                return;
+            }
+
+            const button = document.getElementById('loadDetailLedgerBtn');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+
+            try {
+                const sessionsToLoad = selectedSession === '__all__' ? allSessionNames : [selectedSession];
+                const sessionTransactions = await Promise.all(sessionsToLoad.map(async (sessionName) => {
+                    const params = new URLSearchParams({ session: sessionName, admissionNo, limit: '1000' });
+                    const response = await fetch(`${CONFIG.API_URL}/fees/transactions?${params.toString()}`, {
+                        headers: authHeaders()
+                    });
+                    if (!response.ok) return [];
+                    const payload = await response.json();
+                    return (payload.transactions || []).map((transaction) => ({
+                        ...transaction,
+                        sessionName
+                    }));
+                }));
+
+                const exactTransactions = dedupeDetailLedgerTransactions(sessionTransactions.flat()
+                    .filter((transaction) => normalizeAdmissionForCompare(transaction.admissionNo) === normalizeAdmissionForCompare(admissionNo)));
+                currentDetailLedgerTransactions = exactTransactions;
+                currentDetailLedgerAdmissionNo = admissionNo;
+                currentDetailLedgerSession = selectedSession;
+                renderStudentLedgerDetail(exactTransactions, admissionNo, selectedSession);
+            } catch (error) {
+                console.error('Failed to load detailed student ledger:', error);
+                alert('Unable to load detailed student ledger');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-receipt me-2"></i>Load';
+            }
+        }
+
+        function normalizeAdmissionForCompare(value) {
+            return String(value || '').trim().toUpperCase();
+        }
+
+        function dedupeDetailLedgerTransactions(transactions = []) {
+            const seen = new Set();
+            return transactions.filter((transaction) => {
+                const key = transaction._id
+                    || transaction.id
+                    || `${transaction.sessionName || transaction.session || ''}|${transaction.receiptNo || ''}|${transaction.voucherNo || ''}|${transaction.createdAt || ''}`;
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function renderStudentLedgerDetail(transactions, admissionNo, selectedSession) {
+            const sortedTransactions = (Array.isArray(transactions) ? transactions : [])
+                .sort((a, b) => new Date(a.receiptDate || a.createdAt || 0) - new Date(b.receiptDate || b.createdAt || 0));
+            const empty = document.getElementById('detailLedgerEmpty');
+            const wrap = document.getElementById('detailLedgerTableWrap');
+            const statusWrap = document.getElementById('detailLedgerStatusWrap');
+            const body = document.getElementById('detailLedgerTableBody');
+            const foot = document.getElementById('detailLedgerTableFoot');
+            const studentName = sortedTransactions.find((transaction) => transaction.studentName)?.studentName
+                || document.getElementById('detailLedgerStudentSearch').value.split('|')[0]?.trim()
+                || '-';
+            const totals = sortedTransactions.reduce((summary, transaction) => {
+                const billed = getTransactionBilledAmount(transaction);
+                const payment = splitTransactionPayment(transaction);
+                const due = billed - payment.cash - payment.online;
+                summary.billed += billed;
+                summary.cash += payment.cash;
+                summary.online += payment.online;
+                summary.due += due;
+                return summary;
+            }, { billed: 0, cash: 0, online: 0, due: 0 });
+
+            document.getElementById('detailLedgerStudentName').textContent = studentName;
+            document.getElementById('detailLedgerAdmNo').textContent = admissionNo;
+            document.getElementById('detailLedgerBilled').textContent = formatCurrency(totals.billed);
+            document.getElementById('detailLedgerCash').textContent = formatCurrency(totals.cash);
+            document.getElementById('detailLedgerOnline').textContent = formatCurrency(totals.online);
+            document.getElementById('detailLedgerDue').textContent = formatCurrency(totals.due);
+            document.getElementById('detailLedgerRowCountBadge').textContent = `${sortedTransactions.length} receipts`;
+            document.getElementById('detailLedgerSubtitle').textContent = `${admissionNo} | ${selectedSession === '__all__' ? 'All Sessions' : selectedSession}`;
+
+            if (!sortedTransactions.length) {
+                wrap.classList.add('d-none');
+                statusWrap.classList.add('d-none');
+                setDetailLedgerExportButtons(false);
+                empty.classList.remove('d-none');
+                empty.querySelector('p.fw-semibold').textContent = 'No receipt found for this student.';
+                empty.querySelector('p.mb-0').textContent = 'Check Admission No. or collect fees first.';
+                body.innerHTML = '';
+                foot.innerHTML = '';
+                statusWrap.innerHTML = '';
+                return;
+            }
+
+            empty.classList.add('d-none');
+            statusWrap.classList.remove('d-none');
+            wrap.classList.remove('d-none');
+            setDetailLedgerExportButtons(true);
+            renderDetailLedgerStatus(sortedTransactions, selectedSession);
+            body.innerHTML = sortedTransactions.map((transaction, index) => {
+                const billed = getTransactionBilledAmount(transaction);
+                const payment = splitTransactionPayment(transaction);
+                const due = billed - payment.cash - payment.online;
+                const particulars = (transaction.lineItems || [])
+                    .map((item) => `${item.particular || '-'} (${formatCurrency(item.amount || 0)})`)
+                    .join('<br>');
+
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${formatLedgerDate(transaction.receiptDate || transaction.createdAt)}</td>
+                        <td>${escapeHtml(transaction.sessionName || transaction.session || '')}</td>
+                        <td>${escapeHtml(transaction.voucherNo || transaction.receiptNo || '-')}</td>
+                        <td>${particulars || '-'}</td>
+                        <td>${escapeHtml(transaction.month || '-')}</td>
+                        <td>${formatCurrency(billed)}</td>
+                        <td>${payment.cash > 0 ? formatCurrency(payment.cash) : '-'}</td>
+                        <td>${payment.online > 0 ? formatCurrency(payment.online) : '-'}</td>
+                        <td>${due !== 0 ? formatCurrency(due) : '-'}</td>
+                        <td>${escapeHtml(transaction.notes || '-')}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            foot.innerHTML = `
+                <tr class="table-light fw-semibold">
+                    <td colspan="6">Grand Total</td>
+                    <td>${formatCurrency(totals.billed)}</td>
+                    <td>${formatCurrency(totals.cash)}</td>
+                    <td>${formatCurrency(totals.online)}</td>
+                    <td>${formatCurrency(totals.due)}</td>
+                    <td></td>
+                </tr>
+            `;
+        }
+
+        function setDetailLedgerExportButtons(enabled) {
+            document.getElementById('printDetailLedgerBtn').disabled = !enabled;
+            document.getElementById('pdfDetailLedgerBtn').disabled = !enabled;
+            document.getElementById('excelDetailLedgerBtn').disabled = !enabled;
+        }
+
+        function exportStudentLedgerDetailToExcel() {
+            if (!currentDetailLedgerTransactions.length) {
+                return;
+            }
+
+            const workbook = XLSX.utils.book_new();
+            const statusRows = buildDetailLedgerStatusExportRows(currentDetailLedgerTransactions);
+            const receiptRows = currentDetailLedgerTransactions.map((transaction, index) => {
+                const billed = getTransactionBilledAmount(transaction);
+                const payment = splitTransactionPayment(transaction);
+                return {
+                    'Sl No.': index + 1,
+                    Date: formatLedgerDate(transaction.receiptDate || transaction.createdAt),
+                    Session: transaction.sessionName || transaction.session || '',
+                    Receipt: transaction.voucherNo || transaction.receiptNo || '',
+                    Particulars: (transaction.lineItems || []).map((item) => `${item.particular || '-'} (${formatCurrency(item.amount || 0)})`).join(', '),
+                    Month: transaction.month || '',
+                    Billed: billed,
+                    Cash: payment.cash,
+                    Online: payment.online,
+                    Due: billed - payment.cash - payment.online,
+                    Notes: transaction.notes || ''
+                };
+            });
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(statusRows), 'Monthly Status');
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(receiptRows), 'Receipts');
+            XLSX.writeFile(workbook, buildDetailLedgerExportFileName('xlsx'));
+        }
+
+        function buildDetailLedgerStatusExportRows(transactions) {
+            const groups = currentDetailLedgerSession === '__all__'
+                ? groupDetailLedgerTransactionsBySession(transactions)
+                : [{ session: currentDetailLedgerSession, transactions }];
+
+            return groups.flatMap((group) => {
+                const rows = buildDetailLedgerStatusRows(group.transactions);
+                const types = [
+                    { key: 'tuition', label: 'Tuition Fee' },
+                    { key: 'transport', label: 'Transport Fee' },
+                    { key: 'lateFee', label: 'Late Fee' }
+                ];
+
+                return types.map((type) => {
+                    const entry = {
+                        Session: group.session,
+                        Particular: type.label
+                    };
+                    SESSION_MONTHS.forEach((month) => {
+                        const row = rows.find((item) => item.month === month);
+                        entry[month] = Number(row?.[type.key] || 0);
+                    });
+                    entry.Total = SESSION_MONTHS.reduce((sum, month) => {
+                        const row = rows.find((item) => item.month === month);
+                        return sum + Number(row?.[type.key] || 0);
+                    }, 0);
+                    return entry;
+                });
+            });
+        }
+
+        function printStudentLedgerDetail(mode = 'print') {
+            if (!currentDetailLedgerTransactions.length) {
+                return;
+            }
+
+            const schoolName = currentSchoolProfile?.schoolName || 'Skyview Public School';
+            const studentName = document.getElementById('detailLedgerStudentName').textContent || '-';
+            const sessionLabel = currentDetailLedgerSession === '__all__' ? 'All Sessions' : currentDetailLedgerSession;
+            const statusMarkup = document.getElementById('detailLedgerStatusWrap').innerHTML;
+            const receiptTableMarkup = document.getElementById('detailLedgerTableWrap').innerHTML;
+            const title = mode === 'pdf' ? 'Student Ledger Details PDF' : 'Student Ledger Details';
+            const printWindow = window.open('', 'PrintStudentLedgerDetail', 'width=1400,height=900');
+
+            if (!printWindow) {
+                alert('Popup blocked. Please allow popups for printing.');
+                return;
+            }
+
+            const printDocument = [
+                '<!DOCTYPE html><html><head><meta charset="UTF-8">',
+                '<title>' + escapeHtml(title) + '</title>',
+                '<style>',
+                'body { font-family: Arial, sans-serif; margin: 18px; color: #000; }',
+                '.print-header { text-align: center; margin-bottom: 14px; }',
+                '.print-header h1 { margin: 0 0 6px; font-size: 24px; }',
+                '.print-header h2 { margin: 0 0 8px; font-size: 18px; }',
+                '.print-meta { margin-bottom: 12px; font-size: 12px; text-align: center; }',
+                'h3 { margin: 14px 0 6px; font-size: 14px; }',
+                '.badge { display: inline-block; border: 1px solid #999; padding: 3px 8px; font-size: 11px; }',
+                'table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }',
+                'th, td { border: 1px solid #000; padding: 5px 4px; font-size: 10px; text-align: center; vertical-align: middle; color: #000; }',
+                'th { background: #e5eefc !important; font-weight: 700; }',
+                'td:first-child, th:first-child { text-align: left; }',
+                '.row-total, tfoot td { font-weight: 700; }',
+                '.d-none, button { display: none !important; }',
+                'thead { display: table-header-group; }',
+                'tr { page-break-inside: avoid; }',
+                '@page { size: A4 landscape; margin: 10mm; }',
+                '<' + '/style><' + '/head><body>',
+                '<div class="print-header">',
+                '<h1>' + escapeHtml(schoolName) + '</h1>',
+                '<h2>Student Ledger Details</h2>',
+                '</div>',
+                '<div class="print-meta">',
+                '<strong>Student:</strong> ' + escapeHtml(studentName) + ' &nbsp; | &nbsp; ',
+                '<strong>Admission No.:</strong> ' + escapeHtml(currentDetailLedgerAdmissionNo) + ' &nbsp; | &nbsp; ',
+                '<strong>Session:</strong> ' + escapeHtml(sessionLabel),
+                mode === 'pdf' ? '<br><strong>PDF:</strong> Choose "Save as PDF" in the print dialog.' : '',
+                '</div>',
+                statusMarkup,
+                '<h3>Receipt Details</h3>',
+                receiptTableMarkup,
+                '<' + '/body><' + '/html>'
+            ].join('');
+
+            printWindow.document.open();
+            printWindow.document.write(printDocument);
+            printWindow.document.close();
+
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+            }, 300);
+        }
+
+        function buildDetailLedgerExportFileName(extension = 'xlsx') {
+            const session = currentDetailLedgerSession === '__all__' ? 'all-sessions' : currentDetailLedgerSession || 'session';
+            const admissionNo = currentDetailLedgerAdmissionNo || 'student';
+            return `student-ledger-detail-${slugify(admissionNo)}-${slugify(session)}.${extension}`;
+        }
+
+        function renderDetailLedgerStatus(transactions, selectedSession) {
+            const wrap = document.getElementById('detailLedgerStatusWrap');
+            const groupedTransactions = selectedSession === '__all__'
+                ? groupDetailLedgerTransactionsBySession(transactions)
+                : [{ session: selectedSession, transactions }];
+
+            wrap.innerHTML = groupedTransactions
+                .map((group) => renderDetailLedgerStatusTable(group.transactions, group.session))
+                .join('');
+        }
+
+        function groupDetailLedgerTransactionsBySession(transactions) {
+            const grouped = new Map();
+            transactions.forEach((transaction) => {
+                const session = transaction.sessionName || transaction.session || 'Unknown Session';
+                if (!grouped.has(session)) {
+                    grouped.set(session, []);
+                }
+                grouped.get(session).push(transaction);
+            });
+
+            return Array.from(grouped.entries())
+                .sort(([sessionA], [sessionB]) => {
+                    const indexA = allSessionNames.indexOf(sessionA);
+                    const indexB = allSessionNames.indexOf(sessionB);
+                    if (indexA !== -1 || indexB !== -1) {
+                        return (indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA) - (indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB);
+                    }
+                    return String(sessionA).localeCompare(String(sessionB));
+                })
+                .map(([session, sessionTransactions]) => ({ session, transactions: sessionTransactions }));
+        }
+
+        function buildDetailLedgerStatusRows(transactions) {
+            const statusRows = SESSION_MONTHS.map((month) => ({
+                month,
+                tuition: 0,
+                transport: 0,
+                lateFee: 0
+            }));
+            const byMonth = new Map(statusRows.map((row) => [row.month, row]));
+
+            transactions.forEach((transaction) => {
+                const month = normalizeMonthName(transaction.month) || normalizeMonthNameFromDate(transaction.receiptDate || transaction.createdAt);
+                const row = byMonth.get(month);
+                if (!row) return;
+
+                (transaction.lineItems || []).forEach((item) => {
+                    const amount = Number(item.amount || 0);
+                    const bucket = getDetailLedgerStatusBucket(item.particular);
+                    if (bucket && amount) {
+                        row[bucket] += amount;
+                    }
+                });
+            });
+
+            return statusRows;
+        }
+
+        function renderDetailLedgerStatusTable(transactions, sessionLabel) {
+            const statusRows = buildDetailLedgerStatusRows(transactions);
+
+            const statusTypes = [
+                { key: 'tuition', label: 'Tuition Fee' },
+                { key: 'transport', label: 'Transport Fee' },
+                { key: 'lateFee', label: 'Late Fee' }
+            ];
+
+            const bodyRows = statusTypes.map((type) => {
+                const total = statusRows.reduce((sum, row) => sum + Number(row[type.key] || 0), 0);
+                return `
+                    <tr>
+                        <td class="fw-semibold">${escapeHtml(type.label)}</td>
+                        ${statusRows.map((row) => `<td>${row[type.key] ? formatCurrency(row[type.key]) : '-'}</td>`).join('')}
+                        <td class="row-total">${total ? formatCurrency(total) : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const totals = statusRows.reduce((summary, row) => {
+                summary.tuition += row.tuition;
+                summary.transport += row.transport;
+                summary.lateFee += row.lateFee;
+                return summary;
+            }, { tuition: 0, transport: 0, lateFee: 0 });
+            const monthTotals = statusRows.map((row) => row.tuition + row.transport + row.lateFee);
+            const grandTotal = totals.tuition + totals.transport + totals.lateFee;
+
+            return `
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h3 class="h6 mb-0">Monthly Fee Status</h3>
+                        <span class="badge bg-light text-dark border">${escapeHtml(sessionLabel || 'Selected Session')}</span>
+                    </div>
+                    <table class="table table-bordered table-striped align-middle register-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Particular</th>
+                                ${SESSION_MONTHS.map((month) => `<th>${escapeHtml(month.slice(0, 3))}</th>`).join('')}
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>${bodyRows}</tbody>
+                        <tfoot>
+                            <tr class="table-light fw-semibold">
+                                <td>Total</td>
+                                ${monthTotals.map((total) => `<td>${total ? formatCurrency(total) : '-'}</td>`).join('')}
+                                <td class="row-total">${grandTotal ? formatCurrency(grandTotal) : '-'}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        }
+
+        function getDetailLedgerStatusBucket(particular) {
+            const key = normalizeParticularKey(particular);
+            if (key.includes('pre year') || key.includes('pre-year') || key.includes('previous year')) {
+                return '';
+            }
+
+            const hasLateFine = key.includes('late') || key.includes('fine');
+            const hasTuition = key.includes('tuition');
+            const hasTransport = key.includes('transport');
+
+            if (key === 'late fee' || hasLateFine) return 'lateFee';
+            if (key === 'tuition fee' || hasTuition) return 'tuition';
+            if (key === 'transport fee' || hasTransport) return 'transport';
+            return '';
+        }
+
+        function getTransactionBilledAmount(transaction) {
+            return (transaction.lineItems || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+        }
+
+        function splitTransactionPayment(transaction) {
+            const paymentBreakdown = Array.isArray(transaction.paymentBreakdown) ? transaction.paymentBreakdown : [];
+            if (!paymentBreakdown.length) {
+                const amount = Number(transaction.paidAmount || 0);
+                return String(transaction.paymentMode || '').toLowerCase() === 'online'
+                    ? { cash: 0, online: amount }
+                    : { cash: amount, online: 0 };
+            }
+
+            return paymentBreakdown.reduce((summary, entry) => {
+                const amount = Number(entry.amount || 0);
+                const baseMode = String(entry.baseMode || entry.modeLabel || '').toLowerCase();
+                if (baseMode === 'cash') {
+                    summary.cash += amount;
+                } else {
+                    summary.online += amount;
+                }
+                return summary;
+            }, { cash: 0, online: 0 });
+        }
+
+        function formatLedgerDate(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '-';
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            }).replace(/ /g, '-');
+        }
+
         async function loadRegister() {
             const session = sessionSelect.value;
             const className = classSelect.value;
@@ -430,6 +1451,9 @@
                 ]);
 
                 currentTransactions = Array.isArray(transactions) ? transactions : [];
+                currentParticularColumns = registerType === 'ledger'
+                    ? buildParticularColumns(currentTransactions)
+                    : [];
                 currentRows = buildRegisterRows(students, currentTransactions, section);
                 currentGrandTotals = buildGrandTotals(currentRows);
 
@@ -478,9 +1502,14 @@
         async function fetchTransactions(session, className) {
             const params = new URLSearchParams({
                 session,
-                particular: registerType === 'tuition' ? 'Tuition Fee' : 'Transport',
                 limit: '500'
             });
+
+            if (registerType === 'tuition') {
+                params.set('particular', 'Tuition Fee');
+            } else if (registerType === 'transport') {
+                params.set('particular', 'Transport');
+            }
 
             if (className) {
                 params.set('className', className);
@@ -512,6 +1541,7 @@
                     section: student.section || '',
                     rollNo: student.rollNo || '',
                     months: createMonthBuckets(),
+                    particulars: createParticularBuckets(),
                     totalCollection: 0
                 });
             });
@@ -529,11 +1559,23 @@
                         section: transaction.section || '',
                         rollNo: transaction.rollNo || '',
                         months: createMonthBuckets(),
+                        particulars: createParticularBuckets(),
                         totalCollection: 0
                     });
                 }
 
                 const row = studentMap.get(admissionNo);
+                if (registerType === 'ledger') {
+                    (transaction.lineItems || []).forEach((item) => {
+                        const particular = String(item.particular || '').trim();
+                        const amount = Number(item.amount || 0);
+                        if (!particular) return;
+                        row.particulars[particular] = Number(row.particulars[particular] || 0) + amount;
+                        row.totalCollection += amount;
+                    });
+                    return;
+                }
+
                 const monthName = normalizeMonthName(transaction.month) || normalizeMonthNameFromDate(transaction.receiptDate || transaction.createdAt);
                 if (!monthName || !row.months.hasOwnProperty(monthName)) {
                     return;
@@ -557,13 +1599,19 @@
         }
 
         function buildGrandTotals(rows) {
-            const totals = createMonthBuckets();
+            const totals = registerType === 'ledger' ? createParticularBuckets() : createMonthBuckets();
             let overall = 0;
 
             rows.forEach((row) => {
-                SESSION_MONTHS.forEach((month) => {
-                    totals[month] += Number(row.months[month] || 0);
-                });
+                if (registerType === 'ledger') {
+                    currentParticularColumns.forEach((particular) => {
+                        totals[particular] += Number(row.particulars[particular] || 0);
+                    });
+                } else {
+                    SESSION_MONTHS.forEach((month) => {
+                        totals[month] += Number(row.months[month] || 0);
+                    });
+                }
                 overall += Number(row.totalCollection || 0);
             });
 
@@ -583,7 +1631,7 @@
             registerTableHead.innerHTML = `
                 <tr>
                     <th>Student Name</th>
-                    ${SESSION_MONTHS.map((month) => `<th>${escapeHtml(month)}</th>`).join('')}
+                    ${getActiveRegisterColumns().map((column) => `<th>${escapeHtml(column)}</th>`).join('')}
                     <th>Total Collection</th>
                 </tr>
             `;
@@ -596,7 +1644,7 @@
                             ${escapeHtml(row.admissionNo)}${row.className ? ` | ${escapeHtml(row.className)}${row.section ? `-${escapeHtml(row.section)}` : ''}` : ''}${row.rollNo ? ` | Roll ${escapeHtml(String(row.rollNo))}` : ''}
                         </div>
                     </td>
-                    ${SESSION_MONTHS.map((month) => renderAmountCell(row.months[month])).join('')}
+                    ${getActiveRegisterColumns().map((column) => renderAmountCell(registerType === 'ledger' ? row.particulars[column] : row.months[column])).join('')}
                     <td class="row-total">${formatCurrency(row.totalCollection)}</td>
                 </tr>
             `).join('');
@@ -604,7 +1652,7 @@
             registerTableFoot.innerHTML = `
                 <tr class="table-light fw-semibold">
                     <td>Grand Total</td>
-                    ${SESSION_MONTHS.map((month) => `<td>${formatCurrency(grandTotals[month] || 0)}</td>`).join('')}
+                    ${getActiveRegisterColumns().map((column) => `<td>${formatCurrency(grandTotals[column] || 0)}</td>`).join('')}
                     <td class="row-total">${formatCurrency(grandTotals.Total || 0)}</td>
                 </tr>
             `;
@@ -616,20 +1664,20 @@
             document.getElementById('statStudents').textContent = rows.length;
             document.getElementById('statReceipts').textContent = Array.isArray(transactions) ? transactions.length : 0;
             summaryTotalCollection.textContent = formatCurrency(grandTotals.Total || 0);
-            summaryMonthsCovered.textContent = String(SESSION_MONTHS.filter((month) => Number(grandTotals[month] || 0) > 0).length);
+            summaryMonthsCovered.textContent = String(getActiveRegisterColumns().filter((column) => Number(grandTotals[column] || 0) > 0).length);
 
             const filterLabel = [
                 session,
                 className || 'All Classes',
                 section || 'All Sections'
             ].join(' | ');
-            tableSubtitle.textContent = `${registerType === 'tuition' ? 'Tuition' : 'Transport'} register for ${filterLabel}`;
-            tableTitle.textContent = `${registerType === 'tuition' ? 'Tuition Fees Collection Register' : 'Transport Fees Collection Register'}`;
+            tableSubtitle.textContent = `${getRegisterLabel()} for ${filterLabel}`;
+            tableTitle.textContent = getRegisterTitle();
         }
 
         function updateTableLabels() {
-            summaryRegisterType.textContent = registerType === 'tuition' ? 'Tuition' : 'Transport';
-            tableTitle.textContent = `${registerType === 'tuition' ? 'Tuition Fees Collection Register' : 'Transport Fees Collection Register'}`;
+            summaryRegisterType.textContent = getRegisterLabel();
+            tableTitle.textContent = getRegisterTitle();
         }
 
         function showEmptyState(message) {
@@ -660,8 +1708,8 @@
                     'Roll No': row.rollNo
                 };
 
-                SESSION_MONTHS.forEach((month) => {
-                    entry[month] = Number(row.months[month] || 0);
+                getActiveRegisterColumns().forEach((column) => {
+                    entry[column] = Number((registerType === 'ledger' ? row.particulars[column] : row.months[column]) || 0);
                 });
 
                 entry['Total Collection'] = Number(row.totalCollection || 0);
@@ -670,7 +1718,7 @@
 
             worksheetRows.push({
                 'Student Name': 'Grand Total',
-                ...Object.fromEntries(SESSION_MONTHS.map((month) => [month, Number(currentGrandTotals[month] || 0)])),
+                ...Object.fromEntries(getActiveRegisterColumns().map((column) => [column, Number(currentGrandTotals[column] || 0)])),
                 'Total Collection': Number(currentGrandTotals.Total || 0)
             });
 
@@ -689,9 +1737,7 @@
             const session = sessionSelect.value || '-';
             const className = classSelect.value || 'All Classes';
             const section = sectionSelect.value || 'All Sections';
-            const registerLabel = registerType === 'tuition'
-                ? 'Tuition Fees Collection Register'
-                : 'Transport Fees Collection Register';
+            const registerLabel = getRegisterTitle();
             const tableMarkup = document.querySelector('.register-table')?.outerHTML || '';
 
             if (!tableMarkup) {
@@ -750,7 +1796,11 @@
             const session = sessionSelect.value || 'session';
             const className = classSelect.value || 'all-classes';
             const section = sectionSelect.value || 'all-sections';
-            const type = registerType === 'tuition' ? 'tuition-register' : 'transport-register';
+            const type = registerType === 'tuition'
+                ? 'tuition-register'
+                : registerType === 'transport'
+                    ? 'transport-register'
+                    : 'student-ledger';
             return `${slugify(type)}-${slugify(session)}-${slugify(className)}-${slugify(section)}.xlsx`;
         }
 
@@ -773,6 +1823,67 @@
 
         function createMonthBuckets() {
             return Object.fromEntries(SESSION_MONTHS.map((month) => [month, 0]));
+        }
+
+        function buildParticularColumns(transactions) {
+            const columns = new Map();
+            (Array.isArray(transactions) ? transactions : []).forEach((transaction) => {
+                (transaction.lineItems || []).forEach((item) => {
+                    const particular = String(item.particular || '').trim();
+                    if (!particular) return;
+                    const key = normalizeParticularKey(particular);
+                    if (!columns.has(key)) columns.set(key, particular);
+                });
+            });
+            return Array.from(columns.values()).sort((a, b) => a.localeCompare(b));
+        }
+
+        function createParticularBuckets() {
+            return Object.fromEntries(currentParticularColumns.map((particular) => [particular, 0]));
+        }
+
+        function getActiveRegisterColumns() {
+            return registerType === 'ledger' ? currentParticularColumns : SESSION_MONTHS;
+        }
+
+        function getRegisterLabel() {
+            if (registerType === 'tuition') return 'Tuition';
+            if (registerType === 'transport') return 'Transport';
+            return 'Ledger';
+        }
+
+        function getRegisterTitle() {
+            if (registerType === 'tuition') return 'Tuition Fees Collection Register';
+            if (registerType === 'transport') return 'Transport Fees Collection Register';
+            return 'Individual Student Ledger';
+        }
+
+        function normalizeParticularKey(value) {
+            const normalized = String(value || '')
+                .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                .replace(/\u00A0/g, ' ')
+                .trim()
+                .replace(/\s+/g, ' ')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim()
+                .replace(/\bfees\b/g, 'fee')
+                .replace(/\s+/g, ' ');
+
+            if (normalized === 'tuition') return 'tuition fee';
+            if (normalized === 'transport') return 'transport fee';
+            return normalized;
+        }
+
+        function dedupeParticularNames(names) {
+            const map = new Map();
+            names.forEach((name) => {
+                const cleanName = String(name || '').trim().replace(/\s+/g, ' ');
+                if (!cleanName) return;
+                const key = normalizeParticularKey(cleanName);
+                if (!map.has(key)) map.set(key, cleanName);
+            });
+            return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
         }
 
         function normalizeMonthName(value) {

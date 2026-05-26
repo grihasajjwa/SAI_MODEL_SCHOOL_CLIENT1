@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Bill and Ledger - Skyview Public School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <style>
+        body {
+            background: #f6f8fb;
+        }
+
+        .fuel-panel {
+            border: 1px solid #dde7f3;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(31, 53, 89, 0.06);
+        }
+
+        .stat-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .fuel-stat {
+            border: 1px solid #dde7f3;
+            border-radius: 8px;
+            background: #fff;
+            padding: 12px 14px;
+        }
+
+        .fuel-stat span {
+            display: block;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        .fuel-stat strong {
+            display: block;
+            margin-top: 4px;
+            font-size: 1.25rem;
+            color: #183b67;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                color: #111;
+                font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+                font-size: 11px;
+            }
+
+            #navbar-container,
+            .no-print,
+            .col-lg-4,
+            .card-header,
+            .stat-strip,
+            main > .d-flex {
+                display: none !important;
+            }
+
+            main {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+
+            .col-lg-8 {
+                width: 100% !important;
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .fuel-panel,
+            .fuel-stat {
+                border: none;
+                box-shadow: none;
+            }
+
+            .fuel-panel .card-body {
+                padding: 0 !important;
+            }
+
+            .table {
+                border-collapse: collapse !important;
+                font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+                font-size: 10.5px;
+                line-height: 1.25;
+                width: 100%;
+            }
+
+            .table th {
+                background: #f1f3f5 !important;
+                color: #111;
+                font-weight: 700;
+                text-transform: uppercase;
+                font-size: 10px;
+            }
+
+            .table th,
+            .table td {
+                border: 1px solid #444 !important;
+                padding: 5px 6px !important;
+                vertical-align: middle;
+            }
+
+            .table tfoot th {
+                background: #e9ecef !important;
+                font-size: 10.5px;
+                font-weight: 800;
+            }
+
+            a {
+                color: #000;
+                text-decoration: none;
+            }
+
+            #fuelLedgerTable th:nth-child(9),
+            #fuelLedgerTable td:nth-child(9) {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stat-strip {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container-fluid py-4" style="max-width: 1380px;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+            <div>
+                <h3 class="mb-1">Fuel Bill and Ledger</h3>
+                <p class="text-muted mb-0">Maintain school bus fuel purchases and odometer readings.</p>
+            </div>
+            <div class="d-flex gap-2 no-print">
+                <button type="button" class="btn btn-outline-secondary" id="printFuelLedgerBtn">
+                    <i class="fas fa-print me-2"></i>Print Ledger
+                </button>
+                <a href="expense-record.html" class="btn btn-outline-primary">
+                    <i class="fas fa-wallet me-2"></i>Record Expense
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card fuel-panel">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0" id="fuelFormTitle"><i class="fas fa-gas-pump me-2"></i>New Fuel Bill</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="fuelLedgerForm">
+                            <div id="fuelLedgerMessage" class="alert alert-danger d-none" role="alert"></div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="fuelDate">Date</label>
+                                <input type="date" class="form-control" id="fuelDate" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="fuelCentreName">Fuel Centre Name</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="fuelCentreName" required>
+                                        <option value="">Select Fuel Centre</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary" id="addFuelCentreBtn" title="Add fuel centre">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="fuelReceiptNo">Receipt No.</label>
+                                <input type="text" class="form-control" id="fuelReceiptNo" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="fuelVehicleNumber">Vehicle Number</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="fuelVehicleNumber" required>
+                                        <option value="">Select Vehicle</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary" id="addFuelVehicleBtn" title="Add vehicle">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="fuelVolumeLtr">Volume in Ltr</label>
+                                    <input type="number" class="form-control" id="fuelVolumeLtr" min="0" step="0.01" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="fuelAmount">Amount</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rs.</span>
+                                        <input type="number" class="form-control" id="fuelAmount" min="0" step="0.01" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="form-label" for="fuelRecordedKmMeter">Recorded Km in Meter</label>
+                                <input type="number" class="form-control" id="fuelRecordedKmMeter" min="0" step="1" required>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="form-label" for="fuelNotes">Notes</label>
+                                <input type="text" class="form-control" id="fuelNotes" placeholder="Optional">
+                            </div>
+
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-success" id="saveFuelBillBtn">
+                                    <i class="fas fa-save me-2"></i>Save Fuel Bill
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary mt-2 d-none" id="cancelFuelEditBtn">
+                                    Cancel Edit
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="stat-strip mb-3">
+                    <div class="fuel-stat">
+                        <span>Billed Amount - Payment</span>
+                        <strong>Rs. <span id="fuelBalanceAmount">0.00</span></strong>
+                    </div>
+                    <div class="fuel-stat">
+                        <span>Total Volume</span>
+                        <strong><span id="fuelTotalVolume">0.00</span> Ltr</strong>
+                    </div>
+                    <div class="fuel-stat">
+                        <span>Entries</span>
+                        <strong id="fuelEntryCount">0</strong>
+                    </div>
+                </div>
+
+                <div class="card fuel-panel">
+                    <div class="card-header bg-light">
+                        <form id="fuelLedgerFilterForm" class="row g-2 align-items-end">
+                            <div class="col-md-2">
+                                <label class="form-label" for="fuelFilterStartDate">From</label>
+                                <input type="date" class="form-control" id="fuelFilterStartDate">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="fuelFilterEndDate">To</label>
+                                <input type="date" class="form-control" id="fuelFilterEndDate">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="fuelFilterCentre">Fuel Centre</label>
+                                <select class="form-select" id="fuelFilterCentre">
+                                    <option value="">All Centres</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="fuelFilterVehicle">Vehicle</label>
+                                <select class="form-select" id="fuelFilterVehicle">
+                                    <option value="">All Vehicles</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex gap-2">
+                                <button type="submit" class="btn btn-primary flex-fill">Filter</button>
+                                <button type="button" class="btn btn-outline-secondary" id="resetFuelFiltersBtn">Reset</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="fuelLedgerTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Fuel Centre</th>
+                                        <th>Receipt No.</th>
+                                        <th>Vehicle</th>
+                                        <th class="text-end">Ltr</th>
+                                        <th class="text-end">Amount</th>
+                                        <th class="text-end">Payment</th>
+                                        <th class="text-end">Recorded Km</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fuelLedgerTableBody">
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted py-4">Loading fuel ledger...</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="4" class="text-end">Total</th>
+                                        <th class="text-end" id="fuelFooterVolume">0.00</th>
+                                        <th class="text-end" id="fuelFooterBilled">0.00</th>
+                                        <th class="text-end" id="fuelFooterPayment">0.00</th>
+                                        <th class="text-end" id="fuelFooterBalance">0.00</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3 py-2 border-top no-print" id="fuelLedgerPagination">
+                            <div class="small text-muted" id="fuelLedgerPageInfo">Showing 0 records</div>
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="small text-muted" for="fuelLedgerPageSize">Rows</label>
+                                <select class="form-select form-select-sm" id="fuelLedgerPageSize" style="width: 84px;">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="fuelLedgerPrevPageBtn">Previous</button>
+                                <span class="small fw-semibold" id="fuelLedgerPageNumber">1 / 1</span>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="fuelLedgerNextPageBtn">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../js/fuel-ledger.js"></script>
+    <script src="../js/page-shell.js"></script>
+</body>
+</html>

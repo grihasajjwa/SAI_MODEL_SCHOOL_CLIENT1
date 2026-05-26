@@ -1,5 +1,20 @@
 // API Base URL
-const API_BASE_URL = CONFIG.API_URL;
+function resolveFallbackApiUrl() {
+    const { protocol, hostname, port, origin } = window.location;
+    const isLocalhost = ['localhost', '127.0.0.1'].includes(hostname);
+
+    if (protocol === 'file:') return 'http://127.0.0.1:5000/api';
+    if (isLocalhost && port && port !== '5000') return `${protocol}//${hostname}:5000/api`;
+    return `${origin.replace(/\/+$/, '')}/api`;
+}
+
+const ACTIVE_CONFIG = window.CONFIG || {
+    API_URL: resolveFallbackApiUrl(),
+    STORAGE_KEYS: { TOKEN: 'skyview_token' }
+};
+window.CONFIG = ACTIVE_CONFIG;
+var CONFIG = ACTIVE_CONFIG;
+const API_BASE_URL = ACTIVE_CONFIG.API_URL;
 
 // Function to get authentication token
 function getAuthToken() {
@@ -85,6 +100,73 @@ const classApi = {
             return [];
         }
     },
+
+    async getClassesByAcademicYear(academicYear) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/classes/year/${encodeURIComponent(academicYear)}`);
+            if (!response) return [];
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching classes by academic year:', error);
+            return [];
+        }
+    },
+
+    async createClass(classData) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/classes`, {
+                method: 'POST',
+                body: JSON.stringify(classData)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating class:', error);
+            throw error;
+        }
+    },
+};
+
+const sessionApi = {
+    async getAll() {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/sessions`);
+            if (!response) return [];
+            const data = await response.json();
+            return data.sessions || data || [];
+        } catch (error) {
+            console.error('Error fetching sessions:', error);
+            return [];
+        }
+    }
+};
+
+const examNameApi = {
+    async getBySession(session) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/exam-names/${encodeURIComponent(session)}`);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching exam names:', error);
+            return null;
+        }
+    },
+
+    async save(payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/exam-names`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving exam names:', error);
+            throw error;
+        }
+    }
 };
 
 // Marks-related API calls
@@ -168,9 +250,10 @@ const feesApi = {
         }
     },
 
-    async getTodayTransactions() {
+    async getTodayTransactions(date = '') {
         try {
-            const response = await apiCall(`${API_BASE_URL}/fees/today-transactions`);
+            const query = date ? `?date=${encodeURIComponent(date)}` : '';
+            const response = await apiCall(`${API_BASE_URL}/fees/today-transactions${query}`);
             if (!response) return null;
             return await response.json();
         } catch (error) {
@@ -179,9 +262,10 @@ const feesApi = {
         }
     },
 
-    async getStudentFeeSummary(admissionNo) {
+    async getStudentFeeSummary(admissionNo, session = '') {
         try {
-            const response = await apiCall(`${API_BASE_URL}/fees/student/${encodeURIComponent(admissionNo)}`);
+            const query = session ? `?session=${encodeURIComponent(session)}` : '';
+            const response = await apiCall(`${API_BASE_URL}/fees/student/${encodeURIComponent(admissionNo)}${query}`);
             if (!response) return null;
             return await response.json();
         } catch (error) {
@@ -279,6 +363,44 @@ const feesApi = {
         }
     },
 
+    async getCashbookOpening(params = {}) {
+        try {
+            const query = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    query.set(key, value);
+                }
+            });
+
+            const url = query.toString()
+                ? `${API_BASE_URL}/fees/cashbook/opening?${query.toString()}`
+                : `${API_BASE_URL}/fees/cashbook/opening`;
+
+            const token = getAuthToken();
+            if (!token) return null;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (response.status === 404) {
+                return { success: false, routeMissing: true };
+            }
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                return {
+                    success: false,
+                    message: errorData.message || 'Unable to fetch cashbook opening'
+                };
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching cashbook opening:', error);
+            return null;
+        }
+    },
+
     async getAuditLogs(params = {}) {
         try {
             const query = new URLSearchParams();
@@ -367,6 +489,31 @@ const feesApi = {
         }
     },
 
+    async getParticulars() {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/fees/particulars`);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching fee particulars:', error);
+            return null;
+        }
+    },
+
+    async createParticular(name) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/fees/particulars`, {
+                method: 'POST',
+                body: JSON.stringify({ name })
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating fee particular:', error);
+            return null;
+        }
+    },
+
     async createPaymentAccount(name) {
         try {
             const response = await apiCall(`${API_BASE_URL}/fees/payment-accounts`, {
@@ -447,10 +594,21 @@ const feesApi = {
 
     async deleteExpense(expenseId, payload = {}) {
         try {
-            const response = await apiCall(`${API_BASE_URL}/fees/expenses/${expenseId}`, {
-                method: 'DELETE',
-                body: JSON.stringify(payload)
-            });
+            let response;
+            try {
+                response = await apiCall(`${API_BASE_URL}/fees/expenses/${expenseId}`, {
+                    method: 'DELETE',
+                    body: JSON.stringify(payload)
+                });
+            } catch (error) {
+                if (!String(error.message || '').includes('Not Found')) {
+                    throw error;
+                }
+                response = await apiCall(`${API_BASE_URL}/fees/expenses/${expenseId}/delete`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+            }
             if (!response) return null;
             return await response.json();
         } catch (error) {
@@ -496,13 +654,457 @@ const feesApi = {
     }
 };
 
+const fuelApi = {
+    async getOptions() {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/fuel/options`);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching fuel options:', error);
+            return null;
+        }
+    },
+
+    async createCentre(name) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/fuel/centres`, {
+                method: 'POST',
+                body: JSON.stringify({ name })
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating fuel centre:', error);
+            throw error;
+        }
+    },
+
+    async createVehicle(vehicleNumber) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/fuel/vehicles`, {
+                method: 'POST',
+                body: JSON.stringify({ vehicleNumber })
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating bus vehicle:', error);
+            throw error;
+        }
+    },
+
+    async getEntries(params = {}) {
+        try {
+            const query = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    query.set(key, value);
+                }
+            });
+
+            const url = query.toString()
+                ? `${API_BASE_URL}/fuel/entries?${query.toString()}`
+                : `${API_BASE_URL}/fuel/entries`;
+
+            const response = await apiCall(url);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching fuel ledger:', error);
+            return null;
+        }
+    },
+
+    async saveEntry(payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/fuel/entries`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving fuel bill:', error);
+            throw error;
+        }
+    },
+
+    async updateEntry(entryId, payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/fuel/entries/${entryId}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating fuel bill:', error);
+            throw error;
+        }
+    },
+
+    async deleteEntry(entryId) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/fuel/entries/${entryId}`, {
+                method: 'DELETE'
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting fuel bill:', error);
+            throw error;
+        }
+    }
+};
+
+const supplierApi = {
+    async getOptions() {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/suppliers/options`);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching suppliers:', error);
+            return null;
+        }
+    },
+
+    async createSupplier(payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/suppliers/suppliers`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating supplier:', error);
+            throw error;
+        }
+    },
+
+    async getEntries(params = {}) {
+        try {
+            const query = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') query.set(key, value);
+            });
+            const url = query.toString()
+                ? `${API_BASE_URL}/suppliers/entries?${query.toString()}`
+                : `${API_BASE_URL}/suppliers/entries`;
+            const response = await apiCall(url);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching supplier ledger:', error);
+            return null;
+        }
+    },
+
+    async saveEntry(payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/suppliers/entries`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving supplier purchase:', error);
+            throw error;
+        }
+    },
+
+    async updateEntry(entryId, payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/suppliers/entries/${entryId}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating supplier purchase:', error);
+            throw error;
+        }
+    },
+
+    async deleteEntry(entryId) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/suppliers/entries/${entryId}`, {
+                method: 'DELETE'
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting supplier purchase:', error);
+            throw error;
+        }
+    }
+};
+
+const salaryApi = {
+    async getColumns() {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/columns`);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching salary columns:', error);
+            return null;
+        }
+    },
+
+    async saveColumn(payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/columns`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving salary column:', error);
+            throw error;
+        }
+    },
+
+    async deleteColumn(columnKey) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/columns/${encodeURIComponent(columnKey)}`, {
+                method: 'DELETE'
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting salary column:', error);
+            throw error;
+        }
+    },
+
+    async getEmployees(params = {}) {
+        try {
+            const query = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') query.set(key, value);
+            });
+            const url = query.toString()
+                ? `${API_BASE_URL}/salary/employees?${query.toString()}`
+                : `${API_BASE_URL}/salary/employees`;
+            const response = await apiCall(url);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching salary employees:', error);
+            return null;
+        }
+    },
+
+    async saveEmployee(payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/employees`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving salary employee:', error);
+            throw error;
+        }
+    },
+
+    async updateEmployee(employeeId, payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/employees/${employeeId}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating salary employee:', error);
+            throw error;
+        }
+    },
+
+    async deleteEmployee(employeeId) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/employees/${employeeId}`, {
+                method: 'DELETE'
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting salary employee:', error);
+            throw error;
+        }
+    },
+
+    async previewSheet(params = {}) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/sheets/preview`, {
+                method: 'POST',
+                body: JSON.stringify(params)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error preparing salary sheet preview:', error);
+            return null;
+        }
+    },
+
+    async getSheets(params = {}) {
+        try {
+            const query = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') query.set(key, value);
+            });
+            const url = query.toString()
+                ? `${API_BASE_URL}/salary/sheets?${query.toString()}`
+                : `${API_BASE_URL}/salary/sheets`;
+            const response = await apiCall(url);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching salary sheets:', error);
+            return null;
+        }
+    },
+
+    async saveSheet(payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/sheets`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving salary sheet:', error);
+            throw error;
+        }
+    },
+
+    async getSheet(sheetId) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/sheets/${sheetId}`);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching salary sheet:', error);
+            return null;
+        }
+    },
+
+    async deleteSheet(sheetId) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/salary/sheets/${sheetId}`, {
+                method: 'DELETE'
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting salary sheet:', error);
+            throw error;
+        }
+    }
+};
+
+const examRoutineApi = {
+    async getAll() {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/exam-routines`);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching exam routines:', error);
+            return null;
+        }
+    },
+
+    async getById(id) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/exam-routines/${id}`);
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching exam routine:', error);
+            return null;
+        }
+    },
+
+    async save(payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/exam-routines`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving exam routine:', error);
+            throw error;
+        }
+    },
+
+    async update(id, payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/exam-routines/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating exam routine:', error);
+            throw error;
+        }
+    },
+
+    async saveRow(id, payload) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/exam-routines/${id}/rows`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving exam routine row:', error);
+            throw error;
+        }
+    },
+
+    async delete(id) {
+        try {
+            const response = await apiCall(`${API_BASE_URL}/exam-routines/${id}`, {
+                method: 'DELETE'
+            });
+            if (!response) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting exam routine:', error);
+            throw error;
+        }
+    }
+};
+
 
 // Export the API functions
 window.API = {
     BASE_URL: API_BASE_URL,
     call: apiCall,
+    sessions: sessionApi,
+    examNames: examNameApi,
     class: classApi,
     marks: marksApi,
     exam: examApi,
-    fees: feesApi
+    fees: feesApi,
+    fuel: fuelApi,
+    suppliers: supplierApi,
+    salary: salaryApi,
+    examRoutine: examRoutineApi
 };

@@ -25,6 +25,8 @@ let onlineAccountCounter = 0;
 let recentTransactionsCache = [];
 const customParticulars = new Set();
 const onlineAccounts = [];
+const queryParams = new URLSearchParams(window.location.search);
+const shouldPrefillDuePayment = queryParams.get('collectDue') === '1';
 
 function hasTuitionFee(lineItems = getLineItemsPayload()) {
     return lineItems.some((item) => item.particular === 'Tuition Fee');
@@ -82,39 +84,71 @@ function getAllParticulars() {
     return [...new Set([...DEFAULT_FEE_PARTICULARS, ...Array.from(customParticulars)])].sort((a, b) => a.localeCompare(b));
 }
 
+function normalizeFeeParticular(value = '') {
+    return String(value || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLowerCase()
+        .replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+}
+
+function normalizeAdmissionNo(value = '') {
+    return String(value || '').trim().toUpperCase();
+}
+
 function rememberCustomParticular(value) {
-    const particular = String(value || '').trim();
+    const particular = normalizeFeeParticular(value);
     if (!particular) return;
     customParticulars.add(particular);
 }
 
+async function loadFeeParticulars() {
+    const result = await API.fees.getParticulars();
+    if (!result?.success) {
+        return;
+    }
+
+    (result.particulars || []).forEach((particular) => {
+        rememberCustomParticular(particular.name || particular);
+    });
+
+    refreshParticularDropdowns();
+}
+
 function createParticularOptions(selectedValue = '') {
+    const normalizedSelectedValue = normalizeFeeParticular(selectedValue);
     return `
         <option value="">Select Particular</option>
-        ${getAllParticulars().map((item) => `<option value="${item}" ${item === selectedValue ? 'selected' : ''}>${item}</option>`).join('')}
+        ${getAllParticulars().map((item) => `<option value="${item}" ${item === normalizedSelectedValue ? 'selected' : ''}>${item}</option>`).join('')}
     `;
 }
 
 function refreshParticularDropdowns() {
     document.querySelectorAll('.particular-select').forEach((select) => {
-        const currentValue = select.value;
+        const currentValue = normalizeFeeParticular(select.value);
         select.innerHTML = createParticularOptions(currentValue);
         select.value = currentValue;
     });
 }
 
-function promptAndAddParticular(targetSelect = null) {
+async function promptAndAddParticular(targetSelect = null) {
     const particular = window.prompt('Enter new particular name:');
     if (!particular) return;
 
-    const normalized = particular.trim();
+    const normalized = normalizeFeeParticular(particular);
     if (!normalized) return;
 
-    rememberCustomParticular(normalized);
+    const result = await API.fees.createParticular(normalized);
+    if (!result?.success) {
+        alert(result?.message || 'Unable to save fee particular');
+        return;
+    }
+
+    rememberCustomParticular(result.particular?.name || normalized);
     refreshParticularDropdowns();
 
     if (targetSelect) {
-        targetSelect.value = normalized;
+        targetSelect.value = result.particular?.name || normalized;
         setDefaultMonthForTuition();
         refreshFeeFormState();
     }
@@ -122,10 +156,14 @@ function promptAndAddParticular(targetSelect = null) {
 
 function getPaymentModeOptions() {
     const options = ['Cash', ...onlineAccounts];
-    return options.map((option) => `<option value="${option}">${option}</option>`).join('');
+    return `
+        <option value="">Select</option>
+        ${options.map((option) => `<option value="${option}">${option}</option>`).join('')}
+    `;
 }
 
 function inferBaseMode(modeLabel = '') {
+    if (!modeLabel) return '';
     return modeLabel === 'Cash' ? 'Cash' : 'Online';
 }
 
@@ -200,32 +238,49 @@ async function promptAndAddOnlineAccount(targetSelect = null) {
     }
 }
 
+function isLineItemRowBlank(row) {
+    const particular = normalizeFeeParticular(row.querySelector('.particular-select')?.value || '');
+    const amount = Number(row.querySelector('.amount-input')?.value) || 0;
+    return !particular && amount <= 0;
+}
+
+function focusFirstPaymentType() {
+    document.querySelector('.payment-mode-select')?.focus();
+}
+
+function removeTrailingBlankLineItems() {
+    const rows = Array.from(document.querySelectorAll('.line-item-row'));
+    for (let index = rows.length - 1; index >= 0; index -= 1) {
+        if (!isLineItemRowBlank(rows[index])) {
+            break;
+        }
+
+        rows[index].remove();
+        rows.pop();
+    }
+}
+
 function createLineItemRow(particular = '', amount = '') {
     if (particular) {
         rememberCustomParticular(particular);
     }
 
-    const row = document.createElement('div');
+    const row = document.createElement('tr');
     row.className = 'line-item-row';
     row.innerHTML = `
-        <div class="row g-2 align-items-end">
-            <div class="col-md-8">
-                <label class="form-label">Particular</label>
-                <select class="form-select particular-select" required>
-                    ${createParticularOptions(particular)}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Amount</label>
-                <input type="number" class="form-control amount-input" min="0" step="0.01" value="${amount}">
-            </div>
-            <div class="col-md-1 d-grid">
-                <label class="form-label d-none d-md-block">&nbsp;</label>
-                <button type="button" class="btn btn-outline-danger remove-line-btn" title="Remove row">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
+        <td>
+            <select class="form-select particular-select" aria-label="Particular" required>
+                ${createParticularOptions(particular)}
+            </select>
+        </td>
+        <td style="width: 28%;">
+            <input type="number" class="form-control amount-input" aria-label="Amount" min="0" step="0.01" value="${amount}">
+        </td>
+        <td class="text-center" style="width: 52px;">
+            <button type="button" class="btn btn-outline-danger remove-line-btn" title="Remove row">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
     `;
 
     const particularSelect = row.querySelector('.particular-select');
@@ -234,6 +289,22 @@ function createLineItemRow(particular = '', amount = '') {
         refreshFeeFormState();
     });
     row.querySelector('.amount-input').addEventListener('input', refreshFeeFormState);
+    row.querySelector('.amount-input').addEventListener('keydown', (event) => {
+        if (event.key !== 'Tab' || event.shiftKey) return;
+
+        if (isLineItemRowBlank(row)) {
+            event.preventDefault();
+            focusFirstPaymentType();
+            return;
+        }
+
+        const rows = Array.from(document.querySelectorAll('.line-item-row'));
+        const currentIndex = rows.indexOf(row);
+        const nextRow = rows[currentIndex + 1] || addLineItemRow();
+
+        event.preventDefault();
+        nextRow.querySelector('.particular-select')?.focus();
+    });
     row.querySelector('.remove-line-btn').addEventListener('click', () => {
         row.remove();
         if (!document.querySelectorAll('.line-item-row').length) {
@@ -245,12 +316,36 @@ function createLineItemRow(particular = '', amount = '') {
     return row;
 }
 
-function addLineItemRow(particular = '', amount = '') {
-    document.getElementById('lineItemsContainer').appendChild(createLineItemRow(particular, amount));
+function getLineItemsTableBody() {
+    const container = document.getElementById('lineItemsContainer');
+    let tableBody = container.querySelector('tbody');
+    if (tableBody) {
+        return tableBody;
+    }
+
+    container.innerHTML = `
+        <table class="table table-sm line-items-table align-middle">
+            <thead>
+                <tr>
+                    <th>Particular</th>
+                    <th style="width: 28%;">Amount</th>
+                    <th class="text-center" style="width: 52px;"></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    `;
+    return container.querySelector('tbody');
 }
 
-function createPaymentEntryRow(modeLabel = 'Cash', amount = '', removable = true) {
-    if (modeLabel !== 'Cash') {
+function addLineItemRow(particular = '', amount = '') {
+    const row = createLineItemRow(particular, amount);
+    getLineItemsTableBody().appendChild(row);
+    return row;
+}
+
+function createPaymentEntryRow(modeLabel = '', amount = '', removable = true) {
+    if (modeLabel && modeLabel !== 'Cash') {
         addOnlineAccountLocally(modeLabel);
     }
 
@@ -263,7 +358,7 @@ function createPaymentEntryRow(modeLabel = 'Cash', amount = '', removable = true
         <div class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label">Payment Type</label>
-                <select class="form-select payment-mode-select">
+                <select class="form-select payment-mode-select" required>
                     ${getPaymentModeOptions()}
                 </select>
             </div>
@@ -287,7 +382,7 @@ function createPaymentEntryRow(modeLabel = 'Cash', amount = '', removable = true
     paymentModeSelect.value = modeLabel;
 
     function syncPaymentRowState() {
-        const currentMode = paymentModeSelect.value || 'Cash';
+        const currentMode = paymentModeSelect.value;
         row.dataset.baseMode = inferBaseMode(currentMode);
         row.dataset.modeLabel = currentMode;
     }
@@ -297,6 +392,12 @@ function createPaymentEntryRow(modeLabel = 'Cash', amount = '', removable = true
         refreshFeeFormState();
     });
     row.querySelector('.payment-amount-input').addEventListener('input', refreshFeeFormState);
+    row.querySelector('.payment-amount-input').addEventListener('keydown', (event) => {
+        if (event.key !== 'Tab' || event.shiftKey) return;
+
+        event.preventDefault();
+        document.getElementById('saveFeeBtn')?.focus();
+    });
     row.querySelector('.remove-payment-btn').addEventListener('click', () => {
         row.remove();
         refreshFeeFormState();
@@ -313,15 +414,15 @@ function hydratePaymentBreakdown(entries = []) {
 
     const normalizedEntries = Array.isArray(entries) && entries.length
         ? entries
-        : [{ modeLabel: 'Cash', amount: 0, baseMode: 'Cash' }];
+        : [{ modeLabel: '', amount: 0, baseMode: '' }];
 
     normalizedEntries.forEach((entry, index) => {
-        const modeLabel = entry.modeLabel || entry.label || entry.paymentMode || 'Cash';
+        const modeLabel = entry.modeLabel || entry.label || entry.paymentMode || '';
         container.appendChild(createPaymentEntryRow(modeLabel, entry.amount || 0, index > 0));
     });
 
     if (!container.querySelector('.payment-entry-row')) {
-        container.appendChild(createPaymentEntryRow('Cash', 0, false));
+        container.appendChild(createPaymentEntryRow('', 0, false));
     }
 
     const firstRemoveBtn = container.querySelector('.payment-entry-row .remove-payment-btn');
@@ -332,7 +433,7 @@ function hydratePaymentBreakdown(entries = []) {
     refreshFeeFormState();
 }
 
-function addPaymentRow(modeLabel = 'Cash', amount = '') {
+function addPaymentRow(modeLabel = '', amount = '') {
     const container = document.getElementById('paymentEntriesContainer');
     container.appendChild(createPaymentEntryRow(modeLabel, amount, true));
     refreshFeeFormState();
@@ -341,11 +442,11 @@ function addPaymentRow(modeLabel = 'Cash', amount = '') {
 function getPaymentBreakdownPayload() {
     return Array.from(document.querySelectorAll('.payment-entry-row'))
         .map((row) => ({
-            modeLabel: row.dataset.modeLabel || 'Cash',
-            baseMode: row.querySelector('.payment-mode-select').value || 'Cash',
+            modeLabel: row.dataset.modeLabel || '',
+            baseMode: row.querySelector('.payment-mode-select').value ? inferBaseMode(row.querySelector('.payment-mode-select').value) : '',
             amount: Number(row.querySelector('.payment-amount-input').value) || 0
         }))
-        .filter((item) => item.amount >= 0 && (item.baseMode === 'Cash' || item.modeLabel));
+        .filter((item) => item.amount >= 0);
 }
 
 function findDuplicatePaymentModes(paymentBreakdown = getPaymentBreakdownPayload()) {
@@ -382,6 +483,44 @@ function formatPaymentBreakdown(paymentBreakdown = [], fallbackPaymentMode = '')
     return fallbackPaymentMode || 'Cash';
 }
 
+function escapeHtml(value = '') {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function renderLastFeeEntry(transaction = null) {
+    const hint = document.getElementById('lastFeeEntryHint');
+    if (!hint) return;
+
+    if (!transaction) {
+        hint.classList.add('d-none');
+        hint.innerHTML = '';
+        return;
+    }
+
+    hint.innerHTML = `
+        <span class="label">Last Entry:</span>
+        Voucher No. <strong>${escapeHtml(transaction.voucherNo || 'N/A')}</strong>
+        <span class="mx-1">|</span>
+        Admission No. <strong>${escapeHtml(transaction.admissionNo || 'N/A')}</strong>
+    `;
+    hint.classList.remove('d-none');
+}
+
+async function loadLastFeeEntry() {
+    const result = await API.fees.getTransactions({ limit: 1 });
+    if (!result?.success) {
+        renderLastFeeEntry(null);
+        return;
+    }
+
+    renderLastFeeEntry((result.transactions || [])[0] || null);
+}
+
 function validateRequiredFeeFields({ voucherNo, paymentDate, lineItems, paymentBreakdown, paidAmount, monthValue }) {
     if (!voucherNo) {
         return 'Voucher No. is required';
@@ -391,12 +530,11 @@ function validateRequiredFeeFields({ voucherNo, paymentDate, lineItems, paymentB
         return 'Payment Date is required';
     }
 
-    const previousDueAmount = Number(document.getElementById('previousDueAmount').value) || 0;
-    const hasPositivePayment = Number(paidAmount) > 0;
-    const hasExistingBalance = previousDueAmount !== 0;
+    const previousDueAmount = Number(document.getElementById('previousDueAmount')?.value) || 0;
+    const isDueOnlyPayment = previousDueAmount !== 0 && paidAmount > 0;
 
-    if (!lineItems.length && !hasPositivePayment && !hasExistingBalance) {
-        return 'Please add at least one fee row with amount or enter a payment amount';
+    if (!lineItems.length && !isDueOnlyPayment) {
+        return 'Please add at least one filled fee row or collect against previous due';
     }
 
     if (hasTuitionFee(lineItems) && !monthValue) {
@@ -405,6 +543,10 @@ function validateRequiredFeeFields({ voucherNo, paymentDate, lineItems, paymentB
 
     if (!paymentBreakdown.length) {
         return 'Please add at least one payment row';
+    }
+
+    if (paymentBreakdown.some((entry) => !entry.modeLabel)) {
+        return 'Please select Payment Type';
     }
 
     return null;
@@ -476,10 +618,19 @@ function renderStudentInfo(student, summary) {
     document.getElementById('sectionView').textContent = student.section || '-';
     document.getElementById('rollNoView').textContent = student.rollNo || '-';
     document.getElementById('sessionView').textContent = student.session || '-';
+    document.getElementById('tuitionFeeView').textContent = `Rs. ${formatMoney(student.tuitionFee || 0)}`;
+    document.getElementById('transportFeeView').textContent = student.transport?.required
+        ? `Rs. ${formatMoney(student.transport?.fees || 0)}`
+        : 'Not required';
     document.getElementById('previousDueAmount').value = (summary.previousDueAmount || 0).toFixed(2);
     document.getElementById('totalPaidView').textContent = formatMoney(summary.totalPaid || 0);
     document.getElementById('outstandingView').textContent = formatMoney(summary.totalOutstanding || 0);
     refreshFeeFormState();
+}
+
+function setDueCollectionMode(isActive) {
+    const hint = document.getElementById('dueCollectionHint');
+    if (hint) hint.classList.toggle('d-none', !isActive);
 }
 
 function matchesTransactionKeyword(transaction, keyword) {
@@ -556,9 +707,9 @@ function setFeeFormMode() {
 
 function populateFeeFormForEdit(receipt) {
     editingReceiptId = receipt._id;
-    document.getElementById('admissionNoSearch').value = receipt.admissionNo || '';
+    document.getElementById('admissionNoSearch').value = normalizeAdmissionNo(receipt.admissionNo);
     document.getElementById('voucherNo').value = receipt.voucherNo || '';
-    document.getElementById('selectedAdmissionNo').value = receipt.admissionNo || '';
+    document.getElementById('selectedAdmissionNo').value = normalizeAdmissionNo(receipt.admissionNo);
     document.getElementById('previousDueAmount').value = (Number(receipt.previousDueAmount) || 0).toFixed(2);
     document.getElementById('feeMonth').value = receipt.month || '';
     document.getElementById('paymentDate').value = receipt.receiptDate ? new Date(receipt.receiptDate).toISOString().split('T')[0] : '';
@@ -580,13 +731,13 @@ function populateFeeFormForEdit(receipt) {
 
 function getLineItemsPayload() {
     return Array.from(document.querySelectorAll('.line-item-row')).map((row) => ({
-        particular: row.querySelector('.particular-select').value,
+        particular: normalizeFeeParticular(row.querySelector('.particular-select').value),
         amount: Number(row.querySelector('.amount-input').value) || 0
     })).filter((item) => item.particular && item.amount > 0);
 }
 
-async function searchStudent(admissionNo) {
-    const result = await API.fees.getStudentFeeSummary(admissionNo);
+async function searchStudent(admissionNo, session = '') {
+    const result = await API.fees.getStudentFeeSummary(admissionNo, session);
 
     if (!result || !result.success) {
         throw new Error(result?.message || 'Student not found');
@@ -595,6 +746,11 @@ async function searchStudent(admissionNo) {
     selectedStudent = result.student;
     recentTransactionsCache = result.transactions || [];
     renderStudentInfo(result.student, result.summary || {});
+    if (shouldPrefillDuePayment && !editingReceiptId) {
+        hydratePaymentBreakdown([{ modeLabel: 'Cash', baseMode: 'Cash', amount: 0 }]);
+        setDueCollectionMode(true);
+        document.querySelector('.payment-amount-input')?.focus();
+    }
     renderTransactions(recentTransactionsCache);
 }
 
@@ -617,9 +773,10 @@ function resetFeeForm() {
     document.getElementById('outstandingView').textContent = '0';
     document.getElementById('voucherNo').value = '';
     document.getElementById('paymentEntriesContainer').innerHTML = '';
+    setDueCollectionMode(false);
     setMonthDropdown();
     addLineItemRow();
-    hydratePaymentBreakdown([{ modeLabel: 'Cash', baseMode: 'Cash', amount: 0 }]);
+    hydratePaymentBreakdown([{ modeLabel: '', baseMode: '', amount: 0 }]);
     document.getElementById('feeMonth').value = '';
     document.getElementById('feeNotes').value = '';
     const feeEditReason = document.getElementById('feeEditReason');
@@ -635,7 +792,7 @@ async function loadReceiptForEdit(receiptId) {
         throw new Error(result?.message || 'Unable to fetch receipt for editing');
     }
 
-    await searchStudent(result.receipt.admissionNo);
+    await searchStudent(result.receipt.admissionNo, result.receipt.session || '');
     populateFeeFormForEdit(result.receipt);
 }
 
@@ -653,12 +810,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setMonthDropdown();
     addLineItemRow();
-    hydratePaymentBreakdown([{ modeLabel: 'Cash', baseMode: 'Cash', amount: 0 }]);
+    hydratePaymentBreakdown([{ modeLabel: '', baseMode: '', amount: 0 }]);
     setTodayAsPaymentDate();
     refreshFeeFormState();
 
     document.getElementById('addLineItemBtn').addEventListener('click', () => addLineItemRow());
-    document.getElementById('addParticularBtn').addEventListener('click', () => promptAndAddParticular());
+    document.getElementById('addParticularBtn').addEventListener('click', async () => {
+        try {
+            await promptAndAddParticular();
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Unable to save fee particular');
+        }
+    });
     document.getElementById('addOnlineAccountBtn').addEventListener('click', async () => {
         try {
             await promptAndAddOnlineAccount();
@@ -667,14 +831,26 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(error.message || 'Unable to create online account');
         }
     });
-    document.getElementById('addPaymentRowBtn').addEventListener('click', () => addPaymentRow('Cash', 0));
+    document.getElementById('addPaymentRowBtn').addEventListener('click', () => addPaymentRow('', 0));
     document.getElementById('feeMonth').addEventListener('change', updateMonthRequirement);
     document.getElementById('resetFeeFormBtn').addEventListener('click', resetFeeForm);
     document.getElementById('recentTransactionsSearch').addEventListener('input', () => renderTransactions(recentTransactionsCache));
+    document.getElementById('saveFeeBtn').addEventListener('click', () => {
+        removeTrailingBlankLineItems();
+        refreshFeeFormState();
+    });
+    document.getElementById('admissionNoSearch').addEventListener('input', (event) => {
+        const upperValue = event.target.value.toUpperCase();
+        if (event.target.value !== upperValue) {
+            event.target.value = upperValue;
+        }
+    });
 
     document.getElementById('studentSearchForm').addEventListener('submit', async (event) => {
         event.preventDefault();
-        const admissionNo = document.getElementById('admissionNoSearch').value.trim();
+        const admissionNoInput = document.getElementById('admissionNoSearch');
+        const admissionNo = normalizeAdmissionNo(admissionNoInput.value);
+        admissionNoInput.value = admissionNo;
         const searchButton = document.getElementById('searchStudentBtn');
         const originalHtml = searchButton.innerHTML;
 
@@ -705,6 +881,9 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Search and select a student first');
             return;
         }
+
+        removeTrailingBlankLineItems();
+        refreshFeeFormState();
 
         const lineItems = getLineItemsPayload();
         const voucherNo = document.getElementById('voucherNo').value.trim();
@@ -743,6 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const payload = {
             admissionNo: selectedStudent.studentId,
+            session: selectedStudent.session || '',
             voucherNo,
             month: monthValue,
             receiptDate: paymentDate,
@@ -778,6 +958,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 : 'Fee receipt saved successfully';
 
             resetFeeForm();
+            renderLastFeeEntry(result.receipt || null);
+            document.getElementById('admissionNoSearch')?.focus();
             alert(successMessage);
 
             if (receiptId) {
@@ -792,8 +974,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const prefilledAdmissionNo = new URLSearchParams(window.location.search).get('admissionNo');
-    const prefilledReceiptId = new URLSearchParams(window.location.search).get('receiptId');
+    const prefilledAdmissionNo = queryParams.get('admissionNo');
+    const prefilledReceiptId = queryParams.get('receiptId');
     setFeeFormMode();
 
     document.getElementById('deleteFeeBtn').addEventListener('click', async () => {
@@ -816,6 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             alert('Fee receipt deleted successfully.');
             resetFeeForm();
+            loadLastFeeEntry().catch((error) => console.error(error));
             window.history.replaceState({}, '', 'fee-collection.html');
         } catch (error) {
             console.error(error);
@@ -823,7 +1006,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    loadPaymentAccounts().then(() => {
+    loadLastFeeEntry().catch((error) => {
+        console.error(error);
+        renderLastFeeEntry(null);
+    });
+
+    Promise.all([loadPaymentAccounts(), loadFeeParticulars()]).then(() => {
         if (prefilledReceiptId) {
             loadReceiptForEdit(prefilledReceiptId).catch((error) => {
                 console.error(error);
@@ -833,7 +1021,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (prefilledAdmissionNo) {
-            document.getElementById('admissionNoSearch').value = prefilledAdmissionNo;
+            document.getElementById('admissionNoSearch').value = normalizeAdmissionNo(prefilledAdmissionNo);
             document.getElementById('studentSearchForm').dispatchEvent(new Event('submit', {
                 cancelable: true,
                 bubbles: true

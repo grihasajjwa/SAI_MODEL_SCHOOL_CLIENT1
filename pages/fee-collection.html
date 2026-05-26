@@ -35,12 +35,31 @@
             color: #1d4f91;
         }
 
-        .line-item-row {
+        #lineItemsContainer:not(:empty) {
             background: #f8fbff;
             border: 1px solid #d8e6ff;
             border-radius: 14px;
-            padding: 12px;
-            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .line-items-table {
+            margin: 0;
+        }
+
+        .line-items-table th {
+            background: #eef5ff;
+            color: #153c72;
+            font-size: 0.85rem;
+            padding: 8px 10px;
+        }
+
+        .line-items-table td {
+            padding: 5px 10px;
+            vertical-align: middle;
+        }
+
+        .line-items-table .remove-line-btn {
+            width: 38px;
         }
 
         .payment-entry-row {
@@ -150,6 +169,33 @@
             font-weight: 700;
             margin-top: 4px;
         }
+
+        .last-entry-hint {
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: #f7faff;
+            border: 1px solid #d8e6ff;
+            border-radius: 10px;
+            color: #153c72;
+            font-size: 0.88rem;
+        }
+
+        .last-entry-hint .label {
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        #admissionNoSearch {
+            background-color: #fff7d6;
+            border-color: #f0c84b;
+            font-weight: 700;
+        }
+
+        #admissionNoSearch:focus {
+            background-color: #fff3bf;
+            border-color: #d99b00;
+            box-shadow: 0 0 0 0.2rem rgba(217, 155, 0, 0.18);
+        }
     </style>
 </head>
 <body>
@@ -175,6 +221,7 @@
                             <div class="col-md-7">
                                 <label for="admissionNoSearch" class="form-label">Search Student by Admission No.</label>
                                 <input type="text" class="form-control" id="admissionNoSearch" placeholder="Enter admission number" required>
+                                <div id="lastFeeEntryHint" class="last-entry-hint d-none" aria-live="polite"></div>
                             </div>
                             <div class="col-md-5 d-flex gap-2">
                                 <button type="submit" class="btn btn-primary flex-grow-1" id="searchStudentBtn">
@@ -199,6 +246,8 @@
                                     <div class="meta-block"><span>Section</span><strong id="sectionView">-</strong></div>
                                     <div class="meta-block"><span>Roll No</span><strong id="rollNoView">-</strong></div>
                                     <div class="meta-block"><span>Session</span><strong id="sessionView">-</strong></div>
+                                    <div class="meta-block"><span>Tuition Fee</span><strong id="tuitionFeeView">-</strong></div>
+                                    <div class="meta-block"><span>Transport Fee</span><strong id="transportFeeView">-</strong></div>
                                 </div>
                             </div>
                         </div>
@@ -314,6 +363,9 @@
                                                 </div>
                                             </div>
                                             <div id="paymentEntriesContainer"></div>
+                                            <div id="dueCollectionHint" class="alert alert-info py-2 px-3 mt-2 mb-0 d-none">
+                                                Previous due is loaded. Enter the amount received manually; it can be less, equal, or more than the due.
+                                            </div>
                                         </div>
                                         <div class="col-md-4">
                                             <label for="paidAmount" class="form-label fw-bold">

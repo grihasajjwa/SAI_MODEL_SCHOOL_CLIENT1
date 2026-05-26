@@ -361,7 +361,7 @@
                                     <i class="fas fa-users me-2"></i>Load Students
                                 </button>
                                 <button class="btn btn-outline-secondary" id="saveDraftBtn" type="button">
-                                    <i class="fas fa-floppy-disk me-2"></i>Save Datesheet Draft
+                                    <i class="fas fa-floppy-disk me-2"></i>Save Datasheet
                                 </button>
                                 <button class="btn btn-outline-dark" id="resetDraftBtn" type="button">
                                     <i class="fas fa-rotate-left me-2"></i>Reset Draft
@@ -402,7 +402,7 @@
                                             <th style="min-width: 140px;">Date</th>
                                             <th style="min-width: 130px;">Day</th>
                                             <th style="min-width: 180px;">Time</th>
-                                            <th style="min-width: 140px;">Venue</th>
+                                            <th style="min-width: 170px;">Signature of Teacher</th>
                                             <th style="width: 72px;">Action</th>
                                         </tr>
                                     </thead>
@@ -490,9 +490,9 @@
 
     <script>
         const DEFAULT_EXAMS = [
-            { subject: 'English', date: '', day: '', timing: '10:30 AM - 12:30 PM', venue: 'Main Hall' },
-            { subject: 'Mathematics', date: '', day: '', timing: '10:30 AM - 12:30 PM', venue: 'Main Hall' },
-            { subject: 'Science', date: '', day: '', timing: '10:30 AM - 12:30 PM', venue: 'Main Hall' }
+            { subject: 'English', date: '', day: '', timing: '10:30 AM - 12:30 PM', teacherSignature: '' },
+            { subject: 'Mathematics', date: '', day: '', timing: '10:30 AM - 12:30 PM', teacherSignature: '' },
+            { subject: 'Science', date: '', day: '', timing: '10:30 AM - 12:30 PM', teacherSignature: '' }
         ];
 
         const sessionSelect = document.getElementById('sessionSelect');
@@ -535,11 +535,11 @@
 
             sessionSelect.addEventListener('change', async () => {
                 await loadClassesForSession();
-                loadDraftForCurrentScope();
+                await loadDraftForCurrentScope();
             });
-            classSelect.addEventListener('change', () => {
+            classSelect.addEventListener('change', async () => {
                 populateSections();
-                loadDraftForCurrentScope();
+                await loadDraftForCurrentScope();
             });
             sectionSelect.addEventListener('change', loadDraftForCurrentScope);
             loadStudentsBtn.addEventListener('click', handleLoadStudents);
@@ -596,7 +596,7 @@
                 sessionSelect.value = currentSession;
 
                 await loadClassesForSession();
-                loadDraftForCurrentScope();
+                await loadDraftForCurrentScope();
             } catch (error) {
                 console.error('Failed to initialize bulk admit-card page:', error);
                 previewStatus.textContent = 'Unable to load sessions right now';
@@ -732,7 +732,7 @@
                     <td><input type="date" class="form-control form-control-sm" data-row="${index}" data-field="date" value="${escapeAttribute(row.date)}"></td>
                     <td><input type="text" class="form-control form-control-sm" data-row="${index}" data-field="day" value="${escapeAttribute(row.day)}" placeholder="Day"></td>
                     <td><input type="text" class="form-control form-control-sm" data-row="${index}" data-field="timing" value="${escapeAttribute(row.timing)}" placeholder="10:30 AM - 12:30 PM"></td>
-                    <td><input type="text" class="form-control form-control-sm" data-row="${index}" data-field="venue" value="${escapeAttribute(row.venue)}" placeholder="Venue"></td>
+                    <td><input type="text" class="form-control form-control-sm" data-row="${index}" data-field="teacherSignature" value="${escapeAttribute(row.teacherSignature)}" placeholder="Teacher signature"></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-danger" type="button" data-remove-row="${index}">
                             <i class="fas fa-trash"></i>
@@ -1020,19 +1020,33 @@
             await new Promise((resolve) => requestAnimationFrame(() => resolve()));
         }
 
-        function handleSaveDraft() {
+        async function handleSaveDraft() {
             if (!currentDraftKey()) {
                 alert('Choose session, class, and section before saving a datesheet draft.');
                 return;
             }
-            persistDraftSilently();
-            alert('Datesheet draft saved for this session, class, and section.');
+
+            const originalHtml = saveDraftBtn.innerHTML;
+            try {
+                saveDraftBtn.disabled = true;
+                saveDraftBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving';
+                persistDraftSilently();
+                await saveDatesheetToDb();
+                alert('Datesheet saved in database for this session, class, and section.');
+            } catch (error) {
+                console.error('Failed to save datesheet:', error);
+                alert(error.message || 'Failed to save datesheet.');
+            } finally {
+                saveDraftBtn.disabled = false;
+                saveDraftBtn.innerHTML = originalHtml;
+            }
         }
 
-        function handleResetDraft() {
+        async function handleResetDraft() {
             if (currentDraftKey()) {
                 localStorage.removeItem(currentDraftKey());
             }
+            await resetDatesheetInDb();
             examTitleInput.value = 'Annual Examination';
             admitNoteInput.value = 'Students must carry this admit card every examination day.';
             datesheetRows = cloneExamRows(DEFAULT_EXAMS);
@@ -1040,10 +1054,22 @@
             updateSummaryStats();
         }
 
-        function loadDraftForCurrentScope() {
+        async function loadDraftForCurrentScope() {
             const key = currentDraftKey();
             if (!key) {
                 datesheetRows = cloneExamRows(DEFAULT_EXAMS);
+                renderDatesheetTable();
+                return;
+            }
+
+            const dbDraft = await loadDatesheetFromDb();
+            if (dbDraft) {
+                examTitleInput.value = dbDraft.examTitle || 'Annual Examination';
+                admitNoteInput.value = dbDraft.admitNote || 'Students must carry this admit card every examination day.';
+                datesheetRows = Array.isArray(dbDraft.datesheetRows) && dbDraft.datesheetRows.length
+                    ? cloneExamRows(dbDraft.datesheetRows)
+                    : cloneExamRows(DEFAULT_EXAMS);
+                persistDraftSilently();
                 renderDatesheetTable();
                 return;
             }
@@ -1084,6 +1110,74 @@
             localStorage.setItem(key, JSON.stringify(payload));
         }
 
+        async function loadDatesheetFromDb() {
+            const session = sessionSelect.value;
+            const className = classSelect.value;
+            const section = sectionSelect.value;
+            if (!session || !className || !section) return null;
+
+            try {
+                const params = new URLSearchParams({ session, className, section });
+                const response = await fetch(`${CONFIG.API_URL}/admit-datesheets?${params.toString()}`, {
+                    headers: authHeaders()
+                });
+                if (!response.ok) return null;
+                const payload = await response.json();
+                return payload?.datesheet || null;
+            } catch (error) {
+                console.error('Failed to load admit datesheet from DB:', error);
+                return null;
+            }
+        }
+
+        async function saveDatesheetToDb() {
+            const session = sessionSelect.value;
+            const className = classSelect.value;
+            const section = sectionSelect.value;
+            if (!session || !className || !section) {
+                throw new Error('Choose session, class, and section before saving.');
+            }
+
+            const response = await fetch(`${CONFIG.API_URL}/admit-datesheets`, {
+                method: 'POST',
+                headers: {
+                    ...authHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session,
+                    className,
+                    section,
+                    examTitle: examTitleInput.value.trim(),
+                    admitNote: admitNoteInput.value.trim(),
+                    datesheetRows
+                })
+            });
+
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.message || 'Failed to save datesheet');
+            }
+            return payload.datesheet;
+        }
+
+        async function resetDatesheetInDb() {
+            const session = sessionSelect.value;
+            const className = classSelect.value;
+            const section = sectionSelect.value;
+            if (!session || !className || !section) return;
+
+            try {
+                const params = new URLSearchParams({ session, className, section });
+                await fetch(`${CONFIG.API_URL}/admit-datesheets?${params.toString()}`, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                });
+            } catch (error) {
+                console.error('Failed to reset admit datesheet in DB:', error);
+            }
+        }
+
         function currentDraftKey() {
             const session = sessionSelect.value;
             const className = classSelect.value;
@@ -1105,9 +1199,9 @@
                     date: String(row.date || '').trim(),
                     day: String(row.day || '').trim(),
                     timing: String(row.timing || '').trim(),
-                    venue: String(row.venue || '').trim()
+                    teacherSignature: String(row.teacherSignature || '').trim()
                 }))
-                .filter((row) => row.subject || row.date || row.day || row.timing || row.venue);
+                .filter((row) => row.subject || row.date || row.day || row.timing || row.teacherSignature);
         }
 
         function renderSheet(student, className, section, session, datesheet) {
@@ -1164,7 +1258,7 @@
                                         <th>Exam Date</th>
                                         <th>Day</th>
                                         <th>Timing</th>
-                                        <th>Venue</th>
+                                        <th>Signature of Teacher</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1174,7 +1268,7 @@
                                             <td>${escapeHtml(formatDateDisplay(row.date) || '-')}</td>
                                             <td>${escapeHtml(row.day || '-')}</td>
                                             <td>${escapeHtml(row.timing || '-')}</td>
-                                            <td>${escapeHtml(row.venue || '-')}</td>
+                                            <td>${escapeHtml(row.teacherSignature || '')}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -1210,7 +1304,7 @@
         }
 
         function createEmptyExamRow() {
-            return { subject: '', date: '', day: '', timing: '10:30 AM - 12:30 PM', venue: 'Main Hall' };
+            return { subject: '', date: '', day: '', timing: '10:30 AM - 12:30 PM', teacherSignature: '' };
         }
 
         function cloneExamRows(rows) {
@@ -1219,7 +1313,7 @@
                 date: row.date || '',
                 day: row.day || '',
                 timing: row.timing || '10:30 AM - 12:30 PM',
-                venue: row.venue || 'Main Hall'
+                teacherSignature: row.teacherSignature || ''
             }));
         }
 

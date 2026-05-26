@@ -55,6 +55,18 @@
         });
     }
 
+    function buildRepeatedWatermarkText(text) {
+        const value = String(text || '').trim();
+        if (!value) return '';
+        const safeValue = value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        return Array.from({ length: 240 }, () => `<span>${safeValue}</span>`).join('');
+    }
+
     function setImage(selector, src, alt) {
         document.querySelectorAll(selector).forEach((element) => {
             element.src = resolveAssetUrl(src);
@@ -97,6 +109,9 @@
         setText('[data-school-email]', effectiveProfile.email);
         setText('[data-school-website]', effectiveProfile.website);
         setText('[data-school-watermark]', effectiveProfile.watermarkText || effectiveProfile.name.toUpperCase());
+        document.querySelectorAll('[data-school-watermark-pattern]').forEach((element) => {
+            element.innerHTML = buildRepeatedWatermarkText(effectiveProfile.watermarkText || effectiveProfile.name.toUpperCase());
+        });
         setImage('[data-school-logo]', effectiveProfile.logo, `${effectiveProfile.name} logo`);
 
         const navbarBrandName = document.querySelector('.school-brand-name');

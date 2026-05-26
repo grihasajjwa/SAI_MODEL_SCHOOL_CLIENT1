@@ -1,5 +1,6 @@
 class Auth {
     static POST_LOGIN_REDIRECT_KEY = 'postLoginRedirect';
+    static lastLoginError = '';
 
     static isPublicPage(pathname = window.location.pathname) {
         return /\/pages\/(login|signup)\.html$/i.test(pathname) || /\/(login|signup)\.html$/i.test(pathname);
@@ -51,7 +52,7 @@ class Auth {
 
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload.role;
+            return String(payload.role || '').toLowerCase();
         } catch (error) {
             return null;
         }
@@ -67,6 +68,10 @@ class Auth {
 
     static canManageFinance() {
         return ['admin', 'accountant'].includes(this.getUserRole());
+    }
+
+    static canManageSalary() {
+        return this.getUserRole() === 'admin';
     }
 
     static canDeleteFinance() {
@@ -122,6 +127,7 @@ class Auth {
 
    static async login(username, password, rememberMe = false) {
         try {
+            this.lastLoginError = '';
             const loginUrl = `${CONFIG.API_URL}/auth/login`;
             console.log('Attempting login to URL:', loginUrl);
             console.log('CONFIG.API_URL:', CONFIG.API_URL);
@@ -136,6 +142,9 @@ class Auth {
 
             const data = await response.json();
             console.log('Login response:', data);
+            if (!data.success) {
+                this.lastLoginError = data.message || 'Invalid credentials. Please try again';
+            }
 
             if (data.success && data.token) {
                 localStorage.setItem(CONFIG.STORAGE_KEYS.TOKEN, data.token);
@@ -173,6 +182,7 @@ class Auth {
             return false;
         } catch (error) {
             console.error('Login error:', error);
+            this.lastLoginError = 'An error occurred during login. Please try again';
             return false;
         }
     }
