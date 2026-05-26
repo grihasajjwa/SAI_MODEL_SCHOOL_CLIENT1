@@ -66,6 +66,8 @@ const Navbar = {
             container.innerHTML = navbarHtml;
             container.dataset.navbarLoaded = 'true';
 
+            this.applyRoleVisibility();
+
             // Initialize Bootstrap dropdowns when Bootstrap JS is available.
             if (window.bootstrap?.Dropdown) {
                 const dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
@@ -101,6 +103,31 @@ const Navbar = {
     handleLogout(e) {
         e.preventDefault();
         Auth.logout();
+    },
+
+    getCurrentUserRole() {
+        if (window.Auth?.getUserRole) {
+            return String(window.Auth.getUserRole() || '').toLowerCase();
+        }
+
+        try {
+            const tokenKey = window.CONFIG?.STORAGE_KEYS?.TOKEN || 'skyview_token';
+            const token = localStorage.getItem(tokenKey);
+            if (!token) return '';
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return String(payload.role || '').toLowerCase();
+        } catch (error) {
+            return '';
+        }
+    },
+
+    applyRoleVisibility() {
+        const isAdmin = this.getCurrentUserRole() === 'admin';
+        if (isAdmin) return;
+
+        document.querySelectorAll('[data-admin-only="true"]').forEach((element) => {
+            element.remove();
+        });
     },
 
     // Function to highlight current page in navbar

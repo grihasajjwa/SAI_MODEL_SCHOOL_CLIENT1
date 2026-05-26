@@ -18,6 +18,7 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="studentDropdown">
                         <li><a class="dropdown-item" href="/pages/student-database.html"><i class="fa-solid fa-database me-2"></i>Student Database</a></li>
+                        <li><a class="dropdown-item" href="/pages/student-360.html"><i class="fa-solid fa-user-graduate me-2"></i>Student 360</a></li>
                         <li><a class="dropdown-item" href="/pages/birthday-reminder.html"><i class="fa-solid fa-cake-candles me-2"></i>Birthday Reminder</a></li>
                     </ul>
                 </li>
@@ -29,6 +30,7 @@
                        <li><a class="dropdown-item" href="/pages/create-subject.html"><i class="fa-solid fa-book me-2"></i>Subjects and Teachers</a></li>
                         <li><a class="dropdown-item" href="/pages/academic-records.html"><i class="fa-solid fa-book-open me-2"></i>Academic Records</a></li>
                         <li><a class="dropdown-item" href="/pages/lesson-plan.html"><i class="fa-solid fa-chalkboard-teacher me-2"></i>Lesson Plan</a></li>
+                        <li><a class="dropdown-item" href="/pages/exam-routine.html"><i class="fa-solid fa-calendar-days me-2"></i>Exam Routine</a></li>
                         <li><a class="dropdown-item" href="/pages/question-paper-builder.html"><i class="fa-solid fa-pen-to-square me-2"></i>Question Paper Builder</a></li>
                     </ul>
                 </li>
@@ -50,7 +52,8 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="documentsDropdown">
                         <li><a class="dropdown-item" href="/pages/bulk-admit-card-download.html"><i class="fa-solid fa-file-pdf me-2"></i>Bulk Admit Card PDF</a></li>
                         <li><a class="dropdown-item" href="/pages/certificates.html"><i class="fa-solid fa-certificate me-2"></i>Certificates</a></li>
-                        <li><a class="dropdown-item" href="https://nstutorial.github.io/icard/"><i class="fa-solid fa-address-card me-2"></i>ID Card</a></li>
+                        <li><a class="dropdown-item" href="/pages/id-card-template.html"><i class="fa-solid fa-address-card me-2"></i>ID Card</a></li>
+                        <li><a class="dropdown-item" href="/pages/bulk-id-card-download.html"><i class="fa-solid fa-file-zipper me-2"></i>Bulk ID Card ZIP</a></li>
                     </ul>
                 </li>
                 <li class="nav-item dropdown">
@@ -69,20 +72,32 @@
                     <a class="nav-link dropdown-toggle" href="#" id="feesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         Fees
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="feesDropdown">
-                        <li><a class="dropdown-item" href="/pages/today-finance.html"><i class="fa-solid fa-calendar-day me-2"></i>Today's Transactions</a></li>
+                    <ul class="dropdown-menu dropdown-menu-end finance-dropdown-menu" aria-labelledby="feesDropdown">
                         <li><a class="dropdown-item" href="/pages/fee-collection.html"><i class="fa-solid fa-receipt me-2"></i>Fee Collection</a></li>
                         <li><a class="dropdown-item" href="/pages/student-fee-ledger.html"><i class="fa-solid fa-book-open-reader me-2"></i>Student Fee Ledger</a></li>
                         <li><a class="dropdown-item" href="/pages/fee-collection-register.html"><i class="fa-solid fa-table-list me-2"></i>Fee Collection Register</a></li>
                         <li><a class="dropdown-item" href="/pages/class-fee-defaulters.html"><i class="fa-solid fa-triangle-exclamation me-2"></i>Class Defaulters</a></li>
                         <li><a class="dropdown-item" href="/pages/fee-transactions.html"><i class="fa-solid fa-list me-2"></i>Fee Transactions</a></li>
                         <li><a class="dropdown-item" href="/pages/receipt-reconciliation.html"><i class="fa-solid fa-list-check me-2"></i>Receipt Reconciliation</a></li>
-                        <li><a class="dropdown-item" href="/pages/transaction-audit.html"><i class="fa-solid fa-clock-rotate-left me-2"></i>Transaction Audit</a></li>
                         <li><a class="dropdown-item" href="/pages/fee-due-management.html"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Due Management</a></li>
                         <li><a class="dropdown-item" href="/pages/session-carry-forward.html"><i class="fa-solid fa-diagram-project me-2"></i>Session Carry Forward</a></li>
-                        <li><a class="dropdown-item" href="/pages/cashbook.html"><i class="fa-solid fa-book-open me-2"></i>Cashbook</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="cashbookDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Cashbook
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end finance-dropdown-menu" aria-labelledby="cashbookDropdown">
+                        <li><a class="dropdown-item" href="/pages/cashbook.html"><i class="fa-solid fa-book-open me-2"></i>Cashbook Summary</a></li>
+                        <li><a class="dropdown-item" href="/pages/today-finance.html"><i class="fa-solid fa-calendar-day me-2"></i>Today's Transactions</a></li>
                         <li><a class="dropdown-item" href="/pages/expense-record.html"><i class="fa-solid fa-wallet me-2"></i>Record Expense</a></li>
-                        <li><a class="dropdown-item" href="/pages/expense-transactions.html"><i class="fa-solid fa-book me-2"></i>Expense History</a></li>
+                        <!-- <li><a class="dropdown-item" href="/pages/expense-transactions.html#due-list"><i class="fa-solid fa-hourglass-half me-2"></i>Due List</a></li> -->
+                        <!-- <li><a class="dropdown-item" href="/pages/expense-transactions.html#due-payment"><i class="fa-solid fa-hand-holding-dollar me-2"></i>Due Payment</a></li> -->
+                        <li><a class="dropdown-item" href="/pages/supplier-ledger.html"><i class="fa-solid fa-truck me-2"></i>Supplier Ledger</a></li>
+                        <li><a class="dropdown-item" href="/pages/fuel-ledger.html"><i class="fa-solid fa-gas-pump me-2"></i>Fuel Ledger</a></li>
+                        <li><a class="dropdown-item" href="/pages/transaction-audit.html"><i class="fa-solid fa-clock-rotate-left me-2"></i>Transaction Audit</a></li>
+                        <li data-admin-only="true"><a class="dropdown-item" href="/pages/salary-staff.html"><i class="fa-solid fa-users-gear me-2"></i>Salary Staff</a></li>
+                        <li data-admin-only="true"><a class="dropdown-item" href="/pages/salary-sheet.html"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Salary Sheet</a></li>
                     </ul>
                 </li>
                 
@@ -92,7 +107,7 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
                         <li><a class="dropdown-item" href="/pages/user-profile.html"><i class="fa-solid fa-user-circle me-2"></i>View Profile</a></li>
-                        <li><a class="dropdown-item" href="/pages/user-list.html"><i class="fa-solid fa-user-circle me-2"></i>View User</a></li>
+                        <li data-admin-only="true"><a class="dropdown-item" href="/pages/user-list.html"><i class="fa-solid fa-user-circle me-2"></i>View User</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#" id="logoutButton"><i class="fa-solid fa-sign-out-alt me-2"></i>Logout</a></li>
                     </ul>

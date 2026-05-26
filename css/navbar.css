@@ -58,6 +58,11 @@
     min-width: 200px;
 }
 
+.finance-dropdown-menu {
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+}
+
 .dropdown-item {
     padding: 0.6rem 1.5rem;
     color: #2c3e50;
