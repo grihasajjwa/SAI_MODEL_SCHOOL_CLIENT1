@@ -1,4 +1,4 @@
-const SKYVIEW_DEFAULT_API_URL = 'https://skyview-server-8-0.vercel.app/api';
+const SKYVIEW_DEFAULT_API_URL = 'https://sai-model-school-server-1.vercel.app/api';
 
 function resolveApiUrl() {
     // 1. Optional manual override.
